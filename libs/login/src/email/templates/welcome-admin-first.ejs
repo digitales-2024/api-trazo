@@ -1,0 +1,59 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <%- include("./shared/head.ejs") %>
+  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td align="center">
+        <table width="600" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td align="center">
+              <h2>Hola, <strong><%= locals.name %></strong></h2>
+              <p>
+                Estamos encantados de que te hayas unido a <%= locals.business %>. Tu cuenta ha sido
+                creada y estás listo para comenzar.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td align="left">
+              <p>Aquí están tus credenciales temporales de inicio de sesión:</p>
+              <table
+                style="padding-left: 20px"
+                width="100%"
+                border="0"
+                cellspacing="0"
+                cellpadding="0"
+              >
+                <tr>
+                  <td><strong>Email:</strong> <%= locals.email %></td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Contraseña temporal:</strong>
+                    <%= locals.password %>
+                  </td>
+                </tr>
+              </table>
+              <p>
+                Para garantizar la seguridad de tu cuenta, te pedimos que
+                <span style="color: #f29c3e; font-style: italic">cambies esta contraseña</span>
+                tan pronto como inicies sesión.
+              </p>
+              <p>Puedes acceder a tu cuenta haciendo clic en el botón de abajo:</p>
+              <p>
+                <a target="_blank" href="<%= locals.webAdmin %>">Iniciar sesión</a>
+              </p>
+              <p>
+                Si necesitas ayuda o tienes alguna pregunta, no dudes en ponerte en contacto con
+                nosotros.
+              </p>
+              <p>Gracias por unirte a nosotros. ¡Estamos emocionados de trabajar contigo!</p>
+              <p>Saludos,<br />El equipo de <%= locals.business %></p>
+            </td>
+          </tr>
+          <%- include("./shared/footer.ejs") %>
+        </table>
+      </td>
+    </tr>
+  </table>
+</html>
