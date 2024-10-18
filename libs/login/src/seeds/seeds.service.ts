@@ -1,5 +1,5 @@
 import { BadRequestException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@login/login/prisma/prisma.service';
+import { PrismaService } from '@prisma/prisma/prisma.service';
 import { rolSuperAdminSeed, superAdminSeed } from './data/superadmin.seed';
 import { handleException } from '@login/login/utils';
 import * as bcrypt from 'bcrypt';
@@ -11,7 +11,7 @@ import { permissionsSeed } from './data/permissions.seed';
 export class SeedsService {
   private readonly logger = new Logger(SeedsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * Generar el usuario super admin con su rol

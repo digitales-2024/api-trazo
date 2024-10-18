@@ -5,7 +5,7 @@ import {
   Logger,
   NotFoundException
 } from '@nestjs/common';
-import { PrismaService } from '@login/login/prisma/prisma.service';
+import { PrismaService } from '@prisma/prisma';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto, UpdateUserDto } from './dto';
 import { handleException } from '@login/login/utils';
@@ -28,7 +28,7 @@ export class UsersService {
     private readonly rolService: RolService,
     private readonly eventEmitter: TypedEventEmitter,
     private readonly audit: AuditService
-  ) {}
+  ) { }
 
   /**
    * Crear un usuario en la base de datos

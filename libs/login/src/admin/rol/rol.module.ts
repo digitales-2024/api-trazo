@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { RolService } from './rol.service';
 import { RolController } from './rol.controller';
-import { PrismaModule } from '@login/login/prisma/prisma.module';
+import { PrismaModule } from '@prisma/prisma';
 import { AuditModule } from '../audit/audit.module';
 
 @Module({
@@ -10,4 +10,4 @@ import { AuditModule } from '../audit/audit.module';
   imports: [PrismaModule, AuditModule],
   exports: [RolService]
 })
-export class RolModule {}
+export class RolModule { }

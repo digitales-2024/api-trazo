@@ -1,12 +1,12 @@
 import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
 import { UpdatePasswordDto } from './auth/dto/update-password.dto';
-import { PrismaService } from '@login/login/prisma/prisma.service';
+import { PrismaService } from '@prisma/prisma';
 import * as bcrypt from 'bcrypt';
 import { HttpResponse, UserData } from '@login/login/interfaces';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) { }
 
   /**
    * Obtiene los datos del usuario logueado

@@ -12,6 +12,8 @@
   },
   "moduleNameMapper": {
     "@login/login/(.*)": "<rootDir>/../libs/login/src/$1",
-    "@login/login": "<rootDir>/../libs/login/src"
+    "@login/login": "<rootDir>/../libs/login/src",
+    "@prisma/prisma/(.*)": "<rootDir>/../libs/prisma/src/$1",
+    "@prisma/prisma": "<rootDir>/../libs/prisma/src"
   }
 }

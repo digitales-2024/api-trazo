@@ -1,13 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Permission } from '@login/login/interfaces';
-import { PrismaService } from '@login/login/prisma/prisma.service';
+import { PrismaService } from '@prisma/prisma/prisma.service';
 import { handleException } from '@login/login/utils';
 
 @Injectable()
 export class PermissionsService {
   private readonly logger = new Logger(PermissionsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * Visualiza todos los permisos registrados en la base de datos

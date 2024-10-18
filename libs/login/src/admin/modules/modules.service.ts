@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Module } from '@login/login/interfaces';
-import { PrismaService } from '@login/login/prisma/prisma.service';
+import { PrismaService } from '@prisma/prisma';
 import { handleException } from '@login/login/utils';
 
 @Injectable()
 export class ModulesService {
   private readonly logger = new Logger(ModulesService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * Visualiza todos los módulos registrados en la base de datos

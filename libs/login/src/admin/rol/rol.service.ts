@@ -7,7 +7,7 @@ import {
   NotFoundException
 } from '@nestjs/common';
 import { CreateRolDto } from './dto/create-rol.dto';
-import { PrismaService } from '@login/login/prisma/prisma.service';
+import { PrismaService } from '@prisma/prisma';
 import { handleException } from '@login/login/utils';
 import { ValidRols } from '../auth/interfaces';
 import { UpdateRolDto } from './dto/update-rol.dto';
@@ -22,7 +22,7 @@ export class RolService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService
-  ) {}
+  ) { }
 
   /**
    * Crear un nuevo rol

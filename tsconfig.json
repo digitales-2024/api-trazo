@@ -23,6 +23,12 @@
       ],
       "@login/login/*": [
         "libs/login/src/*"
+      ],
+      "@prisma/prisma": [
+        "libs/prisma/src"
+      ],
+      "@prisma/prisma/*": [
+        "libs/prisma/src/*"
       ]
     }
   }

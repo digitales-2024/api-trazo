@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PermissionsService } from './permissions.service';
 import { PermissionsController } from './permissions.controller';
-import { PrismaModule } from '@login/login/prisma/prisma.module';
+import { PrismaModule } from '@prisma/prisma';
 
 
 @Module({
@@ -9,4 +9,4 @@ import { PrismaModule } from '@login/login/prisma/prisma.module';
   providers: [PermissionsService],
   imports: [PrismaModule]
 })
-export class PermissionsModule {}
+export class PermissionsModule { }

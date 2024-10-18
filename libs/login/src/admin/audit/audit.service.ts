@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { CreateAuditDto } from './dto/create-audit.dto';
-import { PrismaService } from '@login/login/prisma/prisma.service';
+import { PrismaService } from '@prisma/prisma';
 
 @Injectable()
 export class AuditService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) { }
 
   /**
    * Crear una nueva auditoría
