@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String   @id @unique @default(uuid())
+  name               String
+  email              String
+  password           String
+  phone              String?
+  isSuperAdmin       Boolean  @default(false)
+  lastLogin          DateTime @default(now()) @db.Timestamptz(6)
+  isActive           Boolean  @default(true)
+  mustChangePassword Boolean  @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  // Relación con auditorías (acciones realizadas por este usuario)
+  auditsPerformed Audit[] @relation("AuditPerformedBy")
+
+  // Relación con UserRol
+  userRols UserRol[] @relation("UserId")
+
+  @@unique([email, isActive])
+}
+
+model Rol {
+  id          String  @id @unique @default(uuid())
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  // Relación con UserRol
+  rolUsers UserRol[] @relation("RolId")
+
+  // Relación con RolModulePermissions
+  rolModulePermissions RolModulePermissions[] @relation("RolId")
+
+  @@unique([name, isActive])
+}
+
+model UserRol {
+  id       String  @id @unique @default(uuid())
+  user     User    @relation("UserId", fields: [userId], references: [id])
+  userId   String
+  isActive Boolean @default(true)
+  rol      Rol     @relation("RolId", fields: [rolId], references: [id])
+  rolId    String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, rolId])
+}
+
+model Permission {
+  id          String  @id @unique @default(uuid())
+  cod         String
+  name        String
+  description String?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  // Relación con ModulePermissions
+  permissionModule ModulePermissions[] @relation("PermissionId")
+
+  @@unique([cod, name])
+}
+
+model Module {
+  id          String  @id @unique @default(uuid())
+  cod         String
+  name        String
+  description String?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  // Relación con ModulePermissions
+  modulePermissions ModulePermissions[] @relation("ModuleId")
+
+  @@unique([cod, name])
+}
+
+model ModulePermissions {
+  id           String     @id @unique @default(uuid())
+  module       Module     @relation("ModuleId", fields: [moduleId], references: [id], onDelete: Cascade)
+  moduleId     String
+  permission   Permission @relation("PermissionId", fields: [permissionId], references: [id], onDelete: Cascade)
+  permissionId String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  // Relación con RolModulePermissions
+  rolModulePermissions RolModulePermissions[] @relation("ModulePermissionsId")
+
+  @@unique([moduleId, permissionId])
+}
+
+model RolModulePermissions {
+  id                  String            @id @unique @default(uuid())
+  rol                 Rol               @relation("RolId", fields: [rolId], references: [id], onDelete: Cascade)
+  rolId               String
+  modulePermissions   ModulePermissions @relation("ModulePermissionsId", fields: [modulePermissionsId], references: [id], onDelete: Cascade)
+  modulePermissionsId String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  @@unique([rolId, modulePermissionsId])
+}
+
+model Audit {
+  id            String          @id @unique @default(uuid())
+  entityId      String
+  entityType    String // Representa el nombre del modelo (ej: User, Rol, etc.)
+  action        AuditActionType // Representa la acción (CREATE, UPDATE, DELETE)
+  performedBy   User            @relation("AuditPerformedBy", fields: [performedById], references: [id])
+  performedById String
+  createdAt     DateTime        @default(now()) @db.Timestamptz(6)
+}
+
+enum AuditActionType {
+  CREATE
+  UPDATE
+  DELETE
+}

@@ -1,0 +1,60 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <%- include("./shared/head.ejs") %>
+  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td align="center">
+        <table width="600" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td align="center">
+              <h2>Hello, <strong><%= locals.name %>!</strong></h2>
+              <p>
+                We are pleased to inform you that you have successfully registered for a class at
+                <%= locals.business %>.
+              </p>
+              <p>Below are the details of the class you will be participating in:</p>
+            </td>
+          </tr>
+          <tr>
+            <td align="left">
+              <table
+                style="padding-left: 20px"
+                width="100%"
+                border="0"
+                cellspacing="0"
+                cellpadding="0"
+              >
+                <tr>
+                  <td>
+                    <strong>Date and Time:</strong> <%= locals.dateClass %> at <%=
+                    locals.scheduleClass %>
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Class Language:</strong> <%= locals.languageClass %></td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Total Participants:</strong> <%= locals.totalParticipants %> people
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Total Price:</strong> <%= locals.totalPrice %> <%= locals.typeCurrency
+                    %>
+                  </td>
+                </tr>
+              </table>
+              <p>
+                We look forward to seeing you soon and hope you enjoy this unique experience to the
+                fullest!
+              </p>
+              <p>Best regards,<br />The <%= locals.business %> Team</p>
+            </td>
+          </tr>
+          <%- include("./shared/footer.ejs") %>
+        </table>
+      </td>
+    </tr>
+  </table>
+</html>

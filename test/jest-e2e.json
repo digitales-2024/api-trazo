@@ -1,0 +1,19 @@
+{
+  "moduleFileExtensions": [
+    "js",
+    "json",
+    "ts"
+  ],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "@login/login/(.*)": "<rootDir>/../libs/login/src/$1",
+    "@login/login": "<rootDir>/../libs/login/src",
+    "@prisma/prisma/(.*)": "<rootDir>/../libs/prisma/src/$1",
+    "@prisma/prisma": "<rootDir>/../libs/prisma/src"
+  }
+}
