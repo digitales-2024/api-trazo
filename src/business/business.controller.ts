@@ -44,7 +44,8 @@ export class BusinessController {
   update(
     @Param('id') id: string,
     @Body() updateBusinessDto: UpdateBusinessDto,
+    @GetUser() user: UserData,
   ) {
-    return this.businessService.update(+id, updateBusinessDto);
+    return this.businessService.update(id, updateBusinessDto, user);
   }
 }

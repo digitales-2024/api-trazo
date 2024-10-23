@@ -20,14 +20,14 @@ export class BusinessService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-  ) { }
+  ) {}
 
   /**
    * Crea un Business en la base de datos.
    * Solo puede existir 1 registro. Si se intenta crear
    * un segundo registro, lanza http 409
    * @param createBusinessDto El Business a crear
-   * @param user Usuario que crea el usuario
+   * @param user Usuario que crea el Business
    */
   async create(
     createBusinessDto: CreateBusinessDto,
@@ -37,7 +37,7 @@ export class BusinessService {
       const { name, ruc, address, legalRepName, legalRepDni } =
         createBusinessDto;
 
-      this.prisma.$transaction(async (prisma) => {
+      await this.prisma.$transaction(async (prisma) => {
         // Verificar que no existe ningun business
         const businessCount = await prisma.businessConfig.count();
         if (businessCount > 0) {
@@ -58,7 +58,7 @@ export class BusinessService {
         // Registrar la accion en Audit
         await this.audit.create({
           entityId: newBusiness.id,
-          entityType: 'user',
+          entityType: 'business',
           action: AuditActionType.CREATE,
           performedById: user.id,
           createdAt: new Date(),
@@ -99,7 +99,39 @@ export class BusinessService {
     return businesses;
   }
 
-  async update(id: number, updateBusinessDto: UpdateBusinessDto) {
-    return `This action updates a #${id} business`;
+  /**
+   * Actualiza un Business
+   *
+   * @param id id del Business a actualizar
+   * @param updateBusinessDto Informacion a actualizar
+   * @param user Usuario que realiza la acción
+   */
+  async update(
+    id: string,
+    updateBusinessDto: UpdateBusinessDto,
+    user: UserData,
+  ): Promise<HttpResponse<undefined>> {
+    await this.prisma.$transaction(async (prisma) => {
+      await prisma.businessConfig.update({
+        where: {
+          id,
+        },
+        data: updateBusinessDto,
+      });
+
+      await this.audit.create({
+        entityId: id,
+        entityType: 'business',
+        action: AuditActionType.UPDATE,
+        performedById: user.id,
+        createdAt: new Date(),
+      });
+    });
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Business updated successfully',
+      data: undefined,
+    };
   }
 }
