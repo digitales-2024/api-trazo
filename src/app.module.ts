@@ -11,4 +11,4 @@ import { BusinessModule } from './business/business.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

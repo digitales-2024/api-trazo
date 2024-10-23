@@ -1,6 +1,6 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsNumberString, IsString, Length } from "class-validator";
-import { Transform } from "class-transformer";
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsNumberString, IsString, Length } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateBusinessDto {
   @ApiProperty()
