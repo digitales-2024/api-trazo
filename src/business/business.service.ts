@@ -2,6 +2,7 @@ import {
   ConflictException,
   HttpStatus,
   Injectable,
+  InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
 import { CreateBusinessDto } from './dto/create-business.dto';
@@ -19,7 +20,7 @@ export class BusinessService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-  ) {}
+  ) { }
 
   /**
    * Crea un Business en la base de datos.
@@ -81,11 +82,24 @@ export class BusinessService {
     }
   }
 
-  findAll() {
-    return `This action returns all business`;
+  /**
+   * Devuelve los Business de la base de datos.
+   * Si hay mas de 1 Business lanza http 500
+   *
+   * @returns Lista de Business
+   */
+  async findAll() {
+    const businesses = await this.prisma.businessConfig.findMany();
+    if (businesses.length > 1) {
+      throw new InternalServerErrorException(
+        'Found more than 1 Business record',
+      );
+    }
+
+    return businesses;
   }
 
-  update(id: number, updateBusinessDto: UpdateBusinessDto) {
+  async update(id: number, updateBusinessDto: UpdateBusinessDto) {
     return `This action updates a #${id} business`;
   }
 }
