@@ -13,7 +13,7 @@ export class UpdateBusinessDto extends PartialType(CreateBusinessDto) {
   @IsString()
   @IsNotEmpty()
   @Transform(({ value }) => value.trim().toLowerCase())
-  name: string;
+  name?: string;
 
   @ApiProperty({
     name: 'ruc',
@@ -22,8 +22,8 @@ export class UpdateBusinessDto extends PartialType(CreateBusinessDto) {
   })
   @IsNumberString()
   @IsNotEmpty()
-  @Length(11)
-  ruc: string;
+  @Length(11, 11)
+  ruc?: string;
 
   @ApiProperty({
     name: 'address',
@@ -33,7 +33,7 @@ export class UpdateBusinessDto extends PartialType(CreateBusinessDto) {
   @IsString()
   @IsNotEmpty()
   @Transform(({ value }) => value.trim().toLowerCase())
-  address: string;
+  address?: string;
 
   @ApiProperty({
     name: 'legalRepName',
@@ -43,16 +43,16 @@ export class UpdateBusinessDto extends PartialType(CreateBusinessDto) {
   @IsString()
   @IsNotEmpty()
   @Transform(({ value }) => value.trim().toLowerCase())
-  legalRepName: string;
+  legalRepName?: string;
 
   @ApiProperty({
     name: 'legalRepDni',
     description: 'DNI of the legal representative of the business',
     required: false,
   })
-  @IsString()
+  @IsNumberString()
   @IsNotEmpty()
-  @Length(8)
+  @Length(8, 8)
   @Transform(({ value }) => value.trim())
-  legalRepDni: string;
+  legalRepDni?: string;
 }

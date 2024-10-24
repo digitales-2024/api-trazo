@@ -18,7 +18,7 @@ export class CreateBusinessDto {
   })
   @IsNumberString()
   @IsNotEmpty()
-  @Length(11)
+  @Length(11, 11)
   ruc: string;
 
   @ApiProperty({
@@ -43,9 +43,9 @@ export class CreateBusinessDto {
     name: 'legalRepDni',
     description: 'DNI of the legal representative of the business',
   })
-  @IsString()
+  @IsNumberString()
   @IsNotEmpty()
-  @Length(8)
+  @Length(8, 8)
   @Transform(({ value }) => value.trim())
   legalRepDni: string;
 }
