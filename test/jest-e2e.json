@@ -18,6 +18,8 @@
     "@clients/clients/(.*)": "<rootDir>/../libs/clients/src/$1",
     "@clients/clients": "<rootDir>/../libs/clients/src",
     "@design-projects/design-projects/(.*)": "<rootDir>/../libs/design-projects/src/$1",
-    "@design-projects/design-projects": "<rootDir>/../libs/design-projects/src"
+    "@design-projects/design-projects": "<rootDir>/../libs/design-projects/src",
+    "@business/business/(.*)": "<rootDir>/../libs/business/src/$1",
+    "@business/business": "<rootDir>/../libs/business/src"
   }
 }

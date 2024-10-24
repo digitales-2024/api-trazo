@@ -160,3 +160,18 @@ model Spaces {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
 }
+
+
+model BusinessConfig {
+  id            String          @id @unique @default(uuid())
+  name          String
+  ruc           String
+  address       String
+  legalRepName  String
+  legalRepDni   String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+
