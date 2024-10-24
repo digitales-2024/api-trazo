@@ -234,6 +234,13 @@ export class ClientsService {
     return clientDb;
   }
 
+  /**
+   * Actualizar un cliente
+   * @param id ID del cliente a actualizar
+   * @param updateClientDto Dto con los datos a actualizar
+   * @param user Usuario que realiza la acción
+   * @returns Cliente actualizado
+   */
   async update(
     id: string,
     updateClientDto: UpdateClientDto,
