@@ -34,6 +34,7 @@ export class ClientsService {
 
     try {
       // Crear el cliente y registrar la auditoría
+      await this.findByRucDni(rucDni);
       newClient = await this.prisma.$transaction(async () => {
         // Crear el nuevo cliente
         const client = await this.prisma.client.create({
@@ -122,6 +123,38 @@ export class ClientsService {
       }
       handleException(error, 'Error get client');
     }
+  }
+
+  /**
+   * Buscar un cliente por su RUC o DNI
+   * @param rucDni RUC o DNI del cliente a buscar
+   * @returns Cliente encontrado
+   */
+  async findByRucDni(rucDni: string): Promise<ClientData> {
+    const clientDB = await this.prisma.client.findFirst({
+      where: { rucDni },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        phone: true,
+        rucDni: true,
+        province: true,
+        department: true,
+        isActive: true,
+      },
+    });
+
+    if (!!clientDB && !clientDB.isActive) {
+      throw new BadRequestException(
+        'This client is inactive, contact the superadmin to reactivate it',
+      );
+    }
+    if (clientDB) {
+      throw new BadRequestException('This client exists');
+    }
+
+    return clientDB;
   }
 
   /**
