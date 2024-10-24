@@ -4,7 +4,7 @@ import { AppService } from './app.service';
 import { LoginModule } from '@login/login';
 import { PrismaModule } from '@prisma/prisma';
 import { ClientsModule } from '@clients/clients';
-import { BusinessModule } from './modules/admin/business/business.module';
+import { BusinessModule } from '@business/business';
 
 @Module({
   imports: [LoginModule, PrismaModule, ClientsModule, BusinessModule],
