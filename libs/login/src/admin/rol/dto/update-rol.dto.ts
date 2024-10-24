@@ -5,19 +5,19 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 export class UpdateRolDto extends PartialType(CreateRolDto) {
   @ApiPropertyOptional({
     description: 'Name of the rol',
-    example: 'admin'
+    example: 'admin',
   })
   name?: string;
 
   @ApiPropertyOptional({
     description: 'Description of the rol',
-    example: 'Administrator'
+    example: 'Administrator',
   })
   description?: string;
 
   @ApiPropertyOptional({
     description: 'Permissions of the rol',
-    example: ['1', '2']
+    example: ['1', '2'],
   })
   rolPermissions?: string[];
 }

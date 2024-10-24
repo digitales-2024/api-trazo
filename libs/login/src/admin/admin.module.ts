@@ -9,8 +9,6 @@ import { AuditModule } from './audit/audit.module';
 import { ModulesModule } from './modules/modules.module';
 import { PermissionsModule } from './permissions/permissions.module';
 
-
-
 @Module({
   imports: [
     UsersModule,
@@ -20,10 +18,9 @@ import { PermissionsModule } from './permissions/permissions.module';
     AuditModule,
     ModulesModule,
     PermissionsModule,
-
   ],
   controllers: [AdminController],
   providers: [AdminService],
-  exports: []
+  exports: [],
 })
-export class AdminModule { }
+export class AdminModule {}

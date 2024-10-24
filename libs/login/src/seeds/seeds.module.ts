@@ -6,6 +6,6 @@ import { PrismaModule } from '@prisma/prisma';
 @Module({
   controllers: [SeedsController],
   providers: [SeedsService],
-  imports: [PrismaModule]
+  imports: [PrismaModule],
 })
-export class SeedsModule { }
+export class SeedsModule {}

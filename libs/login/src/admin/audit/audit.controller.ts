@@ -1,7 +1,11 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { AuditService } from './audit.service';
 import { CreateAuditDto } from './dto/create-audit.dto';
-import { ApiCreatedResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import {
+  ApiCreatedResponse,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { Auth } from '../auth/decorators';
 
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -9,7 +13,7 @@ import { Auth } from '../auth/decorators';
 @Auth()
 @Controller({
   path: 'audit',
-  version: '1'
+  version: '1',
 })
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}

@@ -4,14 +4,20 @@ import {
   HttpStatus,
   Injectable,
   Logger,
-  NotFoundException
+  NotFoundException,
 } from '@nestjs/common';
 import { CreateRolDto } from './dto/create-rol.dto';
 import { PrismaService } from '@prisma/prisma';
 import { handleException } from '@login/login/utils';
 import { ValidRols } from '../auth/interfaces';
 import { UpdateRolDto } from './dto/update-rol.dto';
-import { HttpResponse, RolPermissions, RolModulesPermissions, Rol, UserData } from '@login/login/interfaces';
+import {
+  HttpResponse,
+  RolPermissions,
+  RolModulesPermissions,
+  Rol,
+  UserData,
+} from '@login/login/interfaces';
 import { DeleteRolesDto } from './dto/delete-roles.dto';
 import { AuditService } from '../audit/audit.service';
 import { AuditActionType } from '@prisma/client';
@@ -21,8 +27,8 @@ export class RolService {
   private readonly logger = new Logger(RolService.name);
   constructor(
     private readonly prisma: PrismaService,
-    private readonly auditService: AuditService
-  ) { }
+    private readonly auditService: AuditService,
+  ) {}
 
   /**
    * Crear un nuevo rol
@@ -39,9 +45,9 @@ export class RolService {
         where: {
           name_isActive: {
             name,
-            isActive: true
-          }
-        }
+            isActive: true,
+          },
+        },
       });
 
       if (rolExist) {
@@ -54,9 +60,9 @@ export class RolService {
         const createdRol = await prisma.rol.create({
           data: {
             name,
-            description
+            description,
           },
-          select: { id: true, name: true, description: true }
+          select: { id: true, name: true, description: true },
         });
 
         // Verificar existencia de permisos y construir las entradas para RolModulePermissions
@@ -64,26 +70,26 @@ export class RolService {
         for (const modulePermissionId of rolPermissions) {
           const modulePermission = await prisma.modulePermissions.findUnique({
             where: {
-              id: modulePermissionId
-            }
+              id: modulePermissionId,
+            },
           });
 
           if (!modulePermission) {
             throw new BadRequestException(
-              `ModulePermission with ID ${modulePermissionId} does not exist.`
+              `ModulePermission with ID ${modulePermissionId} does not exist.`,
             );
           }
 
           rolPermissionEntries.push({
             rolId: createdRol.id,
-            modulePermissionsId: modulePermissionId
+            modulePermissionsId: modulePermissionId,
           });
         }
 
         // Crear las relaciones entre rol y permisos en una transacción
         await prisma.rolModulePermissions.createMany({
           data: rolPermissionEntries,
-          skipDuplicates: true
+          skipDuplicates: true,
         });
 
         return createdRol;
@@ -92,10 +98,13 @@ export class RolService {
       return {
         statusCode: HttpStatus.CREATED,
         message: 'Role created successfully',
-        data: newRol
+        data: newRol,
       };
     } catch (error) {
-      this.logger.error(`Error creating a role with name: ${createRolDto.name}`, error.stack);
+      this.logger.error(
+        `Error creating a role with name: ${createRolDto.name}`,
+        error.stack,
+      );
 
       if (error instanceof ConflictException || BadRequestException) {
         throw error;
@@ -111,14 +120,19 @@ export class RolService {
    * @param updateRolDto Datos del rol a actualizar
    * @returns Datos del rol actualizado
    */
-  async update(id: string, updateRolDto: UpdateRolDto): Promise<HttpResponse<RolPermissions>> {
+  async update(
+    id: string,
+    updateRolDto: UpdateRolDto,
+  ): Promise<HttpResponse<RolPermissions>> {
     try {
       const { name, description, rolPermissions } = updateRolDto;
 
       // Validar que el rol no sea SUPER_ADMIN
       const rolIsSuperAdmin = await this.isRolSuperAdmin(id);
       if (rolIsSuperAdmin) {
-        throw new BadRequestException('Cannot update the role because it is super admin');
+        throw new BadRequestException(
+          'Cannot update the role because it is super admin',
+        );
       }
 
       // Validar que haya datos para actualizar
@@ -148,127 +162,134 @@ export class RolService {
         throw new NotFoundException('Role not found');
       }
       // Iniciar una transacción para actualizar el rol y sus permisos
-      const updatedRole: RolPermissions = await this.prisma.$transaction(async (prisma) => {
-        // Actualizar el rol con los nuevos datos
-        const updatedRoleData = await prisma.rol.update({
-          where: { id },
-          data: {
-            name,
-            description
-          },
-          select: {
-            id: true,
-            name: true,
-            description: true
-          }
-        });
-
-        // Eliminar permisos antiguos del rol
-        await prisma.rolModulePermissions.deleteMany({
-          where: { rolId: id }
-        });
-
-        // Validar existencia de permisos y construir nuevas entradas
-        const rolModulePermissionEntries = [];
-        if (rolPermissions && rolPermissions.length > 0) {
-          for (const modulePermissionId of rolPermissions) {
-            const modulePermission = await prisma.modulePermissions.findUnique({
-              where: {
-                id: modulePermissionId
-              },
-              select: {
-                module: {
-                  select: {
-                    id: true,
-                    cod: true,
-                    name: true,
-                    description: true
-                  }
-                },
-                permission: {
-                  select: {
-                    id: true,
-                    cod: true,
-                    name: true,
-                    description: true
-                  }
-                }
-              }
-            });
-
-            if (!modulePermission) {
-              throw new BadRequestException(
-                `ModulePermission with ID ${modulePermissionId} does not exist.`
-              );
-            }
-
-            rolModulePermissionEntries.push({
-              rolId: id,
-              modulePermissionsId: modulePermissionId
-            });
-          }
-
-          // Crear nuevas relaciones entre rol y permisos
-          await prisma.rolModulePermissions.createMany({
-            data: rolModulePermissionEntries,
-            skipDuplicates: true
+      const updatedRole: RolPermissions = await this.prisma.$transaction(
+        async (prisma) => {
+          // Actualizar el rol con los nuevos datos
+          const updatedRoleData = await prisma.rol.update({
+            where: { id },
+            data: {
+              name,
+              description,
+            },
+            select: {
+              id: true,
+              name: true,
+              description: true,
+            },
           });
-        }
 
-        // Devolver datos actualizados del rol
-        const rolPermissionsDB = await prisma.rolModulePermissions.findMany({
-          where: { rolId: id },
-          select: {
-            modulePermissions: {
-              select: {
-                module: {
+          // Eliminar permisos antiguos del rol
+          await prisma.rolModulePermissions.deleteMany({
+            where: { rolId: id },
+          });
+
+          // Validar existencia de permisos y construir nuevas entradas
+          const rolModulePermissionEntries = [];
+          if (rolPermissions && rolPermissions.length > 0) {
+            for (const modulePermissionId of rolPermissions) {
+              const modulePermission =
+                await prisma.modulePermissions.findUnique({
+                  where: {
+                    id: modulePermissionId,
+                  },
                   select: {
-                    id: true,
-                    cod: true,
-                    name: true,
-                    description: true
-                  }
-                },
-                permission: {
-                  select: {
-                    id: true,
-                    cod: true,
-                    name: true,
-                    description: true
-                  }
-                }
+                    module: {
+                      select: {
+                        id: true,
+                        cod: true,
+                        name: true,
+                        description: true,
+                      },
+                    },
+                    permission: {
+                      select: {
+                        id: true,
+                        cod: true,
+                        name: true,
+                        description: true,
+                      },
+                    },
+                  },
+                });
+
+              if (!modulePermission) {
+                throw new BadRequestException(
+                  `ModulePermission with ID ${modulePermissionId} does not exist.`,
+                );
               }
+
+              rolModulePermissionEntries.push({
+                rolId: id,
+                modulePermissionsId: modulePermissionId,
+              });
             }
-          }
-        });
 
-        // Agrupar permisos por módulo
-        const groupedByModule = rolPermissionsDB.reduce((acc, rolModulePermission) => {
-          const moduleId = rolModulePermission.modulePermissions.module.id;
-          const module = rolModulePermission.modulePermissions.module;
-          const permission = rolModulePermission.modulePermissions.permission;
-
-          if (!acc[moduleId]) {
-            acc[moduleId] = {
-              module,
-              permissions: []
-            };
+            // Crear nuevas relaciones entre rol y permisos
+            await prisma.rolModulePermissions.createMany({
+              data: rolModulePermissionEntries,
+              skipDuplicates: true,
+            });
           }
 
-          acc[moduleId].permissions.push(permission);
+          // Devolver datos actualizados del rol
+          const rolPermissionsDB = await prisma.rolModulePermissions.findMany({
+            where: { rolId: id },
+            select: {
+              modulePermissions: {
+                select: {
+                  module: {
+                    select: {
+                      id: true,
+                      cod: true,
+                      name: true,
+                      description: true,
+                    },
+                  },
+                  permission: {
+                    select: {
+                      id: true,
+                      cod: true,
+                      name: true,
+                      description: true,
+                    },
+                  },
+                },
+              },
+            },
+          });
 
-          return acc;
-        }, {} as RolModulesPermissions[]);
-        return {
-          ...updatedRoleData,
-          rolPermissions: groupedByModule
-        };
-      });
+          // Agrupar permisos por módulo
+          const groupedByModule = rolPermissionsDB.reduce(
+            (acc, rolModulePermission) => {
+              const moduleId = rolModulePermission.modulePermissions.module.id;
+              const module = rolModulePermission.modulePermissions.module;
+              const permission =
+                rolModulePermission.modulePermissions.permission;
+
+              if (!acc[moduleId]) {
+                acc[moduleId] = {
+                  module,
+                  permissions: [],
+                };
+              }
+
+              acc[moduleId].permissions.push(permission);
+
+              return acc;
+            },
+            {} as RolModulesPermissions[],
+          );
+          return {
+            ...updatedRoleData,
+            rolPermissions: groupedByModule,
+          };
+        },
+      );
 
       return {
         statusCode: HttpStatus.OK,
         message: 'Role updated successfully',
-        data: updatedRole
+        data: updatedRole,
       };
     } catch (error) {
       this.logger.error(`Error updating role with id: ${id}`, error.stack);
@@ -295,13 +316,15 @@ export class RolService {
       const rolIsSuperAdmin = await this.isRolSuperAdmin(id);
       if (rolIsSuperAdmin) {
         throw new BadRequestException(
-          'It is not possible to delete the rol because it is super admin'
+          'It is not possible to delete the rol because it is super admin',
         );
       }
 
       const rolIsUsed = await this.rolIsUsed(id);
       if (rolIsUsed) {
-        throw new BadRequestException('It is not possible to delete the rol because it is in use');
+        throw new BadRequestException(
+          'It is not possible to delete the rol because it is in use',
+        );
       }
 
       const rolIsUsedByInactiveUsers = await this.rolIsUsedByInactiveUsers(id);
@@ -314,26 +337,26 @@ export class RolService {
           rolDelete = await prisma.rol.update({
             where: { id },
             data: {
-              isActive: false
-            }
+              isActive: false,
+            },
           });
         } else {
           rolDelete = await prisma.rol.delete({
-            where: { id }
+            where: { id },
           });
         }
 
         return {
           id: rolDelete.id,
           name: rolDelete.name,
-          description: rolDelete.description
+          description: rolDelete.description,
         };
       });
 
       return {
         statusCode: HttpStatus.OK,
         message: 'Rol deleted',
-        data: removedRol
+        data: removedRol,
       };
     } catch (error) {
       this.logger.error(`Error deleting a rol for id: ${id}`, error.stack);
@@ -350,20 +373,23 @@ export class RolService {
    * @param user Usuario que desactiva los roles
    * @returns Retorna un mensaje de la eliminacion correcta
    */
-  async removeAll(roles: DeleteRolesDto, user: UserData): Promise<Omit<HttpResponse, 'data'>> {
+  async removeAll(
+    roles: DeleteRolesDto,
+    user: UserData,
+  ): Promise<Omit<HttpResponse, 'data'>> {
     try {
       await this.prisma.$transaction(async (prisma) => {
         // Buscar los roles en la base de datos
         const rolesDB = await prisma.rol.findMany({
           where: {
-            id: { in: roles.ids }
+            id: { in: roles.ids },
           },
           select: {
             id: true,
             name: true,
             description: true,
-            isActive: true
-          }
+            isActive: true,
+          },
         });
 
         // Validar que se encontraron roles
@@ -372,30 +398,38 @@ export class RolService {
         }
 
         // Validar algunos de id es el de usuario superadmin
-        const superAdminRoles = rolesDB.filter((r) => r.name === ValidRols.SUPER_ADMIN);
+        const superAdminRoles = rolesDB.filter(
+          (r) => r.name === ValidRols.SUPER_ADMIN,
+        );
         if (superAdminRoles.length > 0) {
-          throw new BadRequestException('You cannot deactivate a superadmin role');
+          throw new BadRequestException(
+            'You cannot deactivate a superadmin role',
+          );
         }
 
         // Validar si alguno de los roles esta en uso
-        const rolesInUse = await Promise.all(rolesDB.map((role) => this.rolIsUsed(role.id)));
+        const rolesInUse = await Promise.all(
+          rolesDB.map((role) => this.rolIsUsed(role.id)),
+        );
         if (rolesInUse.some((inUse) => inUse)) {
           throw new BadRequestException('You cannot deactivate a role in use');
         }
 
         // Desactivar roles y eliminar roles
         const deactivatePromises = rolesDB.map(async (rolDelete) => {
-          const rolIsUsedByInactiveUsers = await this.rolIsUsedByInactiveUsers(rolDelete.id);
+          const rolIsUsedByInactiveUsers = await this.rolIsUsedByInactiveUsers(
+            rolDelete.id,
+          );
           if (rolIsUsedByInactiveUsers) {
             // Desactivar usuario
             await prisma.rol.update({
               where: { id: rolDelete.id },
-              data: { isActive: false }
+              data: { isActive: false },
             });
           } else {
             // Eliminar roles
             await prisma.rol.delete({
-              where: { id: rolDelete.id }
+              where: { id: rolDelete.id },
             });
           }
 
@@ -405,13 +439,13 @@ export class RolService {
             entityType: 'rol',
             action: AuditActionType.DELETE,
             performedById: user.id,
-            createdAt: new Date()
+            createdAt: new Date(),
           });
 
           return {
             id: rolDelete.id,
             name: rolDelete.name,
-            description: rolDelete.description
+            description: rolDelete.description,
           };
         });
 
@@ -420,11 +454,14 @@ export class RolService {
 
       return {
         statusCode: HttpStatus.OK,
-        message: 'Users deactivated successfully'
+        message: 'Users deactivated successfully',
       };
     } catch (error) {
       this.logger.error('Error deactivating users', error.stack);
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       handleException(error, 'Error deactivating users');
@@ -436,20 +473,23 @@ export class RolService {
    * @param roles Arreglo de roles a reactivar
    * @param user Usuario que reactiva los roles
    */
-  async reactivateAll(roles: DeleteRolesDto, user: UserData): Promise<Omit<HttpResponse, 'data'>> {
+  async reactivateAll(
+    roles: DeleteRolesDto,
+    user: UserData,
+  ): Promise<Omit<HttpResponse, 'data'>> {
     try {
       await this.prisma.$transaction(async (prisma) => {
         // Buscar los roles en la base de datos
         const rolesDB = await prisma.rol.findMany({
           where: {
-            id: { in: roles.ids }
+            id: { in: roles.ids },
           },
           select: {
             id: true,
             name: true,
             description: true,
-            isActive: true
-          }
+            isActive: true,
+          },
         });
 
         // Validar que se encontraron roles
@@ -458,16 +498,20 @@ export class RolService {
         }
 
         // Validar algunos de id es el de usuario superadmin
-        const superAdminRoles = rolesDB.filter((r) => r.name === ValidRols.SUPER_ADMIN);
+        const superAdminRoles = rolesDB.filter(
+          (r) => r.name === ValidRols.SUPER_ADMIN,
+        );
         if (superAdminRoles.length > 0) {
-          throw new BadRequestException('You cannot reactivate a superadmin role');
+          throw new BadRequestException(
+            'You cannot reactivate a superadmin role',
+          );
         }
 
         // Reactivar roles
         const reactivatePromises = rolesDB.map(async (rolReactivate) => {
           await prisma.rol.update({
             where: { id: rolReactivate.id },
-            data: { isActive: true }
+            data: { isActive: true },
           });
 
           // Auditoría
@@ -476,13 +520,13 @@ export class RolService {
             entityType: 'rol',
             action: AuditActionType.UPDATE,
             performedById: user.id,
-            createdAt: new Date()
+            createdAt: new Date(),
           });
 
           return {
             id: rolReactivate.id,
             name: rolReactivate.name,
-            description: rolReactivate.description
+            description: rolReactivate.description,
           };
         });
 
@@ -491,11 +535,14 @@ export class RolService {
 
       return {
         statusCode: HttpStatus.OK,
-        message: 'Users reactivated successfully'
+        message: 'Users reactivated successfully',
       };
     } catch (error) {
       this.logger.error('Error reactivating users', error.stack);
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       handleException(error, 'Error reactivating users');
@@ -513,8 +560,8 @@ export class RolService {
         where: {
           ...(user.isSuperAdmin ? {} : { isActive: true }),
           NOT: {
-            name: ValidRols.SUPER_ADMIN
-          }
+            name: ValidRols.SUPER_ADMIN,
+          },
         },
         include: {
           rolModulePermissions: {
@@ -522,15 +569,15 @@ export class RolService {
               modulePermissions: {
                 include: {
                   module: true, // Incluye el módulo asociado
-                  permission: true // Incluye el permiso asociado
-                }
-              }
-            }
-          }
+                  permission: true, // Incluye el permiso asociado
+                },
+              },
+            },
+          },
         },
         orderBy: {
-          createdAt: 'asc'
-        }
+          createdAt: 'asc',
+        },
       });
 
       // Agrupa permisos por módulos
@@ -546,15 +593,16 @@ export class RolService {
                 id: rolModulePermission.modulePermissions.module.id,
                 cod: rolModulePermission.modulePermissions.module.cod,
                 name: rolModulePermission.modulePermissions.module.name,
-                description: rolModulePermission.modulePermissions.module.description
+                description:
+                  rolModulePermission.modulePermissions.module.description,
               },
-              permissions: []
+              permissions: [],
             });
           }
 
           modulesMap.get(moduleId)?.permissions.push({
             ...rolModulePermission.modulePermissions.permission,
-            idModulePermission: rolModulePermission.modulePermissions.id
+            idModulePermission: rolModulePermission.modulePermissions.id,
           });
         });
 
@@ -563,13 +611,16 @@ export class RolService {
           name: role.name,
           description: role.description,
           isActive: role.isActive,
-          rolPermissions: Array.from(modulesMap.values())
+          rolPermissions: Array.from(modulesMap.values()),
         };
       });
 
       return groupedRoles;
     } catch (error) {
-      this.logger.error('Error getting roles with modules and permissions', error.stack);
+      this.logger.error(
+        'Error getting roles with modules and permissions',
+        error.stack,
+      );
       throw new Error('Error getting roles with modules and permissions');
     }
   }
@@ -590,12 +641,12 @@ export class RolService {
               modulePermissions: {
                 include: {
                   module: true, // Incluye el módulo relacionado
-                  permission: true // Incluye el permiso relacionado
-                }
-              }
-            }
-          }
-        }
+                  permission: true, // Incluye el permiso relacionado
+                },
+              },
+            },
+          },
+        },
       });
 
       // Verificar si el rol existe
@@ -615,9 +666,10 @@ export class RolService {
               id: rolModulePermission.modulePermissions.module.id,
               cod: rolModulePermission.modulePermissions.module.cod,
               name: rolModulePermission.modulePermissions.module.name,
-              description: rolModulePermission.modulePermissions.module.description
+              description:
+                rolModulePermission.modulePermissions.module.description,
             },
-            permissions: []
+            permissions: [],
           });
         }
 
@@ -625,7 +677,8 @@ export class RolService {
           id: rolModulePermission.modulePermissions.permission.id,
           cod: rolModulePermission.modulePermissions.permission.cod,
           name: rolModulePermission.modulePermissions.permission.name,
-          description: rolModulePermission.modulePermissions.permission.description
+          description:
+            rolModulePermission.modulePermissions.permission.description,
         });
       });
 
@@ -634,7 +687,7 @@ export class RolService {
         id: role.id,
         name: role.name,
         description: role.description,
-        rolPermissions: Array.from(modulesMap.values())
+        rolPermissions: Array.from(modulesMap.values()),
       };
     } catch (error) {
       // Manejo del error en caso de que ocurra una excepción durante la búsqueda
@@ -662,21 +715,21 @@ export class RolService {
               id: true,
               cod: true,
               name: true,
-              description: true
-            }
+              description: true,
+            },
           },
           permission: {
             select: {
               id: true,
               cod: true,
               name: true,
-              description: true
-            }
-          }
+              description: true,
+            },
+          },
         },
         orderBy: {
-          moduleId: 'asc'
-        }
+          moduleId: 'asc',
+        },
       });
       return this.groupPermissionsByModule(modulesPermissions);
     } catch (error) {
@@ -692,7 +745,11 @@ export class RolService {
    */
   private isNoDataUpdate(updateRolDto: UpdateRolDto): boolean {
     // Implementa la lógica para verificar si no hay datos para actualizar
-    return !updateRolDto.name && !updateRolDto.description && !updateRolDto.rolPermissions;
+    return (
+      !updateRolDto.name &&
+      !updateRolDto.description &&
+      !updateRolDto.rolPermissions
+    );
   }
 
   /**
@@ -706,7 +763,7 @@ export class RolService {
     // Buscar el rol por id
     const role = await this.prisma.rol.findUnique({
       where: { id },
-      select: { name: true }
+      select: { name: true },
     });
 
     // Verificar si el rol existe y si es el rol de superadministrador
@@ -724,9 +781,9 @@ export class RolService {
         where: {
           name_isActive: {
             name,
-            isActive: true // Si el rol debe estar activo para ser considerado
-          }
-        }
+            isActive: true, // Si el rol debe estar activo para ser considerado
+          },
+        },
       });
     } catch (error) {
       // Manejo de errores si es necesario
@@ -745,9 +802,9 @@ export class RolService {
         rolId: id,
         isActive: true,
         user: {
-          isActive: true
-        }
-      }
+          isActive: true,
+        },
+      },
     });
 
     return !!rolIsUsed;
@@ -764,10 +821,10 @@ export class RolService {
         isActive: false,
         userRols: {
           some: {
-            rolId: id
-          }
-        }
-      }
+            rolId: id,
+          },
+        },
+      },
     });
     // Devuelve true si el rol está en uso por usuarios inactivos
     return rolIsUsed.length > 0;
@@ -778,12 +835,14 @@ export class RolService {
    * @param rolModulePermissions Permisos de un rol
    * @returns Permisos agrupados por módulos
    */
-  private groupPermissionsByModule(rolModulePermissions: any[]): RolModulesPermissions[] {
+  private groupPermissionsByModule(
+    rolModulePermissions: any[],
+  ): RolModulesPermissions[] {
     return rolModulePermissions.reduce((acc, entry) => {
       const { moduleId, module, permission, id } = entry;
       const modulePermission = {
         idModulePermission: id,
-        ...permission
+        ...permission,
       };
 
       // Verificar si ya existe el módulo en el resultado
@@ -799,9 +858,9 @@ export class RolService {
             id: module.id,
             cod: module.cod,
             name: module.name,
-            description: module.description
+            description: module.description,
           },
-          permissions: [modulePermission]
+          permissions: [modulePermission],
         });
       }
 

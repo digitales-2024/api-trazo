@@ -4,7 +4,7 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
-  Injectable
+  Injectable,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { META_ROLS } from '../decorators/rol-protected.decorator';
@@ -13,8 +13,13 @@ import { META_ROLS } from '../decorators/rol-protected.decorator';
 export class UserRolGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
-  canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
-    const validRols: string[] = this.reflector.get<string[]>(META_ROLS, context.getHandler());
+  canActivate(
+    context: ExecutionContext,
+  ): boolean | Promise<boolean> | Observable<boolean> {
+    const validRols: string[] = this.reflector.get<string[]>(
+      META_ROLS,
+      context.getHandler(),
+    );
 
     const request = context.switchToHttp().getRequest();
 
@@ -29,6 +34,8 @@ export class UserRolGuard implements CanActivate {
 
     if (!user) throw new BadRequestException('User not found');
 
-    throw new ForbiddenException('You do not have permission to access this resource');
+    throw new ForbiddenException(
+      'You do not have permission to access this resource',
+    );
   }
 }

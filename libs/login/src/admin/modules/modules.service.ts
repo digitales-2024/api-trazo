@@ -6,7 +6,7 @@ import { handleException } from '@login/login/utils';
 @Injectable()
 export class ModulesService {
   private readonly logger = new Logger(ModulesService.name);
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Visualiza todos los módulos registrados en la base de datos
@@ -16,14 +16,14 @@ export class ModulesService {
     try {
       return await this.prisma.module.findMany({
         orderBy: {
-          name: 'asc'
+          name: 'asc',
         },
         select: {
           id: true,
           cod: true,
           name: true,
-          description: true
-        }
+          description: true,
+        },
       });
     } catch (error) {
       this.logger.error('Error getting modules', error.stack);
@@ -39,7 +39,7 @@ export class ModulesService {
   async findOne(id: string): Promise<Module & { id: string }> {
     try {
       const moduleDB = await this.prisma.module.findUnique({
-        where: { id }
+        where: { id },
       });
 
       if (!moduleDB) {
@@ -50,7 +50,7 @@ export class ModulesService {
         id: moduleDB.id,
         cod: moduleDB.cod,
         name: moduleDB.name,
-        description: moduleDB.description
+        description: moduleDB.description,
       };
     } catch (error) {
       this.logger.error(`Error getting module with id: ${id}`, error.stack);

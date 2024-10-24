@@ -20,7 +20,7 @@ export class BusinessService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-  ) { }
+  ) {}
 
   /**
    * Crea un Business en la base de datos.

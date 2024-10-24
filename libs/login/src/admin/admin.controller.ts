@@ -6,16 +6,16 @@ import {
   ApiBadRequestResponse,
   ApiOkResponse,
   ApiTags,
-  ApiUnauthorizedResponse
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { HttpResponse, UserData } from '@login/login/interfaces';
 
 @ApiTags('Admin')
 @ApiUnauthorizedResponse({
-  description: 'Unauthorized'
+  description: 'Unauthorized',
 })
 @ApiBadRequestResponse({
-  description: 'Bad request'
+  description: 'Bad request',
 })
 @Controller()
 @Auth()
@@ -30,13 +30,13 @@ export class AdminController {
   }
 
   @ApiOkResponse({
-    description: 'Password updated successfully'
+    description: 'Password updated successfully',
   })
   @Patch('update-password')
   @Version('1')
   updatePassword(
     @Body() updatePassword: UpdatePasswordDto,
-    @GetUser() user: UserData
+    @GetUser() user: UserData,
   ): Promise<HttpResponse<string>> {
     return this.adminService.updatePassword(updatePassword, user);
   }

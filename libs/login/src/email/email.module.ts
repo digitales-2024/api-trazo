@@ -19,21 +19,21 @@ import { EjsAdapter } from '@nestjs-modules/mailer/dist/adapters/ejs.adapter';
           secure: false,
           auth: {
             user: configService.get<string>('MAIL_USER'),
-            pass: configService.get<string>('MAIL_PASS')
-          }
+            pass: configService.get<string>('MAIL_PASS'),
+          },
         },
         defaults: {
-          from: 'Chaqchao'
+          from: 'Chaqchao',
         },
         template: {
           dir: join(__dirname, 'templates'),
           adapter: new EjsAdapter(),
           options: {
-            strict: true
-          }
-        }
-      })
-    })
-  ]
+            strict: true,
+          },
+        },
+      }),
+    }),
+  ],
 })
 export class EmailModule {}
