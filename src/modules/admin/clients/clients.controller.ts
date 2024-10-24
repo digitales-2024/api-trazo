@@ -17,7 +17,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { HttpResponse, UserData } from '@login/login/interfaces';
+import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { ClientData } from 'src/interfaces';
 
 @ApiTags('Client')
@@ -39,9 +39,10 @@ export class ClientsController {
     return this.clientsService.create(createClientDto, user);
   }
 
+  @ApiCreatedResponse({ description: 'Get all clients' })
   @Get()
-  findAll() {
-    return this.clientsService.findAll();
+  findAll(@GetUser() user: UserPayload) {
+    return this.clientsService.findAll(user);
   }
 
   @Get(':id')
