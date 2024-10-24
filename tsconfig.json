@@ -35,6 +35,12 @@
       ],
       "@clients/clients/*": [
         "libs/clients/src/*"
+      ],
+      "@business/business": [
+        "libs/business/src"
+      ],
+      "@business/business/*": [
+        "libs/business/src/*"
       ]
     }
   }

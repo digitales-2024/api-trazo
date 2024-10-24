@@ -33,6 +33,15 @@
       "compilerOptions": {
         "tsConfigPath": "libs/clients/tsconfig.lib.json"
       }
+    },
+    "business": {
+      "type": "library",
+      "root": "libs/business",
+      "entryFile": "index",
+      "sourceRoot": "libs/business/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/business/tsconfig.lib.json"
+      }
     }
   }
 }
