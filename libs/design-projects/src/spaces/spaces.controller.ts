@@ -52,9 +52,14 @@ export class SpacesController {
     return this.spacesService.findOne(id);
   }
 
+  @ApiOkResponse({ description: 'Space successfully updated' })
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSpaceDto: UpdateSpaceDto) {
-    return this.spacesService.update(+id, updateSpaceDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateSpaceDto: UpdateSpaceDto,
+    @GetUser() user: UserData,
+  ): Promise<HttpResponse<SpaceData>> {
+    return this.spacesService.update(id, updateSpaceDto, user);
   }
 
   @Delete(':id')

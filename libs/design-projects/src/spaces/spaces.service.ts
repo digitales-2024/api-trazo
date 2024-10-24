@@ -82,7 +82,7 @@ export class SpacesService {
    * @param name nombre del ambiente
    * @returns Ambiente encontrado por nombre
    */
-  async findByName(name: string): Promise<SpaceData> {
+  async findByName(name: string, id?: string): Promise<SpaceData> {
     const spacetDB = await this.prisma.spaces.findFirst({
       where: { name },
       select: {
@@ -92,16 +92,18 @@ export class SpacesService {
         isActive: true,
       },
     });
-
-    if (!!spacetDB && !spacetDB.isActive) {
-      throw new BadRequestException('This space exists but is not active');
-    }
-    if (spacetDB) {
-      throw new BadRequestException('This name is already in use');
+    if (!!spacetDB && spacetDB.id === id) {
+      if (!!spacetDB && !spacetDB.isActive) {
+        throw new BadRequestException('This space exists but is not active');
+      }
+      if (spacetDB) {
+        throw new BadRequestException('This space already exists');
+      }
     }
 
     return spacetDB;
   }
+
   /**
    * Mostar todos los ambientes
    * @param user usuario solicitante
@@ -182,8 +184,92 @@ export class SpacesService {
     return sapaceDb;
   }
 
-  update(id: number, updateSpaceDto: UpdateSpaceDto) {
-    return `This action updates a #${id} ${updateSpaceDto} space`;
+  /**
+   * Actualizar un ambiente
+   * @param id id del ambiente
+   * @param updateSpaceDto datos del ambiente a actualizar
+   * @returns Ambiente actualizado
+   */
+
+  async update(
+    id: string,
+    updateSpaceDto: UpdateSpaceDto,
+    user: UserData,
+  ): Promise<HttpResponse<SpaceData>> {
+    const { name, description } = updateSpaceDto;
+    if (name) {
+      await this.findByName(name);
+    }
+
+    try {
+      const spaceDB = await this.findById(id);
+
+      // Validar si hay cambios
+      const noChanges =
+        (name === undefined || name === spaceDB.name) &&
+        (description === undefined || description === spaceDB.description);
+
+      if (noChanges) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Spaces updated successfully',
+          data: {
+            id: spaceDB.id,
+            name: spaceDB.name,
+            description: spaceDB.description,
+            isActive: spaceDB.isActive,
+          },
+        };
+      }
+
+      // Construir el objeto de actualización dinámicamente solo con los campos presentes
+      const updateData: any = {};
+      if (name !== undefined && name !== spaceDB.name) updateData.name = name;
+      if (description !== undefined && description !== spaceDB.description)
+        updateData.description = description;
+
+      // Transacción para realizar la actualización
+      const updatedSpaces = await this.prisma.$transaction(async (prisma) => {
+        const spaces = await prisma.spaces.update({
+          where: { id },
+          data: updateData,
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            isActive: true,
+          },
+        });
+        // Crear un registro de auditoría
+        await prisma.audit.create({
+          data: {
+            entityId: spaces.id,
+            action: AuditActionType.UPDATE,
+            performedById: user.id,
+            entityType: 'space',
+          },
+        });
+
+        return spaces;
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Space updated successfully',
+        data: updatedSpaces,
+      };
+    } catch (error) {
+      this.logger.error(`Error updating Space: ${error.message}`, error.stack);
+
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      handleException(error, 'Error updating a Space');
+    }
   }
 
   remove(id: number) {
