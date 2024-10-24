@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
-import { HttpResponse, UserData } from '@login/login/interfaces';
+import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { PrismaService } from '@prisma/prisma';
 import { handleException } from '@login/login/utils';
 import { ClientData } from 'src/interfaces';
@@ -112,8 +112,47 @@ export class ClientsService {
     }
   }
 
-  findAll() {
-    return `This action returns all clients`;
+  /**
+   * Obtener todos los clientes
+   * @param user Usuario que realiza la acción
+   * @returns Lista de clientes
+   */
+  async findAll(user: UserPayload): Promise<ClientData[]> {
+    try {
+      const clients = await this.prisma.client.findMany({
+        where: {
+          ...(user.isSuperAdmin ? {} : { isActive: true }), // Filtrar por isActive solo si no es super admin
+        },
+        select: {
+          id: true,
+          name: true,
+          address: true,
+          phone: true,
+          rucDni: true,
+          province: true,
+          department: true,
+          isActive: true,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+
+      // Mapea los resultados al tipo ClientData
+      return clients.map((client) => ({
+        id: client.id,
+        name: client.name,
+        rucDni: client.rucDni,
+        phone: client.phone,
+        address: client.address,
+        province: client.province,
+        department: client.department,
+        isActive: client.isActive,
+      })) as ClientData[];
+    } catch (error) {
+      this.logger.error('Error getting all clients');
+      handleException(error, 'Error getting all clients');
+    }
   }
 
   /**
