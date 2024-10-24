@@ -3,33 +3,49 @@ import { IsNotEmpty, IsNumberString, IsString, Length } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateBusinessDto {
-  @ApiProperty()
+  @ApiProperty({
+    name: 'name',
+    description: 'Name of the business',
+  })
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => value.trim())
+  @Transform(({ value }) => value.trim().toLowerCase())
   name: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    name: 'ruc',
+    description: 'RUC of the business',
+  })
   @IsNumberString()
   @IsNotEmpty()
   @Length(11)
   ruc: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    name: 'address',
+    description: 'Physical address of the business',
+  })
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => value.trim())
+  @Transform(({ value }) => value.trim().toLowerCase())
   address: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    name: 'legalRepName',
+    description: 'Name of the legal representative of the business',
+  })
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => value.trim())
+  @Transform(({ value }) => value.trim().toLowerCase())
   legalRepName: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    name: 'legalRepDni',
+    description: 'DNI of the legal representative of the business',
+  })
   @IsString()
   @IsNotEmpty()
+  @Length(8)
   @Transform(({ value }) => value.trim())
   legalRepDni: string;
 }
