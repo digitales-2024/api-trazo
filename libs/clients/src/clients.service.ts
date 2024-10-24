@@ -10,7 +10,7 @@ import { UpdateClientDto } from './dto/update-client.dto';
 import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { PrismaService } from '@prisma/prisma';
 import { handleException } from '@login/login/utils';
-import { ClientData } from 'src/interfaces';
+import { ClientData } from '@clients/clients/interfaces';
 import { AuditActionType } from '@prisma/client';
 
 @Injectable()

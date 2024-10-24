@@ -19,7 +19,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
-import { ClientData } from 'src/interfaces';
+import { ClientData } from '@clients/clients/interfaces';
 
 @ApiTags('Client')
 @ApiBadRequestResponse({ description: 'Bad Request' })
