@@ -17,7 +17,8 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { UserData } from '@login/login/interfaces';
+import { HttpResponse, UserData } from '@login/login/interfaces';
+import { ClientData } from 'src/interfaces';
 
 @ApiTags('Client')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -31,7 +32,10 @@ export class ClientsController {
     description: 'Client successfully created',
   })
   @Post()
-  create(@Body() createClientDto: CreateClientDto, @GetUser() user: UserData) {
+  create(
+    @Body() createClientDto: CreateClientDto,
+    @GetUser() user: UserData,
+  ): Promise<HttpResponse<ClientData>> {
     return this.clientsService.create(createClientDto, user);
   }
 
@@ -41,8 +45,8 @@ export class ClientsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.clientsService.findOne(+id);
+  findOne(@Param('id') id: string): Promise<ClientData> {
+    return this.clientsService.findOne(id);
   }
 
   @Patch(':id')
