@@ -33,6 +33,15 @@
       "compilerOptions": {
         "tsConfigPath": "libs/clients/tsconfig.lib.json"
       }
+    },
+    "design-projects": {
+      "type": "library",
+      "root": "libs/design-projects",
+      "entryFile": "index",
+      "sourceRoot": "libs/design-projects/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/design-projects/tsconfig.lib.json"
+      }
     }
   }
 }
