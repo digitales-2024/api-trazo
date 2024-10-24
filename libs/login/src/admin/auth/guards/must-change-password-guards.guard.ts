@@ -26,7 +26,7 @@ export class MustChangePasswordGuard implements CanActivate {
       }
       return true;
     } catch (error) {
-      throw new BadRequestException('Token invalid');
+      throw new BadRequestException('Token invalid', error);
     }
   }
 }
