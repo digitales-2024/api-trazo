@@ -138,17 +138,27 @@ enum AuditActionType {
 }
 
 model Client {
-  id        String   @id @unique @default(uuid())
-  name      String
-  rucDni   String @unique
-  address   String
-  province String
+  id         String   @id @unique @default(uuid())
+  name       String
+  rucDni     String   @unique
+  address    String
+  province   String
   department String
-  phone     String?
-  isActive  Boolean  @default(true)
+  phone      String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt
+}
+
+// tabla ambientes
+model Spaces {
+  id       String  @id @unique @default(uuid())
+  name     String @unique
+  description String?
+  isActive Boolean  @default(true)
+
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
-
 }
 
 
@@ -163,4 +173,5 @@ model BusinessConfig {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
 }
+
 

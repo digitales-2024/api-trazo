@@ -41,6 +41,12 @@
       ],
       "@business/business/*": [
         "libs/business/src/*"
+      ],
+      "@design-projects/design-projects": [
+        "libs/design-projects/src"
+      ],
+      "@design-projects/design-projects/*": [
+        "libs/design-projects/src/*"
       ]
     }
   }
