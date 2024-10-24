@@ -198,7 +198,7 @@ export class ClientsService {
       );
     }
     if (clientDB) {
-      throw new BadRequestException('This client exists');
+      throw new BadRequestException('This RUC or DNI is already in use');
     }
 
     return clientDB;
@@ -234,8 +234,118 @@ export class ClientsService {
     return clientDb;
   }
 
-  update(id: number, updateClientDto: UpdateClientDto) {
-    return `This action updates a #${id} client`;
+  async update(
+    id: string,
+    updateClientDto: UpdateClientDto,
+    user: UserData,
+  ): Promise<HttpResponse<ClientData>> {
+    const { name, phone, rucDni, address, department, province } =
+      updateClientDto;
+    if (rucDni) {
+      await this.validateLengthDniRuc(rucDni);
+    }
+
+    try {
+      const clientDB = await this.findById(id);
+
+      // Validar si hay cambios
+      const noChanges =
+        (name === undefined || name === clientDB.name) &&
+        (phone === undefined || phone === clientDB.phone) &&
+        (rucDni === undefined || rucDni === clientDB.rucDni) &&
+        (address === undefined || address === clientDB.address) &&
+        (department === undefined || department === clientDB.department) &&
+        (province === undefined || province === clientDB.province);
+
+      if (noChanges) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Client updated successfully',
+          data: {
+            id: clientDB.id,
+            name: clientDB.name,
+            rucDni: clientDB.rucDni,
+            phone: clientDB.phone,
+            address: clientDB.address,
+            province: clientDB.province,
+            department: clientDB.department,
+            isActive: clientDB.isActive,
+          },
+        };
+      }
+
+      // Validar que el nuevo rucDni no esté en uso por otro cliente
+      if (rucDni && rucDni !== clientDB.rucDni) {
+        const existingClient = await this.prisma.client.findUnique({
+          where: { rucDni },
+        });
+        if (existingClient && existingClient.id !== id) {
+          throw new BadRequestException(
+            'rucDni already in use by another client',
+          );
+        }
+      }
+
+      // Construir el objeto de actualización dinámicamente solo con los campos presentes
+      const updateData: any = {};
+      if (name !== undefined && name !== clientDB.name) updateData.name = name;
+      if (phone !== undefined && phone !== clientDB.phone)
+        updateData.phone = phone;
+      if (rucDni !== undefined && rucDni !== clientDB.rucDni)
+        updateData.rucDni = rucDni;
+      if (address !== undefined && address !== clientDB.address)
+        updateData.address = address;
+      if (department !== undefined && department !== clientDB.department)
+        updateData.department = department;
+      if (province !== undefined && province !== clientDB.province)
+        updateData.province = province;
+
+      // Transacción para realizar la actualización
+      const updatedClient = await this.prisma.$transaction(async (prisma) => {
+        const client = await prisma.client.update({
+          where: { id },
+          data: updateData,
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            phone: true,
+            rucDni: true,
+            province: true,
+            department: true,
+            isActive: true,
+          },
+        });
+        // Crear un registro de auditoría
+        await prisma.audit.create({
+          data: {
+            entityId: client.id,
+            action: AuditActionType.UPDATE,
+            performedById: user.id,
+            entityType: 'client',
+          },
+        });
+
+        return client;
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Client updated successfully',
+        data: updatedClient,
+      };
+    } catch (error) {
+      this.logger.error(`Error updating client: ${error.message}`, error.stack);
+
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      handleException(error, 'Error updating a client');
+    }
   }
 
   remove(id: number) {
