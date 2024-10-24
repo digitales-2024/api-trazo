@@ -36,7 +36,7 @@ export class CreateBusinessDto {
   })
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => value.trim().toLowerCase())
+  @Transform(({ value }) => value.trim())
   legalRepName: string;
 
   @ApiProperty({
