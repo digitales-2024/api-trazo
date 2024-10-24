@@ -14,6 +14,7 @@ import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -39,20 +40,26 @@ export class ClientsController {
     return this.clientsService.create(createClientDto, user);
   }
 
-  @ApiCreatedResponse({ description: 'Get all clients' })
+  @ApiOkResponse({ description: 'Get all clients' })
   @Get()
   findAll(@GetUser() user: UserPayload) {
     return this.clientsService.findAll(user);
   }
 
+  @ApiOkResponse({ description: 'Get client by id' })
   @Get(':id')
   findOne(@Param('id') id: string): Promise<ClientData> {
     return this.clientsService.findOne(id);
   }
 
+  @ApiOkResponse({ description: 'Client successfully updated' })
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateClientDto: UpdateClientDto) {
-    return this.clientsService.update(+id, updateClientDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateClientDto: UpdateClientDto,
+    @GetUser() user: UserData,
+  ): Promise<HttpResponse<ClientData>> {
+    return this.clientsService.update(id, updateClientDto, user);
   }
 
   @Delete(':id')
