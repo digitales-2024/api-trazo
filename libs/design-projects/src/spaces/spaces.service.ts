@@ -8,7 +8,7 @@ import {
 import { CreateSpaceDto } from './dto/create-space.dto';
 import { UpdateSpaceDto } from './dto/update-space.dto';
 import { PrismaService } from '@prisma/prisma';
-import { HttpResponse, UserData } from '@login/login/interfaces';
+import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { SpaceData } from '../interfaces/spaces.interfaces';
 import { handleException } from '@login/login/utils';
 import { AuditActionType } from '@prisma/client';
@@ -26,7 +26,7 @@ export class SpacesService {
     await this.findByName(name);
     try {
       const newSpace = await this.prisma.$transaction(async () => {
-        // Crear el nuevo cliente
+        // Crear el nuevo ambientes
         const space = await this.prisma.spaces.create({
           data: {
             name,
@@ -40,7 +40,7 @@ export class SpacesService {
           },
         });
 
-        // Registrar la auditoría de la creación del cliente
+        // Registrar la auditoría de la creación del ambientes
         await this.prisma.audit.create({
           data: {
             action: AuditActionType.CREATE,
@@ -102,13 +102,84 @@ export class SpacesService {
 
     return spacetDB;
   }
+  /**
+   * Mostar todos los ambientes
+   * @param user usuario solicitante
+   * @returns todos los ambientes
+   */
+  async findAll(user: UserPayload): Promise<SpaceData[]> {
+    try {
+      const spaces = await this.prisma.spaces.findMany({
+        where: {
+          ...(user.isSuperAdmin ? {} : { isActive: true }), // Filtrar por isActive solo si no es super admin
+        },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          isActive: true,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
 
-  findAll() {
-    return `This action returns all spaces`;
+      // Mapea los resultados al tipo SapceData
+      return spaces.map((space) => ({
+        id: space.id,
+        name: space.name,
+        description: space.description,
+        isActive: space.isActive,
+      })) as SpaceData[];
+    } catch (error) {
+      this.logger.error('Error getting all spaces');
+      handleException(error, 'Error getting all spaces');
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} space`;
+  /**
+   * Buscar un ambiente por id
+   * @param id id del ambiente
+   * @returns Ambiente encontrado por id
+   */
+
+  async findOne(id: string): Promise<SpaceData> {
+    try {
+      return await this.findById(id);
+    } catch (error) {
+      this.logger.error('Error get spaces');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      handleException(error, 'Error get spaces');
+    }
+  }
+
+  /**
+   * valdiacion del ambiente por id
+   * @param id id del ambiente
+   * @returns Ambiente encontrado por id
+   */
+
+  async findById(id: string): Promise<SpaceData> {
+    const sapaceDb = await this.prisma.spaces.findFirst({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        isActive: true,
+      },
+    });
+    if (!sapaceDb) {
+      throw new BadRequestException('This space doesnt exist');
+    }
+
+    if (!!sapaceDb && !sapaceDb.isActive) {
+      throw new BadRequestException('This space exist, but is inactive');
+    }
+
+    return sapaceDb;
   }
 
   update(id: number, updateSpaceDto: UpdateSpaceDto) {
