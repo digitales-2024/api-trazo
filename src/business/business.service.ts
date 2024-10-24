@@ -111,7 +111,43 @@ export class BusinessService {
     updateBusinessDto: UpdateBusinessDto,
     user: UserData,
   ): Promise<HttpResponse<undefined>> {
+    // Si no hay datos que actualizar, salir temprano
+    if (Object.keys(updateBusinessDto).length === 0) {
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Business updated successfully',
+        data: undefined,
+      };
+    }
+
     await this.prisma.$transaction(async (prisma) => {
+      // traer el business por su id
+      const storedBusiness = await prisma.businessConfig.findUnique({
+        where: {
+          id,
+        },
+      });
+
+      // verificar que haya cambios
+      let changesPresent = false;
+      for (const businessField in updateBusinessDto) {
+        const newValue = updateBusinessDto[businessField];
+        if (newValue !== storedBusiness[businessField]) {
+          changesPresent = true;
+          break;
+        }
+      }
+
+      if (!changesPresent) {
+        // return early
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Business updated successfully',
+          data: undefined,
+        };
+      }
+
+      // actualizar
       await prisma.businessConfig.update({
         where: {
           id,
