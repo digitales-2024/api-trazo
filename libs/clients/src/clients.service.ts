@@ -178,7 +178,7 @@ export class ClientsService {
    * @param rucDni RUC o DNI del cliente a buscar
    * @returns Cliente encontrado
    */
-  async findByRucDni(rucDni: string): Promise<ClientData> {
+  async findByRucDni(rucDni: string, id?: string): Promise<ClientData> {
     const clientDB = await this.prisma.client.findFirst({
       where: { rucDni },
       select: {
@@ -193,16 +193,18 @@ export class ClientsService {
       },
     });
 
-    if (!!clientDB && !clientDB.isActive) {
-      throw new BadRequestException(
-        'This client is inactive, contact the superadmin to reactivate it',
-      );
-    }
-    if (clientDB && rucDni.length === 8) {
-      throw new BadRequestException('This DNI is already in use');
-    }
-    if (clientDB && rucDni.length === 11) {
-      throw new BadRequestException('This RUC is already in use');
+    if (!!clientDB && clientDB.id !== id) {
+      if (!clientDB.isActive) {
+        throw new BadRequestException(
+          'This client is inactive, contact the superadmin to reactivate it',
+        );
+      }
+      if (rucDni.length === 8) {
+        throw new BadRequestException('This DNI is already in use');
+      }
+      if (rucDni.length === 11) {
+        throw new BadRequestException('This RUC is already in use');
+      }
     }
 
     return clientDB;
@@ -252,13 +254,14 @@ export class ClientsService {
   ): Promise<HttpResponse<ClientData>> {
     const { name, phone, rucDni, address, department, province } =
       updateClientDto;
-    if (rucDni) {
-      await this.validateLengthDniRuc(rucDni);
-      await this.findByRucDni(rucDni);
-    }
 
     try {
       const clientDB = await this.findById(id);
+
+      if (rucDni) {
+        await this.validateLengthDniRuc(rucDni);
+        await this.findByRucDni(rucDni, id);
+      }
 
       // Validar si hay cambios
       const noChanges =
