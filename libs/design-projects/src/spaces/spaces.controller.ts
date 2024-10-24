@@ -13,12 +13,13 @@ import { UpdateSpaceDto } from './dto/update-space.dto';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
-import { HttpResponse, UserData } from '@login/login/interfaces';
-import { SpaceData } from '../interfaces/spaces.interfaces';
+import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
+import { SpaceData } from '../interfaces';
 
 @ApiTags('Space')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -39,14 +40,16 @@ export class SpacesController {
     return this.spacesService.create(createSpaceDto, user);
   }
 
+  @ApiOkResponse({ description: 'Get all spaces' })
   @Get()
-  findAll() {
-    return this.spacesService.findAll();
+  findAll(@GetUser() user: UserPayload) {
+    return this.spacesService.findAll(user);
   }
 
+  @ApiOkResponse({ description: 'Get space by id' })
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.spacesService.findOne(+id);
+  findOne(@Param('id') id: string): Promise<SpaceData> {
+    return this.spacesService.findOne(id);
   }
 
   @Patch(':id')
