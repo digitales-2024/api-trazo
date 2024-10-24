@@ -27,8 +27,6 @@ export class CreateClientDto {
   })
   @IsString()
   @IsNotEmpty()
-  @Length(8, 8, { message: 'DNI or RUC must be exactly 8 or 11 digits long' })
-  @Length(11, 11, { message: 'DNI or RUC must be exactly 8 or 11 digits long' })
   @Transform(({ value }) => value.trim())
   rucDni: string;
 
