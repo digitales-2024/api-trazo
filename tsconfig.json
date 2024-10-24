@@ -29,6 +29,12 @@
       ],
       "@prisma/prisma/*": [
         "libs/prisma/src/*"
+      ],
+      "@clients/clients": [
+        "libs/clients/src"
+      ],
+      "@clients/clients/*": [
+        "libs/clients/src/*"
       ]
     }
   }

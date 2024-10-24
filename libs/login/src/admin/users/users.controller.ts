@@ -1,4 +1,13 @@
-import { Controller, Post, Body, Get, Patch, Param, Delete, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Patch,
+  Param,
+  Delete,
+  Logger,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { GetUser } from '../auth/decorators/get-user.decorator';
@@ -11,7 +20,7 @@ import {
   ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiTags,
-  ApiUnauthorizedResponse
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { DeleteUsersDto } from './dto/delete-users.dto';
@@ -22,7 +31,7 @@ import { DeleteUsersDto } from './dto/delete-users.dto';
 @ApiBadRequestResponse({ description: 'Bad request' })
 @Controller({
   path: 'users',
-  version: '1'
+  version: '1',
 })
 @Auth()
 export class UsersController {
@@ -33,20 +42,27 @@ export class UsersController {
   @Post()
   create(
     @Body() createUserDto: CreateUserDto,
-    @GetUser() user: UserData
+    @GetUser() user: UserData,
   ): Promise<HttpResponse<UserData>> {
     return this.usersService.create(createUserDto, user);
   }
 
   @ApiOkResponse({ description: 'User updated' })
   @Patch(':id')
-  update(@Body() updateUserDto: UpdateUserDto, @Param('id') id: string, @GetUser() user: UserData) {
+  update(
+    @Body() updateUserDto: UpdateUserDto,
+    @Param('id') id: string,
+    @GetUser() user: UserData,
+  ) {
     return this.usersService.update(updateUserDto, id, user);
   }
 
   @ApiOkResponse({ description: 'User deleted' })
   @Delete(':id')
-  remove(@Param('id') id: string, @GetUser() user: UserData): Promise<HttpResponse<UserData>> {
+  remove(
+    @Param('id') id: string,
+    @GetUser() user: UserData,
+  ): Promise<HttpResponse<UserData>> {
     return this.usersService.remove(id, user);
   }
 
@@ -54,7 +70,7 @@ export class UsersController {
   @Delete('deactivate/all')
   deactivate(
     @Body() users: DeleteUsersDto,
-    @GetUser() user: UserData
+    @GetUser() user: UserData,
   ): Promise<Omit<HttpResponse, 'data'>> {
     return this.usersService.deactivate(users, user);
   }
@@ -67,7 +83,10 @@ export class UsersController {
 
   @ApiOkResponse({ description: 'User reactivated' })
   @Patch('reactivate/:id')
-  reactivate(@Param('id') id: string, @GetUser() user: UserData): Promise<HttpResponse<UserData>> {
+  reactivate(
+    @Param('id') id: string,
+    @GetUser() user: UserData,
+  ): Promise<HttpResponse<UserData>> {
     return this.usersService.reactivate(id, user);
   }
 
@@ -91,7 +110,10 @@ export class UsersController {
 
   @ApiOkResponse({ description: 'Send new password' })
   @Post('send-new-password')
-  sendNewPassword(@Body() sendEmailDto: SendEmailDto, @GetUser() user: UserData) {
+  sendNewPassword(
+    @Body() sendEmailDto: SendEmailDto,
+    @GetUser() user: UserData,
+  ) {
     return this.usersService.sendNewPassword(sendEmailDto, user);
   }
 }

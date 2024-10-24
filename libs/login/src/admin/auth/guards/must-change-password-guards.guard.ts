@@ -1,9 +1,16 @@
-import { BadRequestException, CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+} from '@nestjs/common';
 import { Observable } from 'rxjs';
 
 @Injectable()
 export class MustChangePasswordGuard implements CanActivate {
-  canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
+  canActivate(
+    context: ExecutionContext,
+  ): boolean | Promise<boolean> | Observable<boolean> {
     const request = context.switchToHttp().getRequest();
 
     const cookies = request.cookies;
@@ -19,7 +26,7 @@ export class MustChangePasswordGuard implements CanActivate {
       }
       return true;
     } catch (error) {
-      throw new BadRequestException('Token invalid');
+      throw new BadRequestException('Token invalid', error);
     }
   }
 }

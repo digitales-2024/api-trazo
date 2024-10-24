@@ -14,6 +14,8 @@
     "@login/login/(.*)": "<rootDir>/../libs/login/src/$1",
     "@login/login": "<rootDir>/../libs/login/src",
     "@prisma/prisma/(.*)": "<rootDir>/../libs/prisma/src/$1",
-    "@prisma/prisma": "<rootDir>/../libs/prisma/src"
+    "@prisma/prisma": "<rootDir>/../libs/prisma/src",
+    "@clients/clients/(.*)": "<rootDir>/../libs/clients/src/$1",
+    "@clients/clients": "<rootDir>/../libs/clients/src"
   }
 }

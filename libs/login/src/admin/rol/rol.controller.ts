@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { RolService } from './rol.service';
 import { CreateRolDto } from './dto/create-rol.dto';
 import { Auth, GetUser } from '../auth/decorators';
@@ -10,9 +18,15 @@ import {
   ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiTags,
-  ApiUnauthorizedResponse
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { HttpResponse, Rol, RolModulesPermissions, RolPermissions, UserData } from '@login/login/interfaces';
+import {
+  HttpResponse,
+  Rol,
+  RolModulesPermissions,
+  RolPermissions,
+  UserData,
+} from '@login/login/interfaces';
 import { DeleteRolesDto } from './dto/delete-roles.dto';
 
 @ApiTags('Rol')
@@ -24,7 +38,9 @@ export class RolController {
   constructor(private readonly rolService: RolService) {}
 
   @ApiCreatedResponse({ description: 'Rol created' })
-  @ApiBadRequestResponse({ description: 'Rol already exists and schema errors' })
+  @ApiBadRequestResponse({
+    description: 'Rol already exists and schema errors',
+  })
   @ApiBody({ type: CreateRolDto })
   @Post()
   create(@Body() createRolDto: CreateRolDto): Promise<HttpResponse<Rol>> {
@@ -37,7 +53,7 @@ export class RolController {
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() updateRolDto: UpdateRolDto
+    @Body() updateRolDto: UpdateRolDto,
   ): Promise<HttpResponse<RolPermissions>> {
     return this.rolService.update(id, updateRolDto);
   }
@@ -54,7 +70,7 @@ export class RolController {
   @Delete('remove/all')
   removeAll(
     @Body() roles: DeleteRolesDto,
-    @GetUser() user: UserData
+    @GetUser() user: UserData,
   ): Promise<Omit<HttpResponse, 'data'>> {
     return this.rolService.removeAll(roles, user);
   }
@@ -64,7 +80,7 @@ export class RolController {
   @Patch('reactivate/all')
   reactivateAll(
     @Body() roles: DeleteRolesDto,
-    @GetUser() user: UserData
+    @GetUser() user: UserData,
   ): Promise<Omit<HttpResponse, 'data'>> {
     return this.rolService.reactivateAll(roles, user);
   }

@@ -22,10 +22,10 @@ import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get('JWT_SECRET'),
-        signOptions: { expiresIn: configService.get('JWT_EXPIRES_IN') }
-      })
-    })
+        signOptions: { expiresIn: configService.get('JWT_EXPIRES_IN') },
+      }),
+    }),
   ],
-  exports: [JwtStrategy, RefreshTokenStrategy, PassportModule, JwtModule]
+  exports: [JwtStrategy, RefreshTokenStrategy, PassportModule, JwtModule],
 })
 export class AuthModule {}

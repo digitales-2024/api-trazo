@@ -6,7 +6,7 @@ import { HttpResponse, UserData } from '@login/login/interfaces';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prismaService: PrismaService) { }
+  constructor(private readonly prismaService: PrismaService) {}
 
   /**
    * Obtiene los datos del usuario logueado
@@ -20,7 +20,7 @@ export class AdminService {
       email: user.email,
       phone: user.phone,
       isSuperAdmin: user.isSuperAdmin,
-      roles: user.roles
+      roles: user.roles,
     };
   }
   /**
@@ -31,7 +31,7 @@ export class AdminService {
    */
   async updatePassword(
     updatePassword: UpdatePasswordDto,
-    user: UserData
+    user: UserData,
   ): Promise<HttpResponse<string>> {
     const { email } = user;
 
@@ -41,9 +41,9 @@ export class AdminService {
       where: {
         email_isActive: {
           email,
-          isActive: true
-        }
-      }
+          isActive: true,
+        },
+      },
     });
 
     const isMatching = await bcrypt.compare(password, userDB.password);
@@ -53,28 +53,32 @@ export class AdminService {
     }
 
     if (newPassword === password) {
-      throw new BadRequestException('New password must be different from the current password');
+      throw new BadRequestException(
+        'New password must be different from the current password',
+      );
     }
 
     if (newPassword !== confirmPassword) {
-      throw new BadRequestException('Password and confirm password do not match');
+      throw new BadRequestException(
+        'Password and confirm password do not match',
+      );
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     await this.prismaService.user.update({
       where: {
-        id: userDB.id
+        id: userDB.id,
       },
       data: {
-        password: hashedPassword
-      }
+        password: hashedPassword,
+      },
     });
 
     return {
       statusCode: HttpStatus.OK,
       message: 'Password updated successfully',
-      data: userDB.email
+      data: userDB.email,
     };
   }
 }

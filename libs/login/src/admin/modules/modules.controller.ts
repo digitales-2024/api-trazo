@@ -4,7 +4,7 @@ import {
   ApiBadRequestResponse,
   ApiOkResponse,
   ApiTags,
-  ApiUnauthorizedResponse
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators';
 
@@ -14,7 +14,7 @@ import { Auth } from '../auth/decorators';
 @Auth()
 @Controller({
   path: 'modules',
-  version: '1'
+  version: '1',
 })
 export class ModulesController {
   constructor(private readonly modulesService: ModulesService) {}

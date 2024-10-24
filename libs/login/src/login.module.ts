@@ -7,10 +7,16 @@ import { TypedEventEmitterModule } from './event-emitter/typed-event-emitter.mod
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { EmailModule } from './email/email.module';
 
-
 @Module({
   providers: [LoginService],
   exports: [LoginService, AdminModule, PrismaModule], // Exportando AdminModule
-  imports: [AdminModule, PrismaModule, SeedsModule, TypedEventEmitterModule, EventEmitterModule.forRoot(), EmailModule],
+  imports: [
+    AdminModule,
+    PrismaModule,
+    SeedsModule,
+    TypedEventEmitterModule,
+    EventEmitterModule.forRoot(),
+    EmailModule,
+  ],
 })
-export class LoginModule { }
+export class LoginModule {}

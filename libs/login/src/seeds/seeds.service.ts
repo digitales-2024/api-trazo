@@ -1,4 +1,9 @@
-import { BadRequestException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpStatus,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma/prisma.service';
 import { rolSuperAdminSeed, superAdminSeed } from './data/superadmin.seed';
 import { handleException } from '@login/login/utils';
@@ -11,7 +16,7 @@ import { permissionsSeed } from './data/permissions.seed';
 export class SeedsService {
   private readonly logger = new Logger(SeedsService.name);
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Generar el usuario super admin con su rol
@@ -27,14 +32,17 @@ export class SeedsService {
       const result = await this.prisma.$transaction(async (prisma) => {
         // Filtrar módulos que ya existen para solo agregar los nuevos
         const newModules = modulesSeed.filter(
-          (module) => !existingModules.some((existingModule) => existingModule.cod === module.cod)
+          (module) =>
+            !existingModules.some(
+              (existingModule) => existingModule.cod === module.cod,
+            ),
         );
 
         // Si hay nuevos módulos, insertarlos
         if (newModules.length > 0) {
           await prisma.module.createMany({
             data: newModules,
-            skipDuplicates: true
+            skipDuplicates: true,
           });
         }
 
@@ -42,15 +50,15 @@ export class SeedsService {
         const newPermissions = permissionsSeed.filter(
           (permission) =>
             !existingPermissions.some(
-              (existingPermission) => existingPermission.cod === permission.cod
-            )
+              (existingPermission) => existingPermission.cod === permission.cod,
+            ),
         );
 
         // Si hay nuevos permisos, insertarlos
         if (newPermissions.length > 0) {
           await prisma.permission.createMany({
             data: newPermissions,
-            skipDuplicates: true
+            skipDuplicates: true,
           });
         }
 
@@ -65,7 +73,7 @@ export class SeedsService {
         const generalPermissions = [];
         updatedPermissionsList.forEach((permission) => {
           const isSpecificPermission = updatedModulesList.some((module) =>
-            permission.cod.includes(module.cod)
+            permission.cod.includes(module.cod),
           );
 
           if (isSpecificPermission) {
@@ -87,7 +95,7 @@ export class SeedsService {
           generalPermissions.forEach((permissionId) => {
             modulePermissions.push({
               moduleId: module.id,
-              permissionId: permissionId
+              permissionId: permissionId,
             });
           });
         });
@@ -97,7 +105,7 @@ export class SeedsService {
           permissionIds.forEach((permissionId) => {
             modulePermissions.push({
               moduleId: moduleId,
-              permissionId: permissionId
+              permissionId: permissionId,
             });
           });
         });
@@ -106,32 +114,38 @@ export class SeedsService {
         if (modulePermissions.length > 0) {
           await prisma.modulePermissions.createMany({
             data: modulePermissions,
-            skipDuplicates: true
+            skipDuplicates: true,
           });
         }
 
         // Crear rol superadmin si no existe
         const superadminRole = await prisma.rol.upsert({
-          where: { name_isActive: { name: rolSuperAdminSeed.name, isActive: true } },
+          where: {
+            name_isActive: { name: rolSuperAdminSeed.name, isActive: true },
+          },
           update: {},
-          create: rolSuperAdminSeed
+          create: rolSuperAdminSeed,
         });
 
         // Asignar permisos del módulo al rol superadmin
         const allModulePermissions = await prisma.modulePermissions.findMany();
-        const rolModulePermissionEntries = allModulePermissions.map((modulePermission) => ({
-          rolId: superadminRole.id,
-          modulePermissionsId: modulePermission.id
-        }));
+        const rolModulePermissionEntries = allModulePermissions.map(
+          (modulePermission) => ({
+            rolId: superadminRole.id,
+            modulePermissionsId: modulePermission.id,
+          }),
+        );
 
         await prisma.rolModulePermissions.createMany({
           data: rolModulePermissionEntries,
-          skipDuplicates: true
+          skipDuplicates: true,
         });
 
         // Crear usuario superadmin y asignarle el rol si no existe
         const superadminUser = await prisma.user.upsert({
-          where: { email_isActive: { email: superAdminSeed.email, isActive: true } },
+          where: {
+            email_isActive: { email: superAdminSeed.email, isActive: true },
+          },
           update: {},
           create: {
             ...superAdminSeed,
@@ -139,10 +153,10 @@ export class SeedsService {
             isSuperAdmin: true,
             userRols: {
               create: {
-                rolId: superadminRole.id
-              }
-            }
-          }
+                rolId: superadminRole.id,
+              },
+            },
+          },
         });
 
         return {
@@ -157,16 +171,19 @@ export class SeedsService {
             roles: [
               {
                 id: superadminRole.id,
-                name: superadminRole.name
-              }
-            ]
-          }
+                name: superadminRole.name,
+              },
+            ],
+          },
         };
       });
 
       return result;
     } catch (error) {
-      this.logger.error(`Error generating super admin ${superAdminSeed.email}`, error.stack);
+      this.logger.error(
+        `Error generating super admin ${superAdminSeed.email}`,
+        error.stack,
+      );
       if (error instanceof BadRequestException) {
         throw error;
       }

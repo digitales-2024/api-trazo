@@ -11,11 +11,13 @@ import { Request } from 'express';
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private readonly userService: UsersService,
-    configService: ConfigService
+    configService: ConfigService,
   ) {
     super({
       secretOrKey: configService.get('JWT_SECRET'),
-      jwtFromRequest: ExtractJwt.fromExtractors([JwtStrategy.extractJWTFromCookie])
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        JwtStrategy.extractJWTFromCookie,
+      ]),
     });
   }
 
@@ -32,7 +34,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.userService.findById(idPayload);
 
     if (!user.isActive)
-      throw new UnauthorizedException('User is not active, talk to the administrator');
+      throw new UnauthorizedException(
+        'User is not active, talk to the administrator',
+      );
 
     const { id, name, email, phone, isSuperAdmin, roles } = user;
 
@@ -42,7 +46,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       email,
       phone,
       isSuperAdmin,
-      roles
+      roles,
     };
   }
 }

@@ -5,7 +5,7 @@ import {
   ApiBadRequestResponse,
   ApiOkResponse,
   ApiTags,
-  ApiUnauthorizedResponse
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
 @ApiTags('Permissions')
@@ -14,7 +14,7 @@ import {
 @Auth()
 @Controller({
   path: 'permissions',
-  version: '1'
+  version: '1',
 })
 export class PermissionsController {
   constructor(private readonly permissionsService: PermissionsService) {}
