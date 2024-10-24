@@ -8,6 +8,6 @@ import { AuditModule } from '../audit/audit.module';
   controllers: [RolController],
   providers: [RolService],
   imports: [PrismaModule, AuditModule],
-  exports: [RolService]
+  exports: [RolService],
 })
-export class RolModule { }
+export class RolModule {}

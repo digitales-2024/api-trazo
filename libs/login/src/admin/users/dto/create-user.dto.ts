@@ -8,7 +8,7 @@ import {
   IsString,
   Matches,
   MaxLength,
-  MinLength
+  MinLength,
 } from 'class-validator';
 
 export class CreateUserDto {
@@ -31,13 +31,13 @@ export class CreateUserDto {
   @MaxLength(50)
   @Matches(/(?:(?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
     message:
-      'the password is too weak, it must contain at least one uppercase letter, one lowercase letter, one number'
+      'the password is too weak, it must contain at least one uppercase letter, one lowercase letter, one number',
   })
   @Transform(({ value }) => value.trim())
   password: string;
 
   @ApiProperty({
-    required: false
+    required: false,
   })
   @IsString()
   @IsMobilePhone()

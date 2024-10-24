@@ -4,7 +4,7 @@ import { PrismaService } from '@prisma/prisma';
 
 @Injectable()
 export class AuditService {
-  constructor(private readonly prismaService: PrismaService) { }
+  constructor(private readonly prismaService: PrismaService) {}
 
   /**
    * Crear una nueva auditoría
@@ -12,7 +12,7 @@ export class AuditService {
    */
   async create(createAuditDto: CreateAuditDto): Promise<void> {
     await this.prismaService.audit.create({
-      data: createAuditDto
+      data: createAuditDto,
     });
   }
 }

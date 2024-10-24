@@ -3,7 +3,7 @@ import {
   HttpStatus,
   Injectable,
   Logger,
-  NotFoundException
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma';
 import * as bcrypt from 'bcrypt';
@@ -11,7 +11,12 @@ import { CreateUserDto, UpdateUserDto } from './dto';
 import { handleException } from '@login/login/utils';
 import { RolService } from '../rol/rol.service';
 import { generate } from 'generate-password';
-import { HttpResponse, Rol, UserData, UserPayload } from '@login/login/interfaces';
+import {
+  HttpResponse,
+  Rol,
+  UserData,
+  UserPayload,
+} from '@login/login/interfaces';
 import { TypedEventEmitter } from '@login/login/event-emitter/typed-event-emitter.class';
 import { SendEmailDto } from './dto/send-email.dto';
 import { UpdatePasswordDto } from '../auth/dto/update-password.dto';
@@ -27,8 +32,8 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly rolService: RolService,
     private readonly eventEmitter: TypedEventEmitter,
-    private readonly audit: AuditService
-  ) { }
+    private readonly audit: AuditService,
+  ) {}
 
   /**
    * Crear un usuario en la base de datos
@@ -36,7 +41,10 @@ export class UsersService {
    * @param user Usuario que crea el usuario
    * @returns Objetos con los datos del usuario creado
    */
-  async create(createUserDto: CreateUserDto, user: UserData): Promise<HttpResponse<UserData>> {
+  async create(
+    createUserDto: CreateUserDto,
+    user: UserData,
+  ): Promise<HttpResponse<UserData>> {
     try {
       const newUser = await this.prisma.$transaction(async (prisma) => {
         const { roles, email, password, ...dataUser } = createUserDto;
@@ -58,7 +66,9 @@ export class UsersService {
           const rolIsSuperAdmin = await this.rolService.isRolSuperAdmin(rol);
 
           if (rolIsSuperAdmin) {
-            throw new BadRequestException('You cannot create a user with the superadmin role');
+            throw new BadRequestException(
+              'You cannot create a user with the superadmin role',
+            );
           }
         }
 
@@ -78,8 +88,8 @@ export class UsersService {
             message:
               'Email already exists but inactive, contact the administrator to reactivate the account',
             data: {
-              id: (await this.findByEmailInactive(email)).id
-            }
+              id: (await this.findByEmailInactive(email)).id,
+            },
           });
         }
 
@@ -91,24 +101,27 @@ export class UsersService {
           data: {
             email,
             ...dataUser,
-            password: hashedPassword
+            password: hashedPassword,
           },
           select: {
             id: true,
             name: true,
             email: true,
             phone: true,
-            isSuperAdmin: true
-          }
+            isSuperAdmin: true,
+          },
         });
 
         // Enviamos el usuario al correo con la contraseña temporal
-        const emailResponse = await this.eventEmitter.emitAsync('user.welcome-admin-first', {
-          name: newUser.name.toUpperCase(),
-          email,
-          password,
-          webAdmin: process.env.WEB_URL
-        });
+        const emailResponse = await this.eventEmitter.emitAsync(
+          'user.welcome-admin-first',
+          {
+            name: newUser.name.toUpperCase(),
+            email,
+            password,
+            webAdmin: process.env.WEB_URL,
+          },
+        );
 
         if (emailResponse.every((response) => response !== true)) {
           throw new BadRequestException('Failed to send email');
@@ -121,21 +134,21 @@ export class UsersService {
           const newUserRol = await prisma.userRol.create({
             data: {
               userId: newUser.id,
-              rolId: rol
+              rolId: rol,
             },
             select: {
               rol: {
                 select: {
                   id: true,
-                  name: true
-                }
-              }
-            }
+                  name: true,
+                },
+              },
+            },
           });
 
           userRoles.push({
             id: newUserRol.rol.id,
-            name: newUserRol.rol.name
+            name: newUserRol.rol.name,
           });
 
           await this.audit.create({
@@ -143,13 +156,13 @@ export class UsersService {
             entityType: 'user',
             action: AuditActionType.CREATE,
             performedById: user.id,
-            createdAt: new Date()
+            createdAt: new Date(),
           });
         }
 
         return {
           ...newUser,
-          roles: userRoles
+          roles: userRoles,
         };
       });
 
@@ -162,11 +175,14 @@ export class UsersService {
           email: newUser.email,
           phone: newUser.phone,
           isSuperAdmin: newUser.isSuperAdmin,
-          roles: newUser.roles
-        }
+          roles: newUser.roles,
+        },
       };
     } catch (error) {
-      this.logger.error(`Error creating a user for email: ${createUserDto.email}`, error.stack);
+      this.logger.error(
+        `Error creating a user for email: ${createUserDto.email}`,
+        error.stack,
+      );
       if (error instanceof BadRequestException) {
         throw error;
       }
@@ -184,7 +200,7 @@ export class UsersService {
   async update(
     updateUserDto: UpdateUserDto,
     id: string,
-    user: UserData
+    user: UserData,
   ): Promise<HttpResponse<UserData>> {
     try {
       const userUpdate = await this.prisma.$transaction(async (prisma) => {
@@ -193,7 +209,7 @@ export class UsersService {
         // Verificar que el usuario exista
         const userDB = await prisma.user.findUnique({
           where: { id },
-          include: { userRols: true }
+          include: { userRols: true },
         });
         if (!userDB) {
           throw new NotFoundException('User not found or inactive');
@@ -204,14 +220,16 @@ export class UsersService {
           // Obtener roles actuales del usuario
           const existingRoles = await prisma.userRol.findMany({
             where: {
-              userId: id
+              userId: id,
             },
             select: {
-              rolId: true
-            }
+              rolId: true,
+            },
           });
 
-          const existingRoleIds = new Set(existingRoles.map((role) => role.rolId));
+          const existingRoleIds = new Set(
+            existingRoles.map((role) => role.rolId),
+          );
           const newRoleIds = new Set(roles);
 
           // Roles a eliminar (existentes pero no en el nuevo arreglo)
@@ -228,9 +246,9 @@ export class UsersService {
               where: {
                 userId: id,
                 rolId: {
-                  in: rolesToRemove
-                }
-              }
+                  in: rolesToRemove,
+                },
+              },
             });
           }
 
@@ -238,12 +256,17 @@ export class UsersService {
           for (const rolId of rolesToAdd) {
             const rolExist = await this.rolService.findById(rolId);
             if (!rolExist) {
-              throw new BadRequestException(`Role with ID ${rolId} not found or inactive`);
+              throw new BadRequestException(
+                `Role with ID ${rolId} not found or inactive`,
+              );
             }
 
-            const rolIsSuperAdmin = await this.rolService.isRolSuperAdmin(rolId);
+            const rolIsSuperAdmin =
+              await this.rolService.isRolSuperAdmin(rolId);
             if (rolIsSuperAdmin) {
-              throw new BadRequestException('You cannot update a user with the superadmin role');
+              throw new BadRequestException(
+                'You cannot update a user with the superadmin role',
+              );
             }
 
             // Verificar si el rol ya está asociado al usuario
@@ -251,17 +274,17 @@ export class UsersService {
               where: {
                 userId_rolId: {
                   userId: id,
-                  rolId: rolId
-                }
-              }
+                  rolId: rolId,
+                },
+              },
             });
 
             if (!roleAlreadyAssigned) {
               await prisma.userRol.create({
                 data: {
                   userId: id,
-                  rolId: rolId
-                }
+                  rolId: rolId,
+                },
               });
             }
           }
@@ -282,12 +305,12 @@ export class UsersService {
                 rol: {
                   select: {
                     id: true,
-                    name: true
-                  }
-                }
-              }
-            }
-          }
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
         });
 
         await this.audit.create({
@@ -295,7 +318,7 @@ export class UsersService {
           entityType: 'user',
           action: AuditActionType.UPDATE,
           performedById: user.id,
-          createdAt: new Date()
+          createdAt: new Date(),
         });
 
         return updateUser;
@@ -312,9 +335,9 @@ export class UsersService {
           isSuperAdmin: userUpdate.isSuperAdmin,
           roles: userUpdate.userRols.map((rol) => ({
             id: rol.rol.id,
-            name: rol.rol.name
-          }))
-        }
+            name: rol.rol.name,
+          })),
+        },
       };
     } catch (error) {
       this.logger.error(`Error updating a user for id: ${id}`, error.stack);
@@ -354,10 +377,10 @@ export class UsersService {
             userId: id,
             rol: {
               is: {
-                name: ValidRols.SUPER_ADMIN
-              }
-            }
-          }
+                name: ValidRols.SUPER_ADMIN,
+              },
+            },
+          },
         });
 
         if (superAdminRoles.length > 0) {
@@ -368,8 +391,8 @@ export class UsersService {
         await prisma.user.update({
           where: { id },
           data: {
-            isActive: false
-          }
+            isActive: false,
+          },
         });
 
         await this.audit.create({
@@ -377,17 +400,17 @@ export class UsersService {
           entityType: 'user',
           action: AuditActionType.DELETE,
           performedById: user.id,
-          createdAt: new Date()
+          createdAt: new Date(),
         });
 
         // Eliminar todos los roles del usuario
         await prisma.userRol.updateMany({
           where: {
-            userId: id
+            userId: id,
           },
           data: {
-            isActive: false
-          }
+            isActive: false,
+          },
         });
 
         return {
@@ -396,14 +419,14 @@ export class UsersService {
           email: userDB.email,
           phone: userDB.phone,
           isSuperAdmin: userDB.isSuperAdmin,
-          roles: userDB.roles
+          roles: userDB.roles,
         };
       });
 
       return {
         statusCode: HttpStatus.OK,
         message: 'User deleted',
-        data: userRemove
+        data: userRemove,
       };
     } catch (error) {
       this.logger.error(`Error deleting a user for id: ${id}`, error.stack);
@@ -417,13 +440,16 @@ export class UsersService {
    * @param user Usuario que desactiva los usuarios
    * @returns Retorna un mensaje de la desactivación correcta
    */
-  async deactivate(users: DeleteUsersDto, user: UserData): Promise<Omit<HttpResponse, 'data'>> {
+  async deactivate(
+    users: DeleteUsersDto,
+    user: UserData,
+  ): Promise<Omit<HttpResponse, 'data'>> {
     try {
       await this.prisma.$transaction(async (prisma) => {
         // Buscar los usuarios en la base de datos
         const usersDB = await prisma.user.findMany({
           where: {
-            id: { in: users.ids }
+            id: { in: users.ids },
           },
           select: {
             id: true,
@@ -436,12 +462,12 @@ export class UsersService {
                 rol: {
                   select: {
                     id: true,
-                    name: true
-                  }
-                }
-              }
-            }
-          }
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
         });
 
         // Validar que se encontraron usuarios
@@ -458,14 +484,16 @@ export class UsersService {
         const superAdminUsers = await prisma.userRol.findMany({
           where: {
             userId: { in: usersDB.map((u) => u.id) },
-            rol: { name: ValidRols.SUPER_ADMIN }
+            rol: { name: ValidRols.SUPER_ADMIN },
           },
-          select: { userId: true }
+          select: { userId: true },
         });
 
         const superAdminUserIds = new Set(superAdminUsers.map((r) => r.userId));
         if (usersDB.some((u) => superAdminUserIds.has(u.id))) {
-          throw new BadRequestException('You cannot deactivate a superadmin user');
+          throw new BadRequestException(
+            'You cannot deactivate a superadmin user',
+          );
         }
 
         // Desactivar usuarios y eliminar roles
@@ -473,29 +501,29 @@ export class UsersService {
           //Validar que este usuario no haya hecho una accion en el sistema
           const userAction = await prisma.audit.findFirst({
             where: {
-              performedById: userDelete.id
-            }
+              performedById: userDelete.id,
+            },
           });
           if (userAction) {
             // Desactivar usuario
             await prisma.user.update({
               where: { id: userDelete.id },
-              data: { isActive: false }
+              data: { isActive: false },
             });
 
             // Desactivar roles
             await prisma.userRol.updateMany({
               where: { userId: userDelete.id },
-              data: { isActive: false }
+              data: { isActive: false },
             });
           } else {
             // Eliminar roles
             await prisma.userRol.deleteMany({
-              where: { userId: userDelete.id }
+              where: { userId: userDelete.id },
             });
             // Eliminar usuario
             await prisma.user.delete({
-              where: { id: userDelete.id }
+              where: { id: userDelete.id },
             });
           }
 
@@ -505,7 +533,7 @@ export class UsersService {
             entityType: 'user',
             action: AuditActionType.DELETE,
             performedById: user.id,
-            createdAt: new Date()
+            createdAt: new Date(),
           });
 
           return {
@@ -515,8 +543,8 @@ export class UsersService {
             phone: userDelete.phone,
             roles: userDelete.userRols.map((rol) => ({
               id: rol.rol.id,
-              name: rol.rol.name
-            }))
+              name: rol.rol.name,
+            })),
           };
         });
 
@@ -525,11 +553,14 @@ export class UsersService {
 
       return {
         statusCode: HttpStatus.OK,
-        message: 'Users deactivated successfully'
+        message: 'Users deactivated successfully',
       };
     } catch (error) {
       this.logger.error('Error deactivating users', error.stack);
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       handleException(error, 'Error deactivating users');
@@ -542,7 +573,10 @@ export class UsersService {
    * @param user Usuario que reactiva el usuario
    * @returns Retorna un objeto con los datos del usuario reactivado
    */
-  async reactivate(id: string, user: UserData): Promise<HttpResponse<UserData>> {
+  async reactivate(
+    id: string,
+    user: UserData,
+  ): Promise<HttpResponse<UserData>> {
     try {
       const userReactivate = await this.prisma.$transaction(async (prisma) => {
         const userDB = await prisma.user.findUnique({
@@ -559,12 +593,12 @@ export class UsersService {
                 rol: {
                   select: {
                     id: true,
-                    name: true
-                  }
-                }
-              }
-            }
-          }
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
         });
 
         if (!userDB) {
@@ -578,18 +612,18 @@ export class UsersService {
         await prisma.user.update({
           where: { id },
           data: {
-            isActive: true
-          }
+            isActive: true,
+          },
         });
 
         // Si el usuario se reactiva, entonces se reactivan todos los roles asociados
         await prisma.userRol.updateMany({
           where: {
-            userId: id
+            userId: id,
           },
           data: {
-            isActive: true
-          }
+            isActive: true,
+          },
         });
 
         // Crear un registro de auditoria
@@ -598,7 +632,7 @@ export class UsersService {
           entityType: 'user',
           action: AuditActionType.UPDATE,
           performedById: user.id,
-          createdAt: new Date()
+          createdAt: new Date(),
         });
 
         return {
@@ -610,16 +644,16 @@ export class UsersService {
           roles: userDB.userRols.map((rol) => {
             return {
               id: rol.rol.id,
-              name: rol.rol.name
+              name: rol.rol.name,
             };
-          })
+          }),
         };
       });
 
       return {
         statusCode: HttpStatus.OK,
         message: 'User reactivated',
-        data: userReactivate
+        data: userReactivate,
       };
     } catch (error) {
       this.logger.error(`Error reactivating a user for id: ${id}`, error.stack);
@@ -633,13 +667,16 @@ export class UsersService {
    * @param users Arreglo de los usuarios a reactivar
    * @return Retorna un mensaje de la reactivacion exitosa
    */
-  async reactivateAll(user: UserData, users: DeleteUsersDto): Promise<Omit<HttpResponse, 'data'>> {
+  async reactivateAll(
+    user: UserData,
+    users: DeleteUsersDto,
+  ): Promise<Omit<HttpResponse, 'data'>> {
     try {
       await this.prisma.$transaction(async (prisma) => {
         // Buscar los usuarios en la base de datos
         const usersDB = await prisma.user.findMany({
           where: {
-            id: { in: users.ids }
+            id: { in: users.ids },
           },
           select: {
             id: true,
@@ -652,12 +689,12 @@ export class UsersService {
                 rol: {
                   select: {
                     id: true,
-                    name: true
-                  }
-                }
-              }
-            }
-          }
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
         });
 
         // Validar que se encontraron usuarios
@@ -674,14 +711,16 @@ export class UsersService {
         const superAdminUsers = await prisma.userRol.findMany({
           where: {
             userId: { in: usersDB.map((u) => u.id) },
-            rol: { name: ValidRols.SUPER_ADMIN }
+            rol: { name: ValidRols.SUPER_ADMIN },
           },
-          select: { userId: true }
+          select: { userId: true },
         });
 
         const superAdminUserIds = new Set(superAdminUsers.map((r) => r.userId));
         if (usersDB.some((u) => superAdminUserIds.has(u.id))) {
-          throw new BadRequestException('You cannot deactivate a superadmin user');
+          throw new BadRequestException(
+            'You cannot deactivate a superadmin user',
+          );
         }
 
         // Reactivar usuarios y eliminar roles
@@ -689,13 +728,13 @@ export class UsersService {
           // Desactivar usuario
           await prisma.user.update({
             where: { id: userDelete.id },
-            data: { isActive: true }
+            data: { isActive: true },
           });
 
           // Reactivar los roles
           await prisma.userRol.updateMany({
             where: { userId: userDelete.id },
-            data: { isActive: true }
+            data: { isActive: true },
           });
 
           // Auditoría
@@ -704,7 +743,7 @@ export class UsersService {
             entityType: 'user',
             action: AuditActionType.UPDATE,
             performedById: user.id,
-            createdAt: new Date()
+            createdAt: new Date(),
           });
 
           return {
@@ -714,8 +753,8 @@ export class UsersService {
             phone: userDelete.phone,
             roles: userDelete.userRols.map((rol) => ({
               id: rol.rol.id,
-              name: rol.rol.name
-            }))
+              name: rol.rol.name,
+            })),
           };
         });
 
@@ -724,11 +763,14 @@ export class UsersService {
 
       return {
         statusCode: HttpStatus.OK,
-        message: 'Users reactivate successfully'
+        message: 'Users reactivate successfully',
       };
     } catch (error) {
       this.logger.error('Error reactivating users', error.stack);
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       handleException(error, 'Error reactivating users');
@@ -742,13 +784,15 @@ export class UsersService {
    */
   async findAll(user: UserPayload): Promise<UserPayload[]> {
     // Verificar que el usuario tenga permisos para listar usuarios
-    const canListUsers = user.roles.some((role) => role.name === ValidRols.SUPER_ADMIN);
+    const canListUsers = user.roles.some(
+      (role) => role.name === ValidRols.SUPER_ADMIN,
+    );
 
     let usersDB: any[] = [];
     if (!canListUsers) {
       usersDB = await this.prisma.user.findMany({
         where: {
-          isActive: true
+          isActive: true,
         },
         select: {
           id: true,
@@ -764,15 +808,15 @@ export class UsersService {
               rol: {
                 select: {
                   id: true,
-                  name: true
-                }
-              }
-            }
-          }
+                  name: true,
+                },
+              },
+            },
+          },
         },
         orderBy: {
-          createdAt: 'desc'
-        }
+          createdAt: 'desc',
+        },
       });
     } else {
       usersDB = await this.prisma.user.findMany({
@@ -790,15 +834,15 @@ export class UsersService {
               rol: {
                 select: {
                   id: true,
-                  name: true
-                }
-              }
-            }
-          }
+                  name: true,
+                },
+              },
+            },
+          },
         },
         orderBy: {
-          createdAt: 'desc'
-        }
+          createdAt: 'desc',
+        },
       });
     }
 
@@ -815,9 +859,9 @@ export class UsersService {
         roles: user.userRols.map((rol) => {
           return {
             id: rol.rol.id,
-            name: rol.rol.name
+            name: rol.rol.name,
           };
-        })
+        }),
       };
     });
   }
@@ -836,7 +880,7 @@ export class UsersService {
       email: userDB.email,
       phone: userDB.phone,
       isSuperAdmin: userDB.isSuperAdmin,
-      roles: userDB.roles
+      roles: userDB.roles,
     };
   }
 
@@ -847,11 +891,11 @@ export class UsersService {
   generatePassword(): { password: string } {
     const password = generate({
       length: 10,
-      numbers: true
+      numbers: true,
     });
 
     return {
-      password
+      password,
     };
   }
 
@@ -861,7 +905,10 @@ export class UsersService {
    * @param user Usuario que envia el email
    * @returns Estado del envio del email
    */
-  async sendNewPassword(sendEmailDto: SendEmailDto, user: UserData): Promise<HttpResponse<string>> {
+  async sendNewPassword(
+    sendEmailDto: SendEmailDto,
+    user: UserData,
+  ): Promise<HttpResponse<string>> {
     try {
       const { email, password } = sendEmailDto;
 
@@ -882,7 +929,7 @@ export class UsersService {
 
         if (inactiveEmail) {
           throw new BadRequestException(
-            'Email already exists but inactive, contact the administrator to reactivate the account'
+            'Email already exists but inactive, contact the administrator to reactivate the account',
           );
         }
 
@@ -894,21 +941,24 @@ export class UsersService {
         await prisma.user.update({
           where: { id: userDB.id },
           data: {
-            password: hashedPassword
-          }
+            password: hashedPassword,
+          },
         });
-        const emailResponse = await this.eventEmitter.emitAsync('user.new-password', {
-          name: userDB.name.toUpperCase(),
-          email,
-          password,
-          webAdmin: process.env.WEB_URL
-        });
+        const emailResponse = await this.eventEmitter.emitAsync(
+          'user.new-password',
+          {
+            name: userDB.name.toUpperCase(),
+            email,
+            password,
+            webAdmin: process.env.WEB_URL,
+          },
+        );
 
         if (emailResponse.every((response) => response === true)) {
           return {
             statusCode: HttpStatus.OK,
             message: `Email sent successfully`,
-            data: sendEmailDto.email
+            data: sendEmailDto.email,
           };
         } else {
           throw new BadRequestException('Failed to send email');
@@ -916,7 +966,10 @@ export class UsersService {
       });
       return send;
     } catch (error) {
-      this.logger.error(`Error sending email to: ${sendEmailDto.email}`, error.stack);
+      this.logger.error(
+        `Error sending email to: ${sendEmailDto.email}`,
+        error.stack,
+      );
       if (error instanceof BadRequestException) {
         throw error;
       }
@@ -940,8 +993,8 @@ export class UsersService {
       where: {
         email_isActive: {
           email,
-          isActive: true
-        }
+          isActive: true,
+        },
       },
       select: {
         id: true,
@@ -956,12 +1009,12 @@ export class UsersService {
             rol: {
               select: {
                 id: true,
-                name: true
-              }
-            }
-          }
-        }
-      }
+                name: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!clientDB) {
@@ -979,9 +1032,9 @@ export class UsersService {
       roles: clientDB.userRols.map((rol) => {
         return {
           id: rol.rol.id,
-          name: rol.rol.name
+          name: rol.rol.name,
         };
-      })
+      }),
     };
   }
 
@@ -995,9 +1048,9 @@ export class UsersService {
       where: {
         email_isActive: {
           email,
-          isActive: true
-        }
-      }
+          isActive: true,
+        },
+      },
     });
 
     return !!clientDB;
@@ -1013,9 +1066,9 @@ export class UsersService {
       where: {
         email_isActive: {
           email,
-          isActive: false
-        }
-      }
+          isActive: false,
+        },
+      },
     });
 
     return !!clientDB;
@@ -1031,8 +1084,8 @@ export class UsersService {
       where: {
         email_isActive: {
           email,
-          isActive: false
-        }
+          isActive: false,
+        },
       },
       select: {
         id: true,
@@ -1045,12 +1098,12 @@ export class UsersService {
             rol: {
               select: {
                 id: true,
-                name: true
-              }
-            }
-          }
-        }
-      }
+                name: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!clientDB) {
@@ -1066,9 +1119,9 @@ export class UsersService {
       roles: clientDB.userRols.map((rol) => {
         return {
           id: rol.rol.id,
-          name: rol.rol.name
+          name: rol.rol.name,
         };
-      })
+      }),
     };
   }
 
@@ -1095,12 +1148,12 @@ export class UsersService {
               rol: {
                 select: {
                   id: true,
-                  name: true
-                }
-              }
-            }
-          }
-        }
+                  name: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       if (!clientDB) {
@@ -1118,9 +1171,9 @@ export class UsersService {
         roles: clientDB.userRols.map((rol) => {
           return {
             id: rol.rol.id,
-            name: rol.rol.name
+            name: rol.rol.name,
           };
-        })
+        }),
       };
     } catch (error) {
       this.logger.error(`Error finding user for id: ${id}`, error.stack);
@@ -1139,8 +1192,8 @@ export class UsersService {
     await this.prisma.user.update({
       where: { id },
       data: {
-        lastLogin: new Date()
-      }
+        lastLogin: new Date(),
+      },
     });
   }
 
@@ -1149,21 +1202,30 @@ export class UsersService {
    * @param userId Id del usuario a actualizar la contraseña
    * @param updatePasswordDto Datos para actualizar la contraseña
    */
-  async updatePasswordTemp(userId: string, updatePasswordDto: UpdatePasswordDto): Promise<boolean> {
+  async updatePasswordTemp(
+    userId: string,
+    updatePasswordDto: UpdatePasswordDto,
+  ): Promise<boolean> {
     try {
-      const hashingPassword = bcrypt.hashSync(updatePasswordDto.newPassword, 10);
+      const hashingPassword = bcrypt.hashSync(
+        updatePasswordDto.newPassword,
+        10,
+      );
 
       const userUpdate = await this.prisma.user.update({
         where: { id: userId },
         data: {
           password: hashingPassword,
-          mustChangePassword: false
-        }
+          mustChangePassword: false,
+        },
       });
 
       return !!userUpdate;
     } catch (error) {
-      this.logger.error(`Error updating password for user: ${userId}`, error.stack);
+      this.logger.error(
+        `Error updating password for user: ${userId}`,
+        error.stack,
+      );
       handleException(error, 'Error updating password');
     }
   }

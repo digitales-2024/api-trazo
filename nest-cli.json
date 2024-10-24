@@ -24,6 +24,15 @@
       "compilerOptions": {
         "tsConfigPath": "libs/prisma/tsconfig.lib.json"
       }
+    },
+    "clients": {
+      "type": "library",
+      "root": "libs/clients",
+      "entryFile": "index",
+      "sourceRoot": "libs/clients/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/clients/tsconfig.lib.json"
+      }
     }
   }
 }

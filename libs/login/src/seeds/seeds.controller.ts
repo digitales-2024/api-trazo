@@ -5,7 +5,7 @@ import { ApiTags } from '@nestjs/swagger';
 @ApiTags('Seeds')
 @Controller({
   path: 'seeds',
-  version: '1'
+  version: '1',
 })
 export class SeedsController {
   constructor(private readonly seedsService: SeedsService) {}

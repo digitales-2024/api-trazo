@@ -7,19 +7,22 @@ import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { UsersService } from '../../users/users.service';
 
 @Injectable()
-export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
+export class RefreshTokenStrategy extends PassportStrategy(
+  Strategy,
+  'jwt-refresh',
+) {
   constructor(
     private readonly userService: UsersService,
-    configService: ConfigService
+    configService: ConfigService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (req: Request) => {
           return req.cookies?.refresh_token; // Extraer el refresh token de la cookie HttpOnly
-        }
+        },
       ]),
       secretOrKey: configService.get('JWT_REFRESH_SECRET'), // Secreto para validar el refresh token
-      passReqToCallback: true // Permite acceder al request en el método validate
+      passReqToCallback: true, // Permite acceder al request en el método validate
     });
   }
 
@@ -39,7 +42,9 @@ export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refres
 
     // 3. Verificar que el usuario está activo
     if (!user.isActive) {
-      throw new UnauthorizedException('User is not active, talk to the administrator');
+      throw new UnauthorizedException(
+        'User is not active, talk to the administrator',
+      );
     }
 
     // Devolvemos los datos del usuario y el token para que puedan ser utilizados en el servicio de autenticación

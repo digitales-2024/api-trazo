@@ -9,6 +9,6 @@ import { PrismaModule } from '@prisma/prisma';
   controllers: [UsersController],
   providers: [UsersService],
   imports: [PrismaModule, RolModule, AuditModule],
-  exports: [UsersService]
+  exports: [UsersService],
 })
-export class UsersModule { }
+export class UsersModule {}

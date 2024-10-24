@@ -9,7 +9,7 @@ const infoBusiness = {
   url: 'https://trazo.com',
   phone: '+51 999 999 998',
   address: '1234 Street',
-  contact: 'contacto@gmail.com'
+  contact: 'contacto@gmail.com',
 };
 
 @Injectable()
@@ -18,7 +18,9 @@ export class EmailService {
   constructor(private readonly mailerService: MailerService) {}
 
   @OnEvent('user.welcome-admin-first')
-  async welcomeEmail(data: EventPayloads['user.welcome-admin-first']): Promise<boolean> {
+  async welcomeEmail(
+    data: EventPayloads['user.welcome-admin-first'],
+  ): Promise<boolean> {
     const { name, email, password, webAdmin } = data;
     const subject = `Bienvenido a ${infoBusiness.business}: ${getFirstWord(name)}`;
 
@@ -36,8 +38,8 @@ export class EmailService {
           url: infoBusiness.url,
           phone: infoBusiness.phone,
           address: infoBusiness.address,
-          contact: infoBusiness.contact
-        }
+          contact: infoBusiness.contact,
+        },
       });
 
       if (sendingEmail) {
@@ -52,7 +54,9 @@ export class EmailService {
   }
 
   @OnEvent('client.forgot-password')
-  async forgotPassword(data: EventPayloads['client.forgot-password']): Promise<boolean> {
+  async forgotPassword(
+    data: EventPayloads['client.forgot-password'],
+  ): Promise<boolean> {
     const { name, email, link } = data;
     const subject = `Recuperar contraseña de ${infoBusiness.business}`;
 
@@ -69,8 +73,8 @@ export class EmailService {
           url: infoBusiness.url,
           phone: infoBusiness.phone,
           address: infoBusiness.address,
-          contact: infoBusiness.contact
-        }
+          contact: infoBusiness.contact,
+        },
       });
 
       if (sendingEmail) {
@@ -85,7 +89,9 @@ export class EmailService {
   }
 
   @OnEvent('user.new-password')
-  async newPassword(data: EventPayloads['user.new-password']): Promise<boolean> {
+  async newPassword(
+    data: EventPayloads['user.new-password'],
+  ): Promise<boolean> {
     const { name, email, password, webAdmin } = data;
     const subject = `Hola de nuevo: ${getFirstWord(name)}`;
 
@@ -103,8 +109,8 @@ export class EmailService {
           url: infoBusiness.url,
           phone: infoBusiness.phone,
           address: infoBusiness.address,
-          contact: infoBusiness.contact
-        }
+          contact: infoBusiness.contact,
+        },
       });
 
       if (sendingEmail) {
@@ -117,6 +123,4 @@ export class EmailService {
       return false; // Retorna false indicando fallo
     }
   }
-
-
 }

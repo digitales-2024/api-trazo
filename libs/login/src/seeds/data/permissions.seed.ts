@@ -5,21 +5,21 @@ export const permissionsSeed: Permission[] = [
   {
     cod: 'CREATE',
     name: 'create',
-    description: 'Create'
+    description: 'Create',
   },
   {
     cod: 'UPDATE',
     name: 'update',
-    description: 'Update'
+    description: 'Update',
   },
   {
     cod: 'DELETE',
     name: 'delete',
-    description: 'Delete'
+    description: 'Delete',
   },
   {
     cod: 'READ',
     name: 'read',
-    description: 'Read'
-  }
+    description: 'Read',
+  },
 ];

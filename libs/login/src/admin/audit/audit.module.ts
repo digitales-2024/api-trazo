@@ -7,6 +7,6 @@ import { PrismaModule } from '@prisma/prisma';
   controllers: [AuditController],
   providers: [AuditService],
   imports: [PrismaModule],
-  exports: [AuditService]
+  exports: [AuditService],
 })
-export class AuditModule { }
+export class AuditModule {}

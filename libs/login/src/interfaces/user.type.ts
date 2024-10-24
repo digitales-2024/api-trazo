@@ -15,8 +15,14 @@ export type UserPayload = Pick<
   roles: Omit<Rol, 'description'>[];
 };
 
-export type UserData = Omit<UserPayload, 'isActive' | 'mustChangePassword' | 'lastLogin'>;
+export type UserData = Omit<
+  UserPayload,
+  'isActive' | 'mustChangePassword' | 'lastLogin'
+>;
 
-export type UserDataLogin = Pick<UserPayload, 'id' | 'name' | 'email' | 'phone' | 'roles'> & {
+export type UserDataLogin = Pick<
+  UserPayload,
+  'id' | 'name' | 'email' | 'phone' | 'roles'
+> & {
   token: string;
 };
