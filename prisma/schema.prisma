@@ -136,3 +136,17 @@ enum AuditActionType {
   UPDATE
   DELETE
 }
+
+model Client {
+  id        String   @id @unique @default(uuid())
+  name      String
+  rucDni   String
+  address   String
+  province String
+  department String
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+}
