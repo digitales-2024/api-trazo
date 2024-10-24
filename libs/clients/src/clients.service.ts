@@ -10,8 +10,9 @@ import { UpdateClientDto } from './dto/update-client.dto';
 import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { PrismaService } from '@prisma/prisma';
 import { handleException } from '@login/login/utils';
-import { ClientData } from 'src/interfaces';
+import { ClientData } from '@clients/clients/interfaces';
 import { AuditActionType } from '@prisma/client';
+import { DeleteClientsDto } from './dto/delete-client.dto';
 
 @Injectable()
 export class ClientsService {
@@ -197,8 +198,11 @@ export class ClientsService {
         'This client is inactive, contact the superadmin to reactivate it',
       );
     }
-    if (clientDB) {
-      throw new BadRequestException('This RUC or DNI is already in use');
+    if (clientDB && rucDni.length === 8) {
+      throw new BadRequestException('This DNI is already in use');
+    }
+    if (clientDB && rucDni.length === 11) {
+      throw new BadRequestException('This RUC is already in use');
     }
 
     return clientDB;
@@ -234,6 +238,13 @@ export class ClientsService {
     return clientDb;
   }
 
+  /**
+   * Actualizar un cliente
+   * @param id ID del cliente a actualizar
+   * @param updateClientDto Dto con los datos a actualizar
+   * @param user Usuario que realiza la acción
+   * @returns Cliente actualizado
+   */
   async update(
     id: string,
     updateClientDto: UpdateClientDto,
@@ -243,6 +254,7 @@ export class ClientsService {
       updateClientDto;
     if (rucDni) {
       await this.validateLengthDniRuc(rucDni);
+      await this.findByRucDni(rucDni);
     }
 
     try {
@@ -272,18 +284,6 @@ export class ClientsService {
             isActive: clientDB.isActive,
           },
         };
-      }
-
-      // Validar que el nuevo rucDni no esté en uso por otro cliente
-      if (rucDni && rucDni !== clientDB.rucDni) {
-        const existingClient = await this.prisma.client.findUnique({
-          where: { rucDni },
-        });
-        if (existingClient && existingClient.id !== id) {
-          throw new BadRequestException(
-            'rucDni already in use by another client',
-          );
-        }
       }
 
       // Construir el objeto de actualización dinámicamente solo con los campos presentes
@@ -348,7 +348,168 @@ export class ClientsService {
     }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} client`;
+  /**
+   * Reactivar varios clientes
+   * @param user Usuario que realiza la acción
+   * @param clients Dto con los IDs de los clientes a reactivar
+   * @returns Respuesta de éxito
+   */
+  async reactivateAll(
+    user: UserData,
+    clients: DeleteClientsDto,
+  ): Promise<Omit<HttpResponse, 'data'>> {
+    try {
+      await this.prisma.$transaction(async (prisma) => {
+        // Buscar los clientes en la base de datos
+        const clientsDB = await prisma.client.findMany({
+          where: {
+            id: { in: clients.ids },
+          },
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            phone: true,
+            rucDni: true,
+            province: true,
+            department: true,
+            isActive: true,
+          },
+        });
+
+        // Validar que se encontraron los clientes
+        if (clientsDB.length === 0) {
+          throw new NotFoundException('Client not found or inactive');
+        }
+
+        // Reactivar clientes
+        const reactivatePromises = clientsDB.map(async (client) => {
+          // Activar el cliente
+          await prisma.client.update({
+            where: { id: client.id },
+            data: { isActive: true },
+          });
+
+          await this.prisma.audit.create({
+            data: {
+              action: AuditActionType.UPDATE,
+              entityId: client.id,
+              entityType: 'client',
+              performedById: user.id,
+              createdAt: new Date(),
+            },
+          });
+
+          return {
+            id: client.id,
+            name: client.name,
+            rucDni: client.rucDni,
+            phone: client.phone,
+            address: client.address,
+            province: client.province,
+            department: client.department,
+            isActive: client.isActive,
+          };
+        });
+
+        return Promise.all(reactivatePromises);
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Clients reactivate successfully',
+      };
+    } catch (error) {
+      this.logger.error('Error reactivating clients', error.stack);
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      handleException(error, 'Error reactivating clients');
+    }
+  }
+
+  /**
+   * Eliminar varios clientes
+   * @param clients Dto con los IDs de los clientes a eliminar
+   * @param user Usuario que realiza la acción
+   * @returns Respuesta de éxito
+   */
+  async removeAll(
+    clients: DeleteClientsDto,
+    user: UserData,
+  ): Promise<Omit<HttpResponse, 'data'>> {
+    try {
+      await this.prisma.$transaction(async (prisma) => {
+        // Buscar los clientes en la base de datos
+        const clientsDB = await prisma.client.findMany({
+          where: {
+            id: { in: clients.ids },
+          },
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            phone: true,
+            rucDni: true,
+            province: true,
+            department: true,
+            isActive: true,
+          },
+        });
+
+        // Validar que se encontraron los clientes
+        if (clientsDB.length === 0) {
+          throw new NotFoundException('Client not found or inactive');
+        }
+
+        const deactivatePromises = clientsDB.map(async (clientDelete) => {
+          // Desactivar clientes
+          await prisma.client.update({
+            where: { id: clientDelete.id },
+            data: { isActive: false },
+          });
+
+          await this.prisma.audit.create({
+            data: {
+              action: AuditActionType.DELETE,
+              entityId: clientDelete.id,
+              entityType: 'product',
+              performedById: user.id,
+              createdAt: new Date(),
+            },
+          });
+
+          return {
+            id: clientDelete.id,
+            name: clientDelete.name,
+            rucDni: clientDelete.rucDni,
+            phone: clientDelete.phone,
+            address: clientDelete.address,
+            province: clientDelete.province,
+            department: clientDelete.department,
+            isActive: clientDelete.isActive,
+          };
+        });
+
+        return Promise.all(deactivatePromises);
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Clients deactivate successfully',
+      };
+    } catch (error) {
+      this.logger.error('Error deactivating clients', error.stack);
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      handleException(error, 'Error deactivating clients');
+    }
   }
 }

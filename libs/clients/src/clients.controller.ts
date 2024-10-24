@@ -19,7 +19,8 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
-import { ClientData } from 'src/interfaces';
+import { ClientData } from '@clients/clients/interfaces';
+import { DeleteClientsDto } from './dto/delete-client.dto';
 
 @ApiTags('Client')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -62,8 +63,18 @@ export class ClientsController {
     return this.clientsService.update(id, updateClientDto, user);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.clientsService.remove(+id);
+  @ApiOkResponse({ description: 'Clients deactivated' })
+  @Delete('remove/all')
+  deactivate(
+    @Body() clients: DeleteClientsDto,
+    @GetUser() user: UserData,
+  ): Promise<Omit<HttpResponse, 'data'>> {
+    return this.clientsService.removeAll(clients, user);
+  }
+
+  @ApiOkResponse({ description: 'Clients reactivated' })
+  @Patch('reactivate/all')
+  reactivateAll(@GetUser() user: UserData, @Body() clients: DeleteClientsDto) {
+    return this.clientsService.reactivateAll(user, clients);
   }
 }
