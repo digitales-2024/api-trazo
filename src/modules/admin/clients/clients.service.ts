@@ -18,6 +18,13 @@ export class ClientsService {
   private readonly logger = new Logger(ClientsService.name);
   constructor(private readonly prisma: PrismaService) {}
 
+  private validateLengthDniRuc(dniRuc: string): void {
+    if (dniRuc.length !== 8 && dniRuc.length !== 11) {
+      throw new BadRequestException(
+        'The length of the RUC or DNI is incorrect',
+      );
+    }
+  }
   /**
    * Crear un nuevo cliente
    * @param createClientDto Dto con los datos del cliente a crear
@@ -35,6 +42,7 @@ export class ClientsService {
     try {
       // Crear el cliente y registrar la auditoría
       await this.findByRucDni(rucDni);
+      await this.validateLengthDniRuc(rucDni);
       newClient = await this.prisma.$transaction(async () => {
         // Crear el nuevo cliente
         const client = await this.prisma.client.create({
