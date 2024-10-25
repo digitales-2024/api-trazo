@@ -195,7 +195,7 @@ model Quotation {
 
   status                  QuotationStatusType                 // Estado de la cotización
   discount                Float                               // Descuento aplicado
-  totalAmount             Float                               // Monto total de la cotización
+  totalAmount             Float @default(0)                   // Monto total de la cotización
   deliveryTime            Int                                 // Tiempo de entrega en meses
   exchangeRate            Float                               // Tasa de cambio
   landArea                Float                               // Área del terreno en m²

@@ -12,7 +12,12 @@ import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import { UserData } from '@login/login/interfaces';
 import { UpdateQuotationStatusDto } from './dto/update-status.dto';
-import { ApiBadRequestResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 @ApiTags('Quotation')
 @Controller({ path: 'quotation', version: '1' })
@@ -20,6 +25,7 @@ import { ApiBadRequestResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 export class QuotationsController {
   constructor(private readonly quotationsService: QuotationsService) {}
 
+  @ApiCreatedResponse({ description: 'Creates a Quotation' })
   @Post()
   create(@Body() createQuotationDto: CreateQuotationDto) {
     return this.quotationsService.create(createQuotationDto);

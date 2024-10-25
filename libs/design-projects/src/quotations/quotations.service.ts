@@ -2,7 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
 import { UpdateQuotationStatusDto } from './dto/update-status.dto';
-import { AuditActionType, QuotationStatusType } from '@prisma/client';
+import { AuditActionType } from '@prisma/client';
 import { UserData } from '@login/login/interfaces';
 import { PrismaService } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
@@ -15,6 +15,8 @@ export class QuotationsService {
   ) {}
 
   create(createQuotationDto: CreateQuotationDto) {
+    // Creates a simple quotation, just for demo purposes
+
     return 'This action adds a new quotation: ' + createQuotationDto;
   }
 
@@ -35,18 +37,7 @@ export class QuotationsService {
     updateQuotationStatusDto: UpdateQuotationStatusDto,
     user: UserData,
   ) {
-    let newStatus: QuotationStatusType;
-    switch (updateQuotationStatusDto.newStatus) {
-      case 'PENDING':
-        newStatus = QuotationStatusType.PENDING;
-        break;
-      case 'APPROVED':
-        newStatus = QuotationStatusType.APPROVED;
-        break;
-      case 'REJECTED':
-        newStatus = QuotationStatusType.REJECTED;
-        break;
-    }
+    const newStatus = updateQuotationStatusDto.newStatus;
 
     await this.prisma.$transaction(async (prisma) => {
       const currentStatus = await prisma.quotation.findUniqueOrThrow({
