@@ -147,8 +147,9 @@ model Client {
   phone      String?
   isActive   Boolean  @default(true)
 
-  // Relacion con Quotation
-  quotations Quotation[]
+  // Relaciones con Quotation
+  clientQuotations Quotation[]    @relation("client")
+  sellerQuotations Quotation[]    @relation("seller")
 
   createdAt  DateTime @default(now()) @db.Timestamptz(6)
   updatedAt  DateTime @updatedAt
@@ -185,11 +186,11 @@ model Quotation {
   code                    String @unique                      // Código especial para cada cotización
 
   // Relacion con Client
-  client                  Client @relation(fields: [clientId], references: [id])
+  client                  Client @relation("client", fields: [clientId], references: [id])
   clientId                String                              // Llave foránea a la tabla de clientes
 
   // Relacion con Client
-  seller                  Client @relation(fields: [clientId], references: [id])
+  seller                  Client @relation("seller", fields: [sellerId], references: [id])
   sellerId                String                              // Llave foránea a la tabla de usuarios (vendedor)
 
   status                  QuotationStatus                     // Estado de la cotización
