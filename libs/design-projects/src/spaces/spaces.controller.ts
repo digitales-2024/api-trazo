@@ -20,6 +20,7 @@ import {
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { SpaceData } from '../interfaces';
+import { DeleteSpaceDto } from './dto/delete-space.dto';
 
 @ApiTags('Space')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -62,8 +63,21 @@ export class SpacesController {
     return this.spacesService.update(id, updateSpaceDto, user);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.spacesService.remove(+id);
+  @ApiOkResponse({ description: 'Space successfully reactivated' })
+  @Patch('reactivate/all')
+  reactivateAll(
+    @Body() deleteSpaceDto: DeleteSpaceDto,
+    @GetUser() user: UserData,
+  ): Promise<Omit<HttpResponse, 'data'>> {
+    return this.spacesService.reactivateAll(user, deleteSpaceDto);
+  }
+
+  @ApiOkResponse({ description: 'Space successfully desactivated' })
+  @Delete('remove/all')
+  desactivate(
+    @Body() deleteSpaceDto: DeleteSpaceDto,
+    @GetUser() user: UserData,
+  ): Promise<Omit<HttpResponse, 'data'>> {
+    return this.spacesService.removeAll(user, deleteSpaceDto);
   }
 }
