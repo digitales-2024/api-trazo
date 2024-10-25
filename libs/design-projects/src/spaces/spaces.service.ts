@@ -12,6 +12,7 @@ import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { SpaceData } from '../interfaces/spaces.interfaces';
 import { handleException } from '@login/login/utils';
 import { AuditActionType } from '@prisma/client';
+import { DeleteSpaceDto } from './dto/delete-space.dto';
 
 @Injectable()
 export class SpacesService {
@@ -274,5 +275,157 @@ export class SpacesService {
 
   remove(id: number) {
     return `This action removes a #${id} space`;
+  }
+
+  /**
+   * Activar varios spaces
+   * @param user Spaces que realiza la acción
+   * @param spaces Dto con los IDs de los spaces a Activar
+   * @returns Respuesta de éxito
+   */
+
+  async reactivateAll(
+    user: UserData,
+    deleteSpaceDto: DeleteSpaceDto,
+  ): Promise<Omit<HttpResponse, 'data'>> {
+    try {
+      await this.prisma.$transaction(async (prisma) => {
+        // Buscar los spaces en la base de datos
+        const spacesDB = await prisma.spaces.findMany({
+          where: {
+            id: { in: deleteSpaceDto.ids },
+          },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            isActive: true,
+          },
+        });
+
+        // Validar que se encontraron los spaces
+        if (spacesDB.length === 0) {
+          throw new NotFoundException('Space not found or inactive');
+        }
+
+        // Reactivar spaces
+        const reactivatePromises = spacesDB.map(async (space) => {
+          // Activar el cliente
+          await prisma.spaces.update({
+            where: { id: space.id },
+            data: { isActive: true },
+          });
+
+          await this.prisma.audit.create({
+            data: {
+              action: AuditActionType.UPDATE,
+              entityId: space.id,
+              entityType: 'space',
+              performedById: user.id,
+              createdAt: new Date(),
+            },
+          });
+
+          return {
+            id: space.id,
+            name: space.name,
+            description: space.description,
+            isActive: space.isActive,
+          };
+        });
+
+        return Promise.all(reactivatePromises);
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Space reactivate successfully',
+      };
+    } catch (error) {
+      this.logger.error('Error reactivating Space', error.stack);
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      handleException(error, 'Error reactivating space');
+    }
+  }
+
+  /**
+   * Desactivar varios spaces
+   * @param user Spaces que realiza la acción
+   * @param spaces Dto con los IDs de los spaces a desactivar
+   * @returns Respuesta de éxito
+   */
+
+  async removeAll(
+    user: UserData,
+    deleteSpaceDto: DeleteSpaceDto,
+  ): Promise<Omit<HttpResponse, 'data'>> {
+    try {
+      await this.prisma.$transaction(async (prisma) => {
+        // Buscar los spaces en la base de datos
+        const spacesDB = await prisma.spaces.findMany({
+          where: {
+            id: { in: deleteSpaceDto.ids },
+          },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            isActive: true,
+          },
+        });
+
+        // Validar que se encontraron los spaces
+        if (spacesDB.length === 0) {
+          throw new NotFoundException('space not found or inactive');
+        }
+
+        // desactivar spaces
+        const deactivatePromises = spacesDB.map(async (space) => {
+          // Activar el cliente
+          await prisma.spaces.update({
+            where: { id: space.id },
+            data: { isActive: false },
+          });
+
+          await this.prisma.audit.create({
+            data: {
+              action: AuditActionType.DELETE,
+              entityId: space.id,
+              entityType: 'space',
+              performedById: user.id,
+              createdAt: new Date(),
+            },
+          });
+
+          return {
+            id: space.id,
+            name: space.name,
+            description: space.description,
+            isActive: space.isActive,
+          };
+        });
+
+        return Promise.all(deactivatePromises);
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Space deactivate successfully',
+      };
+    } catch (error) {
+      this.logger.error('Error deactivating Space', error.stack);
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      handleException(error, 'Error deactivating space');
+    }
   }
 }
