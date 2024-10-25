@@ -193,7 +193,7 @@ model Quotation {
   seller                  Client @relation("seller", fields: [sellerId], references: [id])
   sellerId                String                              // Llave foránea a la tabla de usuarios (vendedor)
 
-  status                  QuotationStatus                     // Estado de la cotización
+  status                  QuotationStatusType                 // Estado de la cotización
   discount                Float                               // Descuento aplicado
   totalAmount             Float                               // Monto total de la cotización
   deliveryTime            Int                                 // Tiempo de entrega en meses
@@ -216,7 +216,7 @@ model Quotation {
 }
 
 // Estado de una cotizacion
-enum QuotationStatus {
+enum QuotationStatusType {
   PENDING
   APPROVED
   REJECTED
