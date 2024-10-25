@@ -2,19 +2,19 @@ import { Module } from '@login/login/interfaces';
 
 export const modulesSeed: Module[] = [
   {
-    name: 'Products',
-    cod: 'PRD',
-    description: 'This is the products module',
+    name: 'Quotations',
+    cod: 'QUO',
+    description: 'This is the quotation module',
   },
   {
-    name: 'Customers',
-    cod: 'CST',
-    description: 'This is the customers module',
+    name: 'Project Design',
+    cod: 'PDE',
+    description: 'This is the project design module',
   },
   {
-    cod: 'ORD',
-    name: 'Orders',
-    description: 'This is the orders module',
+    cod: 'CLI',
+    name: 'Clients',
+    description: 'This is the client module',
   },
   {
     cod: 'USR',
