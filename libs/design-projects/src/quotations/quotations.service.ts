@@ -14,10 +14,79 @@ export class QuotationsService {
     private readonly audit: AuditService,
   ) {}
 
-  create(createQuotationDto: CreateQuotationDto) {
-    // Creates a simple quotation, just for demo purposes
+  /**
+   * Crea una cotizacion.
+   */
+  async create(createQuotationDto: CreateQuotationDto, user: UserData) {
+    const {
+      name,
+      code,
+      clientId,
+      sellerId,
+      status,
+      discount,
+      deliveryTime,
+      exchangeRate,
+      landArea,
+      paymentSchedule,
+      integratedProjectDetails,
+      architecturalCost,
+      structuralCost,
+      electricCost,
+      sanitaryCost,
+      metrado,
+    } = createQuotationDto;
 
-    return 'This action adds a new quotation: ' + createQuotationDto;
+    // Creates a simple quotation, just for demo purposes
+    await this.prisma.$transaction(async (prisma) => {
+      const newQuotation = await prisma.quotation.create({
+        data: {
+          name,
+          code,
+          status,
+          client: {
+            connect: {
+              id: clientId,
+            },
+          },
+          seller: {
+            connect: {
+              id: sellerId,
+            },
+          },
+          totalAmount: 0,
+          discount,
+          deliveryTime,
+          exchangeRate,
+          landArea,
+          paymentSchedule,
+          integratedProjectDetails,
+          architecturalCost,
+          structuralCost,
+          electricCost,
+          sanitaryCost,
+          metrado,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      // Registrar la accion en Audit
+      await this.audit.create({
+        entityId: newQuotation.id,
+        entityType: 'business',
+        action: AuditActionType.CREATE,
+        performedById: user.id,
+        createdAt: new Date(),
+      });
+    });
+
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'Quotation created',
+      data: undefined,
+    };
   }
 
   findAll() {

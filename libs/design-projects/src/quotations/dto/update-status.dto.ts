@@ -7,6 +7,7 @@ export class UpdateQuotationStatusDto {
     name: 'newStatus',
     description:
       'New status to set the quotation to. Can only be PENDING, APPROVED, REJECTED',
+    example: 'PENDING',
   })
   @IsString()
   @IsNotEmpty()

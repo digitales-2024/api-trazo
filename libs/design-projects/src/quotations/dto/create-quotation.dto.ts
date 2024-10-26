@@ -132,6 +132,13 @@ export class CreateQuotationDto {
     description: 'Price per square meter for the arquitecture blueprint',
     example: 3.0,
   })
+  @IsNumber(
+    {
+      allowNaN: false,
+      allowInfinity: false,
+    },
+    { message: 'architecturalCost must be a number' },
+  )
   architecturalCost: number;
 
   @ApiProperty({

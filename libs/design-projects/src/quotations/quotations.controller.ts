@@ -26,9 +26,13 @@ export class QuotationsController {
   constructor(private readonly quotationsService: QuotationsService) {}
 
   @ApiCreatedResponse({ description: 'Creates a Quotation' })
+  @ApiBadRequestResponse({ description: 'Validation error' })
   @Post()
-  create(@Body() createQuotationDto: CreateQuotationDto) {
-    return this.quotationsService.create(createQuotationDto);
+  create(
+    @Body() createQuotationDto: CreateQuotationDto,
+    @GetUser() user: UserData,
+  ) {
+    return this.quotationsService.create(createQuotationDto, user);
   }
 
   @Get()
