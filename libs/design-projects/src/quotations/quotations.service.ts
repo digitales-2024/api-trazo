@@ -44,6 +44,8 @@ export class QuotationsService {
     // Creates a simple quotation, just for demo purposes
     await this.prisma.$transaction(async (prisma) => {
       // get client and seller via their services
+      const sellerUser = await this.usersService.findById(sellerId);
+      const client = await this.clientService.findById(clientId);
 
       const newQuotation = await prisma.quotation.create({
         data: {
@@ -53,13 +55,13 @@ export class QuotationsService {
           // tabla client
           client: {
             connect: {
-              id: clientId,
+              id: client.id,
             },
           },
           // tabla user
           seller: {
             connect: {
-              id: sellerId,
+              id: sellerUser.id,
             },
           },
           totalAmount: 0,
