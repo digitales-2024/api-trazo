@@ -93,7 +93,7 @@ export class SpacesService {
         isActive: true,
       },
     });
-    if (!!spacetDB && spacetDB.id === id) {
+    if (!!spacetDB && spacetDB.id !== id) {
       if (!!spacetDB && !spacetDB.isActive) {
         throw new BadRequestException('This space exists but is not active');
       }
