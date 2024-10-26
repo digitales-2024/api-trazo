@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "QuotationStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
+CREATE TYPE "QuotationStatusType" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
 
 -- CreateTable
 CREATE TABLE "Quotation" (
@@ -8,9 +8,9 @@ CREATE TABLE "Quotation" (
     "code" TEXT NOT NULL,
     "clientId" TEXT NOT NULL,
     "sellerId" TEXT NOT NULL,
-    "status" "QuotationStatus" NOT NULL,
+    "status" "QuotationStatusType" NOT NULL,
     "discount" DOUBLE PRECISION NOT NULL,
-    "totalAmount" DOUBLE PRECISION NOT NULL,
+    "totalAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "deliveryTime" INTEGER NOT NULL,
     "exchangeRate" DOUBLE PRECISION NOT NULL,
     "landArea" DOUBLE PRECISION NOT NULL,
@@ -37,4 +37,4 @@ CREATE UNIQUE INDEX "Quotation_code_key" ON "Quotation"("code");
 ALTER TABLE "Quotation" ADD CONSTRAINT "Quotation_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "Client"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Quotation" ADD CONSTRAINT "Quotation_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "Client"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Quotation" ADD CONSTRAINT "Quotation_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

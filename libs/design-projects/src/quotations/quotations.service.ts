@@ -6,12 +6,16 @@ import { AuditActionType } from '@prisma/client';
 import { UserData } from '@login/login/interfaces';
 import { PrismaService } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
+import { ClientsService } from '@clients/clients';
+import { UsersService } from '@login/login/admin/users/users.service';
 
 @Injectable()
 export class QuotationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly clientService: ClientsService,
+    private readonly usersService: UsersService,
   ) {}
 
   /**
@@ -39,16 +43,20 @@ export class QuotationsService {
 
     // Creates a simple quotation, just for demo purposes
     await this.prisma.$transaction(async (prisma) => {
+      // get client and seller via their services
+
       const newQuotation = await prisma.quotation.create({
         data: {
           name,
           code,
           status,
+          // tabla client
           client: {
             connect: {
               id: clientId,
             },
           },
+          // tabla user
           seller: {
             connect: {
               id: sellerId,
