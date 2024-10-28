@@ -155,10 +155,6 @@ export class BusinessService {
         data: updateBusinessDto,
       });
 
-      // traer el objeto de la base de datos,
-      // revisar si los campos no cambiaron, si es así no actualizar la tabla y
-      // no crear una entrada en el audit
-
       await this.audit.create({
         entityId: id,
         entityType: 'business',

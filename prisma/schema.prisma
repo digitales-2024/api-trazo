@@ -27,6 +27,9 @@ model User {
   // Relación con UserRol
   userRols UserRol[] @relation("UserId")
 
+  // Relacion con Quotation
+  userQuotations Quotation[]    @relation("seller")
+
   @@unique([email, isActive])
 }
 
@@ -146,6 +149,10 @@ model Client {
   department String
   phone      String?
   isActive   Boolean  @default(true)
+
+  // Relacion con Quotation
+  clientQuotations Quotation[]    @relation("client")
+
   createdAt  DateTime @default(now()) @db.Timestamptz(6)
   updatedAt  DateTime @updatedAt
 }
@@ -174,4 +181,45 @@ model BusinessConfig {
   updatedAt DateTime @updatedAt
 }
 
+// Tabla de cotizaciones (Quotation)
+model Quotation {
+  id                      String @id @unique @default(uuid()) // Clave primaria
+  name                    String                              // Nombre del proyecto
+  code                    String @unique                      // Código especial para cada cotización
 
+  // Relacion con Client
+  client                  Client @relation("client", fields: [clientId], references: [id])
+  clientId                String                              // Llave foránea a la tabla de clientes
+
+  // Relacion con User
+  seller                  User @relation("seller", fields: [sellerId], references: [id])
+  sellerId                String                              // Llave foránea a la tabla de usuarios (vendedor)
+
+  status                  QuotationStatusType                 // Estado de la cotización
+  discount                Float                               // Descuento aplicado
+  totalAmount             Float @default(0)                   // Monto total de la cotización
+  deliveryTime            Int                                 // Tiempo de entrega en meses
+  exchangeRate            Float                               // Tasa de cambio
+  landArea                Float                               // Área del terreno en m²
+
+  paymentSchedule         Json                                // Cronograma de pagos (30%, 50%, 20%)
+
+  // Proyecto integral: Planos y detalles de cada área
+  integratedProjectDetails Json                               // JSON con detalles del proyecto integral (descripción, unidad, metraje, costo por m²)
+
+  architecturalCost       Float
+  structuralCost          Float
+  electricCost            Float
+  sanitaryCost            Float
+  metrado                 Float                               // Metrado total del proyecto
+
+  createdAt               DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt               DateTime @updatedAt
+}
+
+// Estado de una cotizacion
+enum QuotationStatusType {
+  PENDING
+  APPROVED
+  REJECTED
+}
