@@ -123,7 +123,7 @@ export class SpacesService {
           isActive: true,
         },
         orderBy: {
-          createdAt: 'asc',
+          createdAt: 'desc',
         },
       });
 
@@ -198,12 +198,12 @@ export class SpacesService {
     user: UserData,
   ): Promise<HttpResponse<SpaceData>> {
     const { name, description } = updateSpaceDto;
-    if (name) {
-      await this.findByName(name);
-    }
 
     try {
       const spaceDB = await this.findById(id);
+      if (name) {
+        await this.findByName(name, id);
+      }
 
       // Validar si hay cambios
       const noChanges =
@@ -310,7 +310,7 @@ export class SpacesService {
 
         // Reactivar spaces
         const reactivatePromises = spacesDB.map(async (space) => {
-          // Activar el cliente
+          // Activar el space
           await prisma.spaces.update({
             where: { id: space.id },
             data: { isActive: true },
@@ -386,7 +386,7 @@ export class SpacesService {
 
         // desactivar spaces
         const deactivatePromises = spacesDB.map(async (space) => {
-          // Activar el cliente
+          // Activar el space
           await prisma.spaces.update({
             where: { id: space.id },
             data: { isActive: false },
