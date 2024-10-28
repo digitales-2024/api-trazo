@@ -43,7 +43,7 @@ export class QuotationsService {
       structuralCost,
       electricCost,
       sanitaryCost,
-      metrado,
+      metering,
     } = createQuotationDto;
 
     // Creates a simple quotation, just for demo purposes
@@ -80,7 +80,7 @@ export class QuotationsService {
           structuralCost,
           electricCost,
           sanitaryCost,
-          metrado,
+          metering,
         },
         select: {
           id: true,

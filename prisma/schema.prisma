@@ -211,7 +211,7 @@ model Quotation {
   structuralCost          Float
   electricCost            Float
   sanitaryCost            Float
-  metrado                 Float                               // Metrado total del proyecto
+  metering                 Float                               // Metrado total del proyecto
 
   createdAt               DateTime @default(now()) @db.Timestamptz(6)
   updatedAt               DateTime @updatedAt

@@ -184,7 +184,7 @@ export class CreateQuotationDto {
   sanitaryCost: number;
 
   @ApiProperty({
-    name: 'metrado',
+    name: 'metering',
     description: 'Total area of the project',
     example: 750,
   })
@@ -193,7 +193,7 @@ export class CreateQuotationDto {
       allowNaN: false,
       allowInfinity: false,
     },
-    { message: 'metrado must be a number' },
+    { message: 'metering must be a number' },
   )
-  metrado: number;
+  metering: number;
 }

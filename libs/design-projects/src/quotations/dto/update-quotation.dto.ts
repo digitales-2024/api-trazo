@@ -181,7 +181,7 @@ export class UpdateQuotationDto extends PartialType(CreateQuotationDto) {
   sanitaryCost: number;
 
   @ApiProperty({
-    name: 'metrado',
+    name: 'metering',
     description: 'Total area of the project',
     example: 750,
     required: false,
@@ -191,7 +191,7 @@ export class UpdateQuotationDto extends PartialType(CreateQuotationDto) {
       allowNaN: false,
       allowInfinity: false,
     },
-    { message: 'metrado must be a number' },
+    { message: 'metering must be a number' },
   )
-  metrado: number;
+  metering: number;
 }
