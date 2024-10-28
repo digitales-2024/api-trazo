@@ -2,7 +2,7 @@ import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
 import { UpdateQuotationStatusDto } from './dto/update-status.dto';
-import { AuditActionType } from '@prisma/client';
+import { AuditActionType, Quotation } from '@prisma/client';
 import { UserData, UserPayload } from '@login/login/interfaces';
 import { PrismaService } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
@@ -99,8 +99,8 @@ export class QuotationsService {
     };
   }
 
-  findAll() {
-    return `This action returns all quotations`;
+  async findAll(): Promise<Array<Quotation>> {
+    return await this.prisma.quotation.findMany();
   }
 
   findOne(id: number) {
