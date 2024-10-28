@@ -19,7 +19,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
-import { ClientData } from '@clients/clients/interfaces';
+import { ClientData, ClientDescriptionData } from '@clients/clients/interfaces';
 import { DeleteClientsDto } from './dto/delete-client.dto';
 
 @ApiTags('Client')
@@ -43,7 +43,7 @@ export class ClientsController {
 
   @ApiOkResponse({ description: 'Get all clients' })
   @Get()
-  findAll(@GetUser() user: UserPayload) {
+  findAll(@GetUser() user: UserPayload): Promise<ClientDescriptionData[]> {
     return this.clientsService.findAll(user);
   }
 

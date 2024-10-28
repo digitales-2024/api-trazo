@@ -10,7 +10,7 @@ import { UpdateClientDto } from './dto/update-client.dto';
 import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { PrismaService } from '@prisma/prisma';
 import { handleException } from '@login/login/utils';
-import { ClientData } from '@clients/clients/interfaces';
+import { ClientData, ClientDescriptionData } from '@clients/clients/interfaces';
 import { AuditActionType } from '@prisma/client';
 import { DeleteClientsDto } from './dto/delete-client.dto';
 
@@ -118,7 +118,7 @@ export class ClientsService {
    * @param user Usuario que realiza la acción
    * @returns Lista de clientes
    */
-  async findAll(user: UserPayload): Promise<ClientData[]> {
+  async findAll(user: UserPayload): Promise<ClientDescriptionData[]> {
     try {
       const clients = await this.prisma.client.findMany({
         where: {
@@ -149,7 +149,8 @@ export class ClientsService {
         province: client.province,
         department: client.department,
         isActive: client.isActive,
-      })) as ClientData[];
+        description: [client],
+      })) as ClientDescriptionData[];
     } catch (error) {
       this.logger.error('Error getting all clients');
       handleException(error, 'Error getting all clients');
