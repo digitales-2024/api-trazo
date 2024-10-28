@@ -7,12 +7,21 @@ import {
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
 import { UpdateQuotationStatusDto } from './dto/update-status.dto';
-import { AuditActionType, Quotation } from '@prisma/client';
+import {
+  AuditActionType,
+  Quotation,
+  QuotationStatusType,
+} from '@prisma/client';
 import { UserData, UserPayload } from '@login/login/interfaces';
 import { PrismaService } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
 import { ClientsService } from '@clients/clients';
 import { UsersService } from '@login/login/admin/users/users.service';
+
+// [x] solo el superadmin puede GET todas las cotizaciones
+// [x] el resto de usuarios solo puede ver cotizaciones APPROVED/PENDING
+// [ ] el estado REJECTED de la cotizacion cuenta como eliminado
+// [x] solo se pueden editar cotizaciones PENDING
 
 @Injectable()
 export class QuotationsService {
@@ -106,21 +115,51 @@ export class QuotationsService {
 
   /**
    * Obtener todas las cotizaciones
+   * Incluye las cotizaciones REJECTED solo si el usuario es un superadmin
+   *
+   * @param user usuario que realiza la peticion
    * @returns Todas las cotizaciones
    */
-  async findAll(): Promise<Array<Quotation>> {
-    return await this.prisma.quotation.findMany();
+  async findAll(user: UserData): Promise<Array<Quotation>> {
+    // If the user is a superadmin include all 3 statuses,
+    // otherwise hide the REJECTED quotations
+    const selectedStatus: QuotationStatusType[] = user.isSuperAdmin
+      ? ['APPROVED', 'PENDING', 'REJECTED']
+      : ['APPROVED', 'PENDING'];
+
+    // if the user is a superadmin
+    const allQuotations = await this.prisma.quotation.findMany({
+      where: {
+        status: {
+          in: selectedStatus,
+        },
+      },
+    });
+
+    return allQuotations;
   }
 
   /**
-   * Buscar una cotizacion por su ID
+   * Buscar una cotizacion por su ID.
+   * Incluye las cotizaciones REJECTED solo si el usuario es un superadmin
+   *
    * @param id ID de la cotizacion a buscar
+   * @param user usuario que realiza la peticion
    * @returns Cotizacion encontrado
    */
-  async findOne(id: string): Promise<Quotation> {
+  async findOne(id: string, user: UserData): Promise<Quotation> {
+    // If the user is a superadmin include all 3 statuses,
+    // otherwise hide the REJECTED quotations
+    const selectedStatus: QuotationStatusType[] = user.isSuperAdmin
+      ? ['APPROVED', 'PENDING', 'REJECTED']
+      : ['APPROVED', 'PENDING'];
+
     const quotation = await this.prisma.quotation.findUnique({
       where: {
         id,
+        status: {
+          in: selectedStatus,
+        },
       },
     });
 
@@ -133,7 +172,7 @@ export class QuotationsService {
 
   /**
    * Actualiza los datos de una cotizacion.
-   * Si el estado de la cotizacion es APPROVED, esta funcion
+   * Si el estado de la cotizacion es APPROVED o REJECTED, esta funcion
    * lanza 400
    *
    * @param id ID de la cotizacion a actualizar
@@ -165,12 +204,14 @@ export class QuotationsService {
         throw new NotFoundException('Quotation not found');
       }
 
-      // validate the status is either pending or rejected, otherwise fail
-      // if the quotation status is APPROVED, fail this update
+      // If the status is APPROVED or PENDING, throw
       if (storedQuotation.status === 'APPROVED') {
         throw new BadRequestException(
           'Attempted to edit an APPROVED quotation',
         );
+      }
+      if (storedQuotation.status === 'REJECTED') {
+        throw new BadRequestException('Attempted to edit a REJECTED quotation');
       }
 
       // check there are changed fields

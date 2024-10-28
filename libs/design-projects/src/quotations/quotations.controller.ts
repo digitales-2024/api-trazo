@@ -39,15 +39,15 @@ export class QuotationsController {
 
   @ApiOkResponse({ description: 'Get all quotations' })
   @Get()
-  findAll() {
-    return this.quotationsService.findAll();
+  findAll(@GetUser() user: UserData) {
+    return this.quotationsService.findAll(user);
   }
 
   @ApiOkResponse({ description: 'Get quotation by id' })
   @ApiNotFoundResponse({ description: 'Quotation not found' })
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.quotationsService.findOne(id);
+  findOne(@Param('id') id: string, @GetUser() user: UserData) {
+    return this.quotationsService.findOne(id, user);
   }
 
   /**
