@@ -10,14 +10,27 @@ import {
 import { LevelsService } from './levels.service';
 import { CreateLevelDto } from './dto/create-level.dto';
 import { UpdateLevelDto } from './dto/update-level.dto';
+import {
+  ApiBadRequestResponse,
+  ApiCreatedResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { Auth, GetUser } from '@login/login/admin/auth/decorators';
+import { UserData } from '@login/login/interfaces';
 
-@Controller('levels')
+@ApiTags('Levels')
+@Controller({ path: 'levels', version: '1' })
+@Auth()
 export class LevelsController {
   constructor(private readonly levelsService: LevelsService) {}
 
+  @ApiCreatedResponse({ description: 'Creates a level' })
+  @ApiBadRequestResponse({
+    description: 'Validation error or quotation is approved',
+  })
   @Post()
-  create(@Body() createLevelDto: CreateLevelDto) {
-    return this.levelsService.create(createLevelDto);
+  create(@Body() createLevelDto: CreateLevelDto, @GetUser() user: UserData) {
+    return this.levelsService.create(createLevelDto, user);
   }
 
   @Get()

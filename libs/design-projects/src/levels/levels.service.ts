@@ -1,11 +1,67 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateLevelDto } from './dto/create-level.dto';
 import { UpdateLevelDto } from './dto/update-level.dto';
+import { UserData } from '@login/login/interfaces';
+import { PrismaService } from '@prisma/prisma';
+import { AuditService } from '@login/login/admin/audit/audit.service';
+import { QuotationsService } from '../quotations/quotations.service';
+import { AuditActionType } from '@prisma/client';
 
 @Injectable()
 export class LevelsService {
-  create(createLevelDto: CreateLevelDto) {
-    return 'This action adds a new level ' + createLevelDto;
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+    private readonly quotationService: QuotationsService,
+  ) {}
+
+  /**
+   * Creates a new level. If the linked quotation's status is APPROVED, it throws
+   * @param createLevelDto the data of the level to create
+   * @param user the user that performs this action
+   */
+  async create(createLevelDto: CreateLevelDto, user: UserData) {
+    const { name, quotationId } = createLevelDto;
+    await this.prisma.$transaction(async (prisma) => {
+      // verify the passed quotation exists
+      const quotation = await this.quotationService.findOne(quotationId);
+
+      // check the quotation is not APPROVED
+      if (quotation.status === 'APPROVED') {
+        throw new BadRequestException(
+          'Quotation is APPROVED, cannot create a new level',
+        );
+      }
+
+      const newLevel = await prisma.level.create({
+        data: {
+          name,
+          quotation: {
+            connect: {
+              id: quotation.id,
+            },
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      // Registrar la accion en Audit
+      await this.audit.create({
+        entityId: newLevel.id,
+        entityType: 'level',
+        action: AuditActionType.CREATE,
+        performedById: user.id,
+        createdAt: new Date(),
+      });
+    });
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Level created',
+      data: undefined,
+    };
   }
 
   findAll() {
