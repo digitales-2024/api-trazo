@@ -11,3 +11,17 @@ export type ClientData = Pick<
   | 'department'
   | 'isActive'
 >;
+
+export type ClientDescriptionData = Pick<
+  Client,
+  | 'id'
+  | 'name'
+  | 'phone'
+  | 'rucDni'
+  | 'address'
+  | 'province'
+  | 'department'
+  | 'isActive'
+> & {
+  description: ClientData[];
+};
