@@ -19,12 +19,6 @@ import { ClientsService } from '@clients/clients';
 import { UsersService } from '@login/login/admin/users/users.service';
 import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
 
-// [x] solo el superadmin puede GET todas las cotizaciones
-// [x] el resto de usuarios solo puede ver cotizaciones APPROVED/PENDING
-// [x] el estado REJECTED de la cotizacion cuenta como eliminado
-// [x] solo se pueden editar cotizaciones PENDING
-// [ ] implementar deactivate/reactivate
-
 @Injectable()
 export class QuotationsService {
   constructor(
@@ -328,6 +322,7 @@ export class QuotationsService {
         },
         select: {
           id: true,
+          status: true,
         },
       });
 
@@ -338,6 +333,16 @@ export class QuotationsService {
       if (missingQuotationIds.length !== 0) {
         throw new BadRequestException(
           `Quotation with ids ${JSON.stringify(missingQuotationIds)} not found`,
+        );
+      }
+
+      // if a quotation is already APPROVED, throw an error
+      const approvedQuotationIds = quotationToDelete.filter((quotation) => {
+        return quotation.status === 'APPROVED';
+      });
+      if (approvedQuotationIds.length !== 0) {
+        throw new BadRequestException(
+          `Quotation with ids ${JSON.stringify(missingQuotationIds)} are APPROVED and cannot be deleted`,
         );
       }
 
@@ -370,6 +375,74 @@ export class QuotationsService {
     return {
       statusCode: HttpStatus.OK,
       message: 'Quotations deactivated successfully',
+    };
+  }
+
+  async reactivateAll(user: UserData, reactivateDto: DeleteQuotationsDto) {
+    await this.prisma.$transaction(async (prisma) => {
+      const quotationToReactivate = await prisma.quotation.findMany({
+        where: {
+          id: {
+            in: reactivateDto.ids,
+          },
+        },
+        select: {
+          id: true,
+          status: true,
+        },
+      });
+
+      // If a quotation is not found throw an error
+      const missingQuotationIds = reactivateDto.ids.filter((id) => {
+        return (
+          quotationToReactivate.find((quot) => quot.id === id) === undefined
+        );
+      });
+      if (missingQuotationIds.length !== 0) {
+        throw new BadRequestException(
+          `Quotation with ids ${JSON.stringify(missingQuotationIds)} not found`,
+        );
+      }
+
+      // if a quotation is already APPROVED, throw an error
+      const approvedQuotationIds = quotationToReactivate.filter((quotation) => {
+        return quotation.status === 'APPROVED';
+      });
+      if (approvedQuotationIds.length !== 0) {
+        throw new BadRequestException(
+          `Quotation with ids ${JSON.stringify(missingQuotationIds)} are APPROVED and cannot be reactivated`,
+        );
+      }
+
+      // reactivate all
+      await prisma.quotation.updateMany({
+        where: {
+          id: {
+            in: reactivateDto.ids,
+          },
+        },
+        data: {
+          status: 'PENDING',
+        },
+      });
+
+      // log in audit
+      const now = new Date();
+      const updateRecords = reactivateDto.ids.map((quotationId) => ({
+        action: AuditActionType.UPDATE,
+        entityId: quotationId,
+        entityType: 'quotation',
+        performedById: user.id,
+        createdAt: now,
+      }));
+      await prisma.audit.createMany({
+        data: updateRecords,
+      });
+    });
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Quotations reactivated successfully',
     };
   }
 }

@@ -83,11 +83,26 @@ export class QuotationsController {
   @ApiOkResponse({
     description: 'Deletes (sets status to REJECTED) the passed quotations',
   })
+  @ApiBadRequestResponse({
+    description: 'Validation error or ids not found',
+  })
   @Delete('remove/all')
   deactivate(
     @Body() deleteDto: DeleteQuotationsDto,
     @GetUser() user: UserData,
   ) {
     return this.quotationsService.removeAll(deleteDto, user);
+  }
+
+  @ApiOkResponse({ description: 'Reactivates the passed quotatinos' })
+  @ApiBadRequestResponse({
+    description: 'Validation error or ids not found',
+  })
+  @Patch('reactivate/all')
+  reactivateAll(
+    @GetUser() user: UserData,
+    @Body() quotations: DeleteQuotationsDto,
+  ) {
+    return this.quotationsService.reactivateAll(user, quotations);
   }
 }
