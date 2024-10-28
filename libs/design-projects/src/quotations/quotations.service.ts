@@ -116,7 +116,63 @@ export class QuotationsService {
     updateQuotationDto: UpdateQuotationDto,
     user: UserData,
   ) {
-    return `This action updates a #${id} quotation ${updateQuotationDto} and user ${user}`;
+    // Si no hay datos que actualizar, salir antes
+    if (Object.keys(updateQuotationDto).length === 0) {
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Quotation updated successfully',
+        data: undefined,
+      };
+    }
+
+    await this.prisma.$transaction(async (prisma) => {
+      // get the current quotation
+      const storedQuotation = await prisma.quotation.findUniqueOrThrow({
+        where: { id },
+      });
+
+      // check there are changed fields
+      let changesPresent = false;
+      for (const newField in updateQuotationDto) {
+        const newValue = updateQuotationDto[newField];
+        if (newValue !== storedQuotation[newField]) {
+          changesPresent = true;
+          break;
+        }
+      }
+
+      if (!changesPresent) {
+        // return early
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Quotation updated successfully',
+          data: undefined,
+        };
+      }
+
+      // update database
+      await prisma.quotation.update({
+        where: {
+          id,
+        },
+        data: updateQuotationDto,
+      });
+
+      // update audit log
+      await this.audit.create({
+        entityId: id,
+        entityType: 'quotation',
+        action: AuditActionType.UPDATE,
+        performedById: user.id,
+        createdAt: new Date(),
+      });
+    });
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Quotation updated successfully',
+      data: undefined,
+    };
   }
 
   async updateStatus(
