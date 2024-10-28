@@ -19,7 +19,6 @@ export class UpdateSpaceDto extends PartialType(CreateSpaceDto) {
     description: 'Description',
   })
   @IsString()
-  @IsNotEmpty()
   @Transform(({ value }) => value.trim().toLowerCase())
   description?: string;
 }

@@ -17,7 +17,6 @@ export class CreateSpaceDto {
     description: 'Description',
   })
   @IsString()
-  @IsNotEmpty()
   @Transform(({ value }) => value.trim().toLowerCase())
   description: string;
 }
