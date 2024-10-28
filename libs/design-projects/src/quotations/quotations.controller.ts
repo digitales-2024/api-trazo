@@ -10,7 +10,7 @@ import {
 import { QuotationsService } from './quotations.service';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
-import { UserData } from '@login/login/interfaces';
+import { UserData, UserPayload } from '@login/login/interfaces';
 import { UpdateQuotationStatusDto } from './dto/update-status.dto';
 import {
   ApiBadRequestResponse,
@@ -50,14 +50,16 @@ export class QuotationsController {
    * Updates the quotation, whatever its status is.
    */
   @ApiOkResponse({ description: 'Updates this quotation' })
-  @ApiBadRequestResponse({ description: 'Validation error' })
-  @Patch(':id/force')
-  async forceUpdate(
+  @ApiBadRequestResponse({
+    description: 'Validation error or trying to update an approved quotation',
+  })
+  @Patch(':id')
+  async update(
     @Param('id') id: string,
     @Body() newStatus: UpdateQuotationDto,
-    @GetUser() user: UserData,
+    @GetUser() user: UserPayload,
   ) {
-    return await this.quotationsService.forceUpdate(id, newStatus, user);
+    return await this.quotationsService.update(id, newStatus, user);
   }
 
   @ApiOkResponse({ description: 'Updates the status of this quotation' })

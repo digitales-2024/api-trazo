@@ -1,9 +1,9 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
 import { UpdateQuotationStatusDto } from './dto/update-status.dto';
 import { AuditActionType } from '@prisma/client';
-import { UserData } from '@login/login/interfaces';
+import { UserData, UserPayload } from '@login/login/interfaces';
 import { PrismaService } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
 import { ClientsService } from '@clients/clients';
@@ -107,14 +107,10 @@ export class QuotationsService {
     return `This action returns a #${id} quotation`;
   }
 
-  update(id: number, updateQuotationDto: UpdateQuotationDto) {
-    return `This action updates a #${id} quotation ${updateQuotationDto}`;
-  }
-
-  async forceUpdate(
+  async update(
     id: string,
     updateQuotationDto: UpdateQuotationDto,
-    user: UserData,
+    user: UserPayload,
   ) {
     // Si no hay datos que actualizar, salir antes
     if (Object.keys(updateQuotationDto).length === 0) {
@@ -130,6 +126,14 @@ export class QuotationsService {
       const storedQuotation = await prisma.quotation.findUniqueOrThrow({
         where: { id },
       });
+
+      // validate the status is either pending or rejected, otherwise fail
+      // if the quotation status is APPROVED, fail this update
+      if (storedQuotation.status === 'APPROVED') {
+        throw new BadRequestException(
+          'Attempted to edit an APPROVED quotation',
+        );
+      }
 
       // check there are changed fields
       let changesPresent = false;
