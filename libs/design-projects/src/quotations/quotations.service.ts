@@ -1,4 +1,9 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
 import { UpdateQuotationStatusDto } from './dto/update-status.dto';
@@ -99,14 +104,42 @@ export class QuotationsService {
     };
   }
 
+  /**
+   * Obtener todas las cotizaciones
+   * @returns Todas las cotizaciones
+   */
   async findAll(): Promise<Array<Quotation>> {
     return await this.prisma.quotation.findMany();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} quotation`;
+  /**
+   * Buscar una cotizacion por su ID
+   * @param id ID de la cotizacion a buscar
+   * @returns Cotizacion encontrado
+   */
+  async findOne(id: string): Promise<Quotation> {
+    const quotation = await this.prisma.quotation.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (quotation === null) {
+      throw new NotFoundException('Quotation not found');
+    }
+
+    return quotation;
   }
 
+  /**
+   * Actualiza los datos de una cotizacion.
+   * Si el estado de la cotizacion es APPROVED, esta funcion
+   * lanza 400
+   *
+   * @param id ID de la cotizacion a actualizar
+   * @param updateQuotationDto datos a actualizar
+   * @param user usuario que realiza la accion
+   */
   async update(
     id: string,
     updateQuotationDto: UpdateQuotationDto,
@@ -123,9 +156,14 @@ export class QuotationsService {
 
     await this.prisma.$transaction(async (prisma) => {
       // get the current quotation
-      const storedQuotation = await prisma.quotation.findUniqueOrThrow({
+      const storedQuotation = await prisma.quotation.findUnique({
         where: { id },
       });
+
+      // if the quotation doesn's exist, throw
+      if (storedQuotation === null) {
+        throw new NotFoundException('Quotation not found');
+      }
 
       // validate the status is either pending or rejected, otherwise fail
       // if the quotation status is APPROVED, fail this update
@@ -187,7 +225,7 @@ export class QuotationsService {
     const newStatus = updateQuotationStatusDto.newStatus;
 
     await this.prisma.$transaction(async (prisma) => {
-      const currentStatus = await prisma.quotation.findUniqueOrThrow({
+      const currentStatus = await prisma.quotation.findUnique({
         where: {
           id,
         },
@@ -195,6 +233,11 @@ export class QuotationsService {
           status: true,
         },
       });
+
+      // if the quotation doesn's exist, throw
+      if (currentStatus === null) {
+        throw new NotFoundException('Quotation not found');
+      }
 
       if (currentStatus.status === newStatus) {
         // nothing to update, skip
