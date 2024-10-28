@@ -111,6 +111,14 @@ export class QuotationsService {
     return `This action updates a #${id} quotation ${updateQuotationDto}`;
   }
 
+  async forceUpdate(
+    id: string,
+    updateQuotationDto: UpdateQuotationDto,
+    user: UserData,
+  ) {
+    return `This action updates a #${id} quotation ${updateQuotationDto} and user ${user}`;
+  }
+
   async updateStatus(
     id: string,
     updateQuotationStatusDto: UpdateQuotationStatusDto,

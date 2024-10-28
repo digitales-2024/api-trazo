@@ -18,6 +18,7 @@ import {
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { UpdateQuotationDto } from './dto/update-quotation.dto';
 
 @ApiTags('Quotation')
 @Controller({ path: 'quotation', version: '1' })
@@ -45,9 +46,23 @@ export class QuotationsController {
     return this.quotationsService.findOne(+id);
   }
 
+  /**
+   * Updates the quotation, whatever its status is.
+   */
+  @ApiOkResponse({ description: 'Updates this quotation' })
+  @ApiBadRequestResponse({ description: 'Validation error' })
+  @Patch(':id/force')
+  async forceUpdate(
+    @Param('id') id: string,
+    @Body() newStatus: UpdateQuotationDto,
+    @GetUser() user: UserData,
+  ) {
+    return await this.quotationsService.forceUpdate(id, newStatus, user);
+  }
+
   @ApiOkResponse({ description: 'Updates the status of this quotation' })
   @ApiBadRequestResponse({ description: 'A validation error' })
-  @Patch('status/:id')
+  @Patch(':id/status')
   async updateStatus(
     @Param('id') id: string,
     @Body() newStatus: UpdateQuotationStatusDto,
