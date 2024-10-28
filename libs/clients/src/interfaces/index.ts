@@ -1,1 +1,1 @@
-export { ClientData } from './clients.interface';
+export { ClientData, ClientDescriptionData } from './clients.interface';
