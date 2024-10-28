@@ -15,6 +15,7 @@ import { UpdateQuotationStatusDto } from './dto/update-status.dto';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -36,20 +37,24 @@ export class QuotationsController {
     return this.quotationsService.create(createQuotationDto, user);
   }
 
+  @ApiOkResponse({ description: 'Get all quotations' })
   @Get()
   findAll() {
     return this.quotationsService.findAll();
   }
 
+  @ApiOkResponse({ description: 'Get quotation by id' })
+  @ApiNotFoundResponse({ description: 'Quotation not found' })
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.quotationsService.findOne(+id);
+    return this.quotationsService.findOne(id);
   }
 
   /**
    * Updates the quotation, whatever its status is.
    */
   @ApiOkResponse({ description: 'Updates this quotation' })
+  @ApiNotFoundResponse({ description: 'Quotation not found' })
   @ApiBadRequestResponse({
     description: 'Validation error or trying to update an approved quotation',
   })
@@ -63,6 +68,7 @@ export class QuotationsController {
   }
 
   @ApiOkResponse({ description: 'Updates the status of this quotation' })
+  @ApiNotFoundResponse({ description: 'Quotation not found' })
   @ApiBadRequestResponse({ description: 'A validation error' })
   @Patch(':id/status')
   async updateStatus(
