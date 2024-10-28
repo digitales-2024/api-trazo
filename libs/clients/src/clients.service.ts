@@ -480,7 +480,7 @@ export class ClientsService {
             data: {
               action: AuditActionType.DELETE,
               entityId: clientDelete.id,
-              entityType: 'product',
+              entityType: 'client',
               performedById: user.id,
               createdAt: new Date(),
             },
