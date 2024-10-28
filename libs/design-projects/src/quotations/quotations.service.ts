@@ -17,11 +17,13 @@ import { PrismaService } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
 import { ClientsService } from '@clients/clients';
 import { UsersService } from '@login/login/admin/users/users.service';
+import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
 
 // [x] solo el superadmin puede GET todas las cotizaciones
 // [x] el resto de usuarios solo puede ver cotizaciones APPROVED/PENDING
-// [ ] el estado REJECTED de la cotizacion cuenta como eliminado
+// [x] el estado REJECTED de la cotizacion cuenta como eliminado
 // [x] solo se pueden editar cotizaciones PENDING
+// [ ] implementar deactivate/reactivate
 
 @Injectable()
 export class QuotationsService {
@@ -316,7 +318,58 @@ export class QuotationsService {
     };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} quotation`;
+  async removeAll(deleteDto: DeleteQuotationsDto, user: UserData) {
+    await this.prisma.$transaction(async (prisma) => {
+      const quotationToDelete = await prisma.quotation.findMany({
+        where: {
+          id: {
+            in: deleteDto.ids,
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      // If a quotation is not found throw an error
+      const missingQuotationIds = deleteDto.ids.filter((id) => {
+        return quotationToDelete.find((quot) => quot.id === id) === undefined;
+      });
+      if (missingQuotationIds.length !== 0) {
+        throw new BadRequestException(
+          `Quotation with ids ${JSON.stringify(missingQuotationIds)} not found`,
+        );
+      }
+
+      // deactivate all
+      await prisma.quotation.updateMany({
+        where: {
+          id: {
+            in: deleteDto.ids,
+          },
+        },
+        data: {
+          status: 'REJECTED',
+        },
+      });
+
+      // log in audit
+      const now = new Date();
+      const updateRecords = deleteDto.ids.map((quotationId) => ({
+        action: AuditActionType.DELETE,
+        entityId: quotationId,
+        entityType: 'quotation',
+        performedById: user.id,
+        createdAt: now,
+      }));
+      await prisma.audit.createMany({
+        data: updateRecords,
+      });
+    });
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Quotations deactivated successfully',
+    };
   }
 }

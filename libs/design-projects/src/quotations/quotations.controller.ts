@@ -20,6 +20,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
+import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
 
 @ApiTags('Quotation')
 @Controller({ path: 'quotation', version: '1' })
@@ -79,8 +80,14 @@ export class QuotationsController {
     return await this.quotationsService.updateStatus(id, newStatus, user);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.quotationsService.remove(+id);
+  @ApiOkResponse({
+    description: 'Deletes (sets status to REJECTED) the passed quotations',
+  })
+  @Delete('remove/all')
+  deactivate(
+    @Body() deleteDto: DeleteQuotationsDto,
+    @GetUser() user: UserData,
+  ) {
+    return this.quotationsService.removeAll(deleteDto, user);
   }
 }
