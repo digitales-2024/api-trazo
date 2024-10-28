@@ -10,7 +10,7 @@ import {
 import { QuotationsService } from './quotations.service';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
-import { UserData } from '@login/login/interfaces';
+import { UserData, UserPayload } from '@login/login/interfaces';
 import { UpdateQuotationStatusDto } from './dto/update-status.dto';
 import {
   ApiBadRequestResponse,
@@ -18,6 +18,7 @@ import {
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { UpdateQuotationDto } from './dto/update-quotation.dto';
 
 @ApiTags('Quotation')
 @Controller({ path: 'quotation', version: '1' })
@@ -45,9 +46,25 @@ export class QuotationsController {
     return this.quotationsService.findOne(+id);
   }
 
+  /**
+   * Updates the quotation, whatever its status is.
+   */
+  @ApiOkResponse({ description: 'Updates this quotation' })
+  @ApiBadRequestResponse({
+    description: 'Validation error or trying to update an approved quotation',
+  })
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() newStatus: UpdateQuotationDto,
+    @GetUser() user: UserPayload,
+  ) {
+    return await this.quotationsService.update(id, newStatus, user);
+  }
+
   @ApiOkResponse({ description: 'Updates the status of this quotation' })
   @ApiBadRequestResponse({ description: 'A validation error' })
-  @Patch('status/:id')
+  @Patch(':id/status')
   async updateStatus(
     @Param('id') id: string,
     @Body() newStatus: UpdateQuotationStatusDto,
