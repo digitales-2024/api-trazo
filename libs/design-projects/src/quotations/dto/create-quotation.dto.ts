@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { QuotationStatusType } from '@prisma/client';
 import { Transform } from 'class-transformer';
-import { IsIn, IsInt, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsInt, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class CreateQuotationDto {
   @ApiProperty({
@@ -17,6 +16,7 @@ export class CreateQuotationDto {
     name: 'code',
     description: 'Code of the quotation',
     example: 'SGC-P-04-F3',
+    required: false,
   })
   @IsString()
   @IsNotEmpty()
@@ -40,19 +40,6 @@ export class CreateQuotationDto {
   @IsString()
   @IsNotEmpty()
   sellerId: string;
-
-  @ApiProperty({
-    name: 'status',
-    description:
-      'Status to set the quotation to. Can only be PENDING, APPROVED, REJECTED',
-    example: 'PENDING',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @IsIn(['PENDING', 'APPROVED', 'REJECTED'], {
-    message: "newStatus must be either 'PENDING', 'APPROVED' or 'REJECTED'",
-  })
-  status: QuotationStatusType;
 
   @ApiProperty({
     name: 'discount',

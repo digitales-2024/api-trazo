@@ -41,7 +41,6 @@ export class QuotationsService {
       code,
       clientId,
       sellerId,
-      status,
       discount,
       deliveryTime,
       exchangeRate,
@@ -65,7 +64,6 @@ export class QuotationsService {
         data: {
           name,
           code,
-          status,
           // tabla client
           client: {
             connect: {

@@ -183,7 +183,7 @@ model BusinessConfig {
 // Tabla de cotizaciones (Quotation)
 model Quotation {
   id   String @id @unique @default(uuid()) // Clave primaria
-  name String // Nombre del proyecto
+  name String @default("SGC-P-04-F3") // Nombre del proyecto
   code String // Código de la cotizacion.
 
   // Relacion con Client
@@ -194,7 +194,7 @@ model Quotation {
   seller   User   @relation("seller", fields: [sellerId], references: [id])
   sellerId String // Llave foránea a la tabla de usuarios (vendedor)
 
-  status       QuotationStatusType // Estado de la cotización
+  status       QuotationStatusType @default(PENDING) // Estado de la cotización
   discount     Float // Descuento aplicado
   totalAmount  Float               @default(0) // Monto total de la cotización
   deliveryTime Int // Tiempo de entrega en meses
