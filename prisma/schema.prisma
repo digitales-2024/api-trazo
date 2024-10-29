@@ -233,4 +233,7 @@ model Level {
 
   quotation   Quotation @relation("level", fields: [quotationId], references: [id])
   quotationId String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
 }
