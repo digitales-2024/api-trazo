@@ -1,9 +1,8 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateQuotationDto } from './create-quotation.dto';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsInt, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsInt, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { QuotationStatusType } from '@prisma/client';
 
 export class UpdateQuotationDto extends PartialType(CreateQuotationDto) {
   @ApiProperty({
@@ -26,20 +25,6 @@ export class UpdateQuotationDto extends PartialType(CreateQuotationDto) {
   @IsNotEmpty()
   @Transform(({ value }) => value.trim())
   code: string;
-
-  @ApiProperty({
-    name: 'status',
-    description:
-      'Status to set the quotation to. Can only be PENDING, APPROVED, REJECTED',
-    example: 'PENDING',
-    required: false,
-  })
-  @IsString()
-  @IsNotEmpty()
-  @IsIn(['PENDING', 'APPROVED', 'REJECTED'], {
-    message: "newStatus must be either 'PENDING', 'APPROVED' or 'REJECTED'",
-  })
-  status: QuotationStatusType;
 
   @ApiProperty({
     name: 'discount',
@@ -181,7 +166,7 @@ export class UpdateQuotationDto extends PartialType(CreateQuotationDto) {
   sanitaryCost: number;
 
   @ApiProperty({
-    name: 'metrado',
+    name: 'metering',
     description: 'Total area of the project',
     example: 750,
     required: false,
@@ -191,7 +176,7 @@ export class UpdateQuotationDto extends PartialType(CreateQuotationDto) {
       allowNaN: false,
       allowInfinity: false,
     },
-    { message: 'metrado must be a number' },
+    { message: 'metering must be a number' },
   )
-  metrado: number;
+  metering: number;
 }
