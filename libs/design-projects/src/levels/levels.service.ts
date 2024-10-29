@@ -93,6 +93,15 @@ export class LevelsService {
     });
   }
 
+  /**
+   * Actualiza un nivel. Solo es posible actualizar el campo `name`.
+   * Si el nivel pertenece a una cotizacion no editable, devuelve un error
+   *
+   * @param id id del nivel a actualizar
+   * @param updateDto datos a actualizar
+   * @param user usuario que realiza la accion
+   * @returns el nivel tras la eliminacion
+   */
   async update(
     id: string,
     updateDto: UpdateLevelDto,
@@ -109,7 +118,7 @@ export class LevelsService {
 
     const updatedLevel: LevelUpdateData = await this.prisma.$transaction(
       async (prisma) => {
-        const currentLevel = await this.prisma.level.findUnique({
+        const currentLevel = await prisma.level.findUnique({
           where: {
             id,
           },
@@ -170,7 +179,62 @@ export class LevelsService {
     };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} level`;
+  /**
+   * Elimina por completo un nivel, y todos los AmbienteNivel vinculados a este
+   * Si la cotizacion a la que pertenece el nivel no es editable, lanza un error
+   *
+   * @param id id del nivel a eliminar
+   * @param user usuario que realiza la accion
+   */
+  async remove(id: string, user: UserData): Promise<HttpResponse<null>> {
+    await this.prisma.$transaction(async (prisma) => {
+      const currentLevel = await prisma.level.findUnique({
+        where: {
+          id,
+        },
+        select: {
+          quotation: {
+            select: {
+              status: true,
+            },
+          },
+        },
+      });
+
+      if (currentLevel === null) {
+        // nivel no encontrado
+        throw new NotFoundException('Level not found');
+      }
+
+      // if the quotation is not editable, throw
+      if (currentLevel.quotation.status !== 'PENDING') {
+        throw new BadRequestException('Quotation is not editable');
+      }
+
+      // delete all LevelSpace related to this level
+      // TODO: do it when LevelSpace is implemented
+
+      // delete level
+      await prisma.level.delete({
+        where: {
+          id,
+        },
+      });
+
+      // audit
+      await this.audit.create({
+        entityId: id,
+        entityType: 'level',
+        action: AuditActionType.DELETE,
+        performedById: user.id,
+        createdAt: new Date(),
+      });
+    });
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Level deleted successfully',
+      data: null,
+    };
   }
 }

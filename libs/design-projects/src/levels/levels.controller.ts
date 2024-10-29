@@ -45,6 +45,10 @@ export class LevelsController {
   }
 
   @ApiOkResponse({ description: 'Edit a level info' })
+  @ApiNotFoundResponse({ description: 'Level not found' })
+  @ApiBadRequestResponse({
+    description: 'The corresponding quotation is not editable',
+  })
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -57,8 +61,12 @@ export class LevelsController {
   @ApiOkResponse({
     description: 'Completely delete a level, and all its spaces',
   })
+  @ApiNotFoundResponse({ description: 'Level not found' })
+  @ApiBadRequestResponse({
+    description: 'The corresponding quotation is not editable',
+  })
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.levelsService.remove(+id);
+  remove(@Param('id') id: string, @GetUser() user: UserData) {
+    return this.levelsService.remove(id, user);
   }
 }
