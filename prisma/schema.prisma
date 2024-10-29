@@ -214,6 +214,9 @@ model Quotation {
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
+
+  // Relacion con Level
+  levels Level[] @relation("level")
 }
 
 // Estado de una cotizacion
@@ -221,4 +224,16 @@ enum QuotationStatusType {
   PENDING
   APPROVED
   REJECTED
+}
+
+// Nivel (piso) de una cotizacion
+model Level {
+  id   String @id @unique @default(uuid()) // Clave primaria
+  name String // Nombre del nivel. Ejm: "Primer nivel"
+
+  quotation   Quotation @relation("level", fields: [quotationId], references: [id])
+  quotationId String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
 }
