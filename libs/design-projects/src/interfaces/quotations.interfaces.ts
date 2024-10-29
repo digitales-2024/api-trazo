@@ -23,11 +23,6 @@ type ProjectField = {
  * Defines the fields in the payment schema
  */
 export type PaymentSchedule = {
-  /**
-   * Text to the side of the payment schedule.
-   * E.g. "Inicio de diseño\nAprobacion por parte de..."
-   */
-  description: string;
   payments: Array<Payment>;
 };
 
@@ -44,4 +39,9 @@ type Payment = {
    * E.g. 30
    */
   percentage: number;
+  /**
+   * Text to the side of the payment schedule.
+   * E.g. "Inicio de diseño\nAprobacion por parte de..."
+   */
+  description: string;
 };
