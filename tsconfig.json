@@ -47,6 +47,12 @@
       ],
       "@design-projects/design-projects/*": [
         "libs/design-projects/src/*"
+      ],
+      "@sunat-change/sunat-change": [
+        "libs/sunat-change/src"
+      ],
+      "@sunat-change/sunat-change/*": [
+        "libs/sunat-change/src/*"
       ]
     }
   }
