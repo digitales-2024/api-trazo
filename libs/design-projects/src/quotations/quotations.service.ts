@@ -8,12 +8,8 @@ import {
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
 import { UpdateQuotationStatusDto } from './dto/update-status.dto';
-import {
-  AuditActionType,
-  Quotation,
-  QuotationStatusType,
-} from '@prisma/client';
-import { UserData, UserPayload } from '@login/login/interfaces';
+import { AuditActionType, QuotationStatusType } from '@prisma/client';
+import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { PrismaService } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
 import { ClientsService } from '@clients/clients';
@@ -34,8 +30,14 @@ export class QuotationsService {
 
   /**
    * Crea una cotizacion.
+   *
+   * @param createQuotationDto datos con los que crear la cotizacion
+   * @param user usuario que realiza la accion
    */
-  async create(createQuotationDto: CreateQuotationDto, user: UserData) {
+  async create(
+    createQuotationDto: CreateQuotationDto,
+    user: UserData,
+  ): Promise<HttpResponse<undefined>> {
     const {
       name,
       code,
@@ -54,7 +56,6 @@ export class QuotationsService {
       metering,
     } = createQuotationDto;
 
-    // Creates a simple quotation, just for demo purposes
     await this.prisma.$transaction(async (prisma) => {
       // get client and seller via their services
       const sellerUser = await this.usersService.findById(sellerId);
@@ -209,7 +210,7 @@ export class QuotationsService {
    * @param user usuario que realiza la peticion
    * @returns Cotizacion encontrado
    */
-  async findOne(id: string, user: UserData): Promise<Quotation> {
+  async findOne(id: string, user: UserData): Promise<QuotationData> {
     // If the user is a superadmin include all 3 statuses,
     // otherwise hide the REJECTED quotations
     const selectedStatus: QuotationStatusType[] = user.isSuperAdmin
@@ -223,13 +224,68 @@ export class QuotationsService {
           in: selectedStatus,
         },
       },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        status: true,
+        discount: true,
+        totalAmount: true,
+        deliveryTime: true,
+        exchangeRate: true,
+        landArea: true,
+        paymentSchedule: true,
+        integratedProjectDetails: true,
+        architecturalCost: true,
+        structuralCost: true,
+        electricCost: true,
+        sanitaryCost: true,
+        metering: true,
+        client: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        seller: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
     });
 
     if (quotation === null) {
       throw new NotFoundException('Quotation not found');
     }
 
-    return quotation;
+    return {
+      id: quotation.id,
+      name: quotation.name,
+      code: quotation.code,
+      status: quotation.status,
+      discount: quotation.discount,
+      totalAmount: quotation.totalAmount,
+      deliveryTime: quotation.deliveryTime,
+      exchangeRate: quotation.exchangeRate,
+      landArea: quotation.landArea,
+      paymentSchedule: quotation.paymentSchedule,
+      integratedProjectDetails: quotation.integratedProjectDetails,
+      architecturalCost: quotation.architecturalCost,
+      structuralCost: quotation.structuralCost,
+      electricCost: quotation.electricCost,
+      sanitaryCost: quotation.sanitaryCost,
+      metering: quotation.metering,
+      client: {
+        id: quotation.client.id,
+        name: quotation.client.name,
+      },
+      user: {
+        id: quotation.seller.id,
+        name: quotation.seller.name,
+      },
+    };
   }
 
   /**
@@ -245,7 +301,7 @@ export class QuotationsService {
     id: string,
     updateQuotationDto: UpdateQuotationDto,
     user: UserPayload,
-  ) {
+  ): Promise<HttpResponse<undefined>> {
     // Si no hay datos que actualizar, salir antes
     if (Object.keys(updateQuotationDto).length === 0) {
       return {
@@ -320,11 +376,18 @@ export class QuotationsService {
     };
   }
 
+  /**
+   * Actualiza el estado de una cotizacion
+   *
+   * @param id id de la cotizacion a actualizar
+   * @param updateQuotationStatusDto datos a usar en la actualizacion
+   * @param user usuario que realiza la accion
+   */
   async updateStatus(
     id: string,
     updateQuotationStatusDto: UpdateQuotationStatusDto,
     user: UserData,
-  ) {
+  ): Promise<HttpResponse<undefined>> {
     const newStatus = updateQuotationStatusDto.newStatus;
 
     await this.prisma.$transaction(async (prisma) => {
@@ -378,7 +441,18 @@ export class QuotationsService {
     };
   }
 
-  async removeAll(deleteDto: DeleteQuotationsDto, user: UserData) {
+  /**
+   * Desactiva las cotizaciones enviadas (establece su estado en REJECTED).
+   * Si alguna de las cotizaciones no existe, o esta APPROVED
+   * falla.
+   *
+   * @param deleteDto ids de las cotizaciones a desactivar
+   * @param user usuario que realiza la accion
+   */
+  async removeAll(
+    deleteDto: DeleteQuotationsDto,
+    user: UserData,
+  ): Promise<HttpResponse<undefined>> {
     await this.prisma.$transaction(async (prisma) => {
       const quotationToDelete = await prisma.quotation.findMany({
         where: {
@@ -397,9 +471,10 @@ export class QuotationsService {
         return quotationToDelete.find((quot) => quot.id === id) === undefined;
       });
       if (missingQuotationIds.length !== 0) {
-        throw new BadRequestException(
-          `Quotation with ids ${JSON.stringify(missingQuotationIds)} not found`,
+        this.logger.log(
+          `Remove quotation: Quotation with ids ${JSON.stringify(missingQuotationIds)} not found`,
         );
+        throw new BadRequestException('Quotation not found');
       }
 
       // if a quotation is already APPROVED, throw an error
@@ -407,9 +482,10 @@ export class QuotationsService {
         return quotation.status === 'APPROVED';
       });
       if (approvedQuotationIds.length !== 0) {
-        throw new BadRequestException(
-          `Quotation with ids ${JSON.stringify(missingQuotationIds)} are APPROVED and cannot be deleted`,
+        this.logger.log(
+          `Remove quotation: Quotation with ids ${JSON.stringify(missingQuotationIds)} not found`,
         );
+        throw new BadRequestException('Valid quotation not found');
       }
 
       // deactivate all
@@ -441,9 +517,17 @@ export class QuotationsService {
     return {
       statusCode: HttpStatus.OK,
       message: 'Quotations deactivated successfully',
+      data: undefined,
     };
   }
 
+  /**
+   * Reactiva las cotizaciones enviadas (establece su estado en PENDING).
+   * Si alguna de las cotizaciones no existe, o esta APPROVED, falla
+   *
+   * @param reactivateDto ids a reactivar
+   * @param user usuario que realiza la accion
+   */
   async reactivateAll(user: UserData, reactivateDto: DeleteQuotationsDto) {
     await this.prisma.$transaction(async (prisma) => {
       const quotationToReactivate = await prisma.quotation.findMany({
@@ -475,9 +559,10 @@ export class QuotationsService {
         return quotation.status === 'APPROVED';
       });
       if (approvedQuotationIds.length !== 0) {
-        throw new BadRequestException(
+        this.logger.log(
           `Quotation with ids ${JSON.stringify(missingQuotationIds)} are APPROVED and cannot be reactivated`,
         );
+        throw new BadRequestException("Quotations can't be reactivated");
       }
 
       // reactivate all
