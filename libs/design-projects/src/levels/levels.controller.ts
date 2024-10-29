@@ -13,6 +13,8 @@ import { UpdateLevelDto } from './dto/update-level.dto';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
@@ -33,21 +35,24 @@ export class LevelsController {
     return this.levelsService.create(createLevelDto, user);
   }
 
-  @Get()
-  findAll() {
-    return this.levelsService.findAll();
-  }
-
+  @ApiOkResponse({
+    description: 'Get all levels that belong to the passed *quotation* id',
+  })
+  @ApiNotFoundResponse({ description: 'id does not belong to a quotation' })
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.levelsService.findOne(+id);
+  findOne(@Param('id') id: string, @GetUser() user: UserData) {
+    return this.levelsService.findOne(id, user);
   }
 
+  @ApiOkResponse({ description: 'Edit a level info' })
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateLevelDto: UpdateLevelDto) {
     return this.levelsService.update(+id, updateLevelDto);
   }
 
+  @ApiOkResponse({
+    description: 'Completely delete a level, and all its spaces',
+  })
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.levelsService.remove(+id);

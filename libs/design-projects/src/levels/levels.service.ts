@@ -66,12 +66,25 @@ export class LevelsService {
     };
   }
 
-  findAll() {
-    return `This action returns all levels`;
-  }
+  /**
+   * Devuelve todas las cotizaciones vinculadas a la cotización con `id`
+   *
+   * @param id id de la *cotizacion* de la cual obtener sus niveles
+   * @returns la lista de niveles que pertenecen a la *cotizacion* con `id`
+   */
+  async findOne(id: string, user: UserData): Promise<Array<Level>> {
+    // check there is a quotation with the given id
+    await this.quotationService.findOne(id, user);
 
-  findOne(id: number) {
-    return `This action returns a #${id} level`;
+    return await this.prisma.level.findMany({
+      where: {
+        quotation: {
+          is: {
+            id,
+          },
+        },
+      },
+    });
   }
 
   update(id: number, updateLevelDto: UpdateLevelDto) {
