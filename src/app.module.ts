@@ -6,6 +6,7 @@ import { PrismaModule } from '@prisma/prisma';
 import { ClientsModule } from '@clients/clients';
 import { BusinessModule } from '@business/business';
 import { DesignProjectsModule } from '@design-projects/design-projects';
+import { SunatChangeModule } from '@sunat-change/sunat-change';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { DesignProjectsModule } from '@design-projects/design-projects';
     ClientsModule,
     DesignProjectsModule,
     BusinessModule,
+    SunatChangeModule,
   ],
   controllers: [AppController],
   providers: [AppService],
