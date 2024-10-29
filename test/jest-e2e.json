@@ -20,6 +20,8 @@
     "@design-projects/design-projects/(.*)": "<rootDir>/../libs/design-projects/src/$1",
     "@design-projects/design-projects": "<rootDir>/../libs/design-projects/src",
     "@business/business/(.*)": "<rootDir>/../libs/business/src/$1",
-    "@business/business": "<rootDir>/../libs/business/src"
+    "@business/business": "<rootDir>/../libs/business/src",
+    "@sunat-change/sunat-change/(.*)": "<rootDir>/../libs/sunat-change/src/$1",
+    "@sunat-change/sunat-change": "<rootDir>/../libs/sunat-change/src"
   }
 }
