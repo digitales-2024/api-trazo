@@ -1,4 +1,15 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateLevelDto } from './create-level.dto';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
 
-export class UpdateLevelDto extends PartialType(CreateLevelDto) {}
+export class UpdateLevelDto {
+  @ApiProperty({
+    name: 'name',
+    description: 'Name of the level',
+    example: 'Primer nivel',
+    required: false,
+  })
+  @IsString({ message: 'name should be a string' })
+  @Transform(({ value }) => value?.trim?.())
+  name: string;
+}

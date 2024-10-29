@@ -46,8 +46,12 @@ export class LevelsController {
 
   @ApiOkResponse({ description: 'Edit a level info' })
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateLevelDto: UpdateLevelDto) {
-    return this.levelsService.update(+id, updateLevelDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateLevelDto: UpdateLevelDto,
+    @GetUser() user: UserData,
+  ) {
+    return this.levelsService.update(id, updateLevelDto, user);
   }
 
   @ApiOkResponse({

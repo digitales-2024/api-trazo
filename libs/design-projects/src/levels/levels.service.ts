@@ -1,4 +1,9 @@
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateLevelDto } from './dto/create-level.dto';
 import { UpdateLevelDto } from './dto/update-level.dto';
 import { HttpResponse, UserData } from '@login/login/interfaces';
@@ -6,6 +11,7 @@ import { PrismaService } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
 import { QuotationsService } from '../quotations/quotations.service';
 import { AuditActionType, Level } from '@prisma/client';
+import { LevelUpdateData } from '../interfaces/levels.interfaces';
 
 @Injectable()
 export class LevelsService {
@@ -87,8 +93,81 @@ export class LevelsService {
     });
   }
 
-  update(id: number, updateLevelDto: UpdateLevelDto) {
-    return `This action updates a #${id} level ${updateLevelDto}`;
+  async update(
+    id: string,
+    updateDto: UpdateLevelDto,
+    user: UserData,
+  ): Promise<HttpResponse<LevelUpdateData>> {
+    // Si no hay datos que actualizar, salir antes
+    if (!updateDto.name) {
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Level updated successfully',
+        data: undefined,
+      };
+    }
+
+    const updatedLevel: LevelUpdateData = await this.prisma.$transaction(
+      async (prisma) => {
+        const currentLevel = await this.prisma.level.findUnique({
+          where: {
+            id,
+          },
+          select: {
+            name: true,
+            id: true,
+            quotationId: true,
+            quotation: {
+              select: {
+                status: true,
+              },
+            },
+          },
+        });
+
+        if (currentLevel === null) {
+          // nivel no encontrado
+          throw new NotFoundException('Level not found');
+        }
+
+        // if the quotation is not editable, throw
+        if (currentLevel.quotation.status !== 'PENDING') {
+          throw new BadRequestException('Quotation is not editable');
+        }
+
+        if (currentLevel.name === updateDto.name) {
+          // Return early if there is nothing to update
+          return currentLevel;
+        }
+
+        // update
+        const updatedLevel = await prisma.level.update({
+          where: {
+            id,
+          },
+          data: {
+            name: updateDto.name,
+          },
+        });
+
+        // audit
+        await this.audit.create({
+          entityId: updatedLevel.id,
+          entityType: 'level',
+          action: AuditActionType.UPDATE,
+          performedById: user.id,
+          createdAt: new Date(),
+        });
+
+        return updatedLevel;
+      },
+    );
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Level updated successfully',
+      data: updatedLevel,
+    };
   }
 
   remove(id: number) {
