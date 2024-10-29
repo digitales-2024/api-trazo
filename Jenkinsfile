@@ -12,6 +12,7 @@ pipeline {
 		stage('Install') {
 			steps {
 				sh 'npm i'
+				sh 'npx prisma generate dev'
 			}
 		}
 		stage('Validate lint rules') {
