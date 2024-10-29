@@ -8,16 +8,13 @@ import {
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
 import { UpdateQuotationStatusDto } from './dto/update-status.dto';
-import {
-  AuditActionType,
-  Quotation,
-  QuotationStatusType,
-} from '@prisma/client';
-import { UserData, UserPayload } from '@login/login/interfaces';
+import { AuditActionType, QuotationStatusType } from '@prisma/client';
+import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { PrismaService } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
 import { ClientsService } from '@clients/clients';
 import { UsersService } from '@login/login/admin/users/users.service';
+import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
 import { QuotationData } from '@clients/clients/interfaces';
 import { handleException } from '@login/login/utils';
 
@@ -33,14 +30,19 @@ export class QuotationsService {
 
   /**
    * Crea una cotizacion.
+   *
+   * @param createQuotationDto datos con los que crear la cotizacion
+   * @param user usuario que realiza la accion
    */
-  async create(createQuotationDto: CreateQuotationDto, user: UserData) {
+  async create(
+    createQuotationDto: CreateQuotationDto,
+    user: UserData,
+  ): Promise<HttpResponse<undefined>> {
     const {
       name,
       code,
       clientId,
       sellerId,
-      status,
       discount,
       deliveryTime,
       exchangeRate,
@@ -51,10 +53,9 @@ export class QuotationsService {
       structuralCost,
       electricCost,
       sanitaryCost,
-      metrado,
+      metering,
     } = createQuotationDto;
 
-    // Creates a simple quotation, just for demo purposes
     await this.prisma.$transaction(async (prisma) => {
       // get client and seller via their services
       const sellerUser = await this.usersService.findById(sellerId);
@@ -64,7 +65,6 @@ export class QuotationsService {
         data: {
           name,
           code,
-          status,
           // tabla client
           client: {
             connect: {
@@ -88,7 +88,7 @@ export class QuotationsService {
           structuralCost,
           electricCost,
           sanitaryCost,
-          metrado,
+          metering,
         },
         select: {
           id: true,
@@ -114,6 +114,9 @@ export class QuotationsService {
 
   /**
    * Obtener todas las cotizaciones
+   * Incluye las cotizaciones REJECTED solo si el usuario es un superadmin
+   *
+   * @param user usuario que realiza la peticion
    * @returns Todas las cotizaciones
    */
   async findAll(user: UserPayload): Promise<QuotationData[]> {
@@ -147,7 +150,7 @@ export class QuotationsService {
           structuralCost: true,
           electricCost: true,
           sanitaryCost: true,
-          metrado: true,
+          metering: true,
           client: {
             select: {
               id: true,
@@ -183,7 +186,7 @@ export class QuotationsService {
         structuralCost: product.structuralCost,
         electricCost: product.electricCost,
         sanitaryCost: product.sanitaryCost,
-        metrado: product.metrado,
+        metering: product.metering,
         client: {
           id: product.client.id,
           name: product.client.name,
@@ -200,14 +203,56 @@ export class QuotationsService {
   }
 
   /**
-   * Buscar una cotizacion por su ID
+   * Buscar una cotizacion por su ID.
+   * Incluye las cotizaciones REJECTED solo si el usuario es un superadmin
+   *
    * @param id ID de la cotizacion a buscar
+   * @param user usuario que realiza la peticion
    * @returns Cotizacion encontrado
    */
-  async findOne(id: string): Promise<Quotation> {
+  async findOne(id: string, user: UserData): Promise<QuotationData> {
+    // If the user is a superadmin include all 3 statuses,
+    // otherwise hide the REJECTED quotations
+    const selectedStatus: QuotationStatusType[] = user.isSuperAdmin
+      ? ['APPROVED', 'PENDING', 'REJECTED']
+      : ['APPROVED', 'PENDING'];
+
     const quotation = await this.prisma.quotation.findUnique({
       where: {
         id,
+        status: {
+          in: selectedStatus,
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        status: true,
+        discount: true,
+        totalAmount: true,
+        deliveryTime: true,
+        exchangeRate: true,
+        landArea: true,
+        paymentSchedule: true,
+        integratedProjectDetails: true,
+        architecturalCost: true,
+        structuralCost: true,
+        electricCost: true,
+        sanitaryCost: true,
+        metering: true,
+        client: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        seller: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -215,12 +260,37 @@ export class QuotationsService {
       throw new NotFoundException('Quotation not found');
     }
 
-    return quotation;
+    return {
+      id: quotation.id,
+      name: quotation.name,
+      code: quotation.code,
+      status: quotation.status,
+      discount: quotation.discount,
+      totalAmount: quotation.totalAmount,
+      deliveryTime: quotation.deliveryTime,
+      exchangeRate: quotation.exchangeRate,
+      landArea: quotation.landArea,
+      paymentSchedule: quotation.paymentSchedule,
+      integratedProjectDetails: quotation.integratedProjectDetails,
+      architecturalCost: quotation.architecturalCost,
+      structuralCost: quotation.structuralCost,
+      electricCost: quotation.electricCost,
+      sanitaryCost: quotation.sanitaryCost,
+      metering: quotation.metering,
+      client: {
+        id: quotation.client.id,
+        name: quotation.client.name,
+      },
+      user: {
+        id: quotation.seller.id,
+        name: quotation.seller.name,
+      },
+    };
   }
 
   /**
    * Actualiza los datos de una cotizacion.
-   * Si el estado de la cotizacion es APPROVED, esta funcion
+   * Si el estado de la cotizacion es APPROVED o REJECTED, esta funcion
    * lanza 400
    *
    * @param id ID de la cotizacion a actualizar
@@ -231,7 +301,7 @@ export class QuotationsService {
     id: string,
     updateQuotationDto: UpdateQuotationDto,
     user: UserPayload,
-  ) {
+  ): Promise<HttpResponse<undefined>> {
     // Si no hay datos que actualizar, salir antes
     if (Object.keys(updateQuotationDto).length === 0) {
       return {
@@ -252,12 +322,14 @@ export class QuotationsService {
         throw new NotFoundException('Quotation not found');
       }
 
-      // validate the status is either pending or rejected, otherwise fail
-      // if the quotation status is APPROVED, fail this update
+      // If the status is APPROVED or PENDING, throw
       if (storedQuotation.status === 'APPROVED') {
         throw new BadRequestException(
           'Attempted to edit an APPROVED quotation',
         );
+      }
+      if (storedQuotation.status === 'REJECTED') {
+        throw new BadRequestException('Attempted to edit a REJECTED quotation');
       }
 
       // check there are changed fields
@@ -304,11 +376,18 @@ export class QuotationsService {
     };
   }
 
+  /**
+   * Actualiza el estado de una cotizacion
+   *
+   * @param id id de la cotizacion a actualizar
+   * @param updateQuotationStatusDto datos a usar en la actualizacion
+   * @param user usuario que realiza la accion
+   */
   async updateStatus(
     id: string,
     updateQuotationStatusDto: UpdateQuotationStatusDto,
     user: UserData,
-  ) {
+  ): Promise<HttpResponse<undefined>> {
     const newStatus = updateQuotationStatusDto.newStatus;
 
     await this.prisma.$transaction(async (prisma) => {
@@ -362,7 +441,159 @@ export class QuotationsService {
     };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} quotation`;
+  /**
+   * Desactiva las cotizaciones enviadas (establece su estado en REJECTED).
+   * Si alguna de las cotizaciones no existe, o esta APPROVED
+   * falla.
+   *
+   * @param deleteDto ids de las cotizaciones a desactivar
+   * @param user usuario que realiza la accion
+   */
+  async removeAll(
+    deleteDto: DeleteQuotationsDto,
+    user: UserData,
+  ): Promise<HttpResponse<undefined>> {
+    await this.prisma.$transaction(async (prisma) => {
+      const quotationToDelete = await prisma.quotation.findMany({
+        where: {
+          id: {
+            in: deleteDto.ids,
+          },
+        },
+        select: {
+          id: true,
+          status: true,
+        },
+      });
+
+      // If a quotation is not found throw an error
+      const missingQuotationIds = deleteDto.ids.filter((id) => {
+        return quotationToDelete.find((quot) => quot.id === id) === undefined;
+      });
+      if (missingQuotationIds.length !== 0) {
+        this.logger.log(
+          `Remove quotation: Quotation with ids ${JSON.stringify(missingQuotationIds)} not found`,
+        );
+        throw new BadRequestException('Quotation not found');
+      }
+
+      // if a quotation is already APPROVED, throw an error
+      const approvedQuotationIds = quotationToDelete.filter((quotation) => {
+        return quotation.status === 'APPROVED';
+      });
+      if (approvedQuotationIds.length !== 0) {
+        this.logger.log(
+          `Remove quotation: Quotation with ids ${JSON.stringify(missingQuotationIds)} not found`,
+        );
+        throw new BadRequestException('Valid quotation not found');
+      }
+
+      // deactivate all
+      await prisma.quotation.updateMany({
+        where: {
+          id: {
+            in: deleteDto.ids,
+          },
+        },
+        data: {
+          status: 'REJECTED',
+        },
+      });
+
+      // log in audit
+      const now = new Date();
+      const updateRecords = deleteDto.ids.map((quotationId) => ({
+        action: AuditActionType.DELETE,
+        entityId: quotationId,
+        entityType: 'quotation',
+        performedById: user.id,
+        createdAt: now,
+      }));
+      await prisma.audit.createMany({
+        data: updateRecords,
+      });
+    });
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Quotations deactivated successfully',
+      data: undefined,
+    };
+  }
+
+  /**
+   * Reactiva las cotizaciones enviadas (establece su estado en PENDING).
+   * Si alguna de las cotizaciones no existe, o esta APPROVED, falla
+   *
+   * @param reactivateDto ids a reactivar
+   * @param user usuario que realiza la accion
+   */
+  async reactivateAll(user: UserData, reactivateDto: DeleteQuotationsDto) {
+    await this.prisma.$transaction(async (prisma) => {
+      const quotationToReactivate = await prisma.quotation.findMany({
+        where: {
+          id: {
+            in: reactivateDto.ids,
+          },
+        },
+        select: {
+          id: true,
+          status: true,
+        },
+      });
+
+      // If a quotation is not found throw an error
+      const missingQuotationIds = reactivateDto.ids.filter((id) => {
+        return (
+          quotationToReactivate.find((quot) => quot.id === id) === undefined
+        );
+      });
+      if (missingQuotationIds.length !== 0) {
+        throw new BadRequestException(
+          `Quotation with ids ${JSON.stringify(missingQuotationIds)} not found`,
+        );
+      }
+
+      // if a quotation is already APPROVED, throw an error
+      const approvedQuotationIds = quotationToReactivate.filter((quotation) => {
+        return quotation.status === 'APPROVED';
+      });
+      if (approvedQuotationIds.length !== 0) {
+        this.logger.log(
+          `Quotation with ids ${JSON.stringify(missingQuotationIds)} are APPROVED and cannot be reactivated`,
+        );
+        throw new BadRequestException("Quotations can't be reactivated");
+      }
+
+      // reactivate all
+      await prisma.quotation.updateMany({
+        where: {
+          id: {
+            in: reactivateDto.ids,
+          },
+        },
+        data: {
+          status: 'PENDING',
+        },
+      });
+
+      // log in audit
+      const now = new Date();
+      const updateRecords = reactivateDto.ids.map((quotationId) => ({
+        action: AuditActionType.UPDATE,
+        entityId: quotationId,
+        entityType: 'quotation',
+        performedById: user.id,
+        createdAt: now,
+      }));
+      await prisma.audit.createMany({
+        data: updateRecords,
+      });
+    });
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Quotations reactivated successfully',
+    };
   }
 }

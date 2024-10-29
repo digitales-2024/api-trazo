@@ -17,7 +17,7 @@ export type QuotationData = Pick<
   | 'structuralCost'
   | 'electricCost'
   | 'sanitaryCost'
-  | 'metrado'
+  | 'metering'
 > & {
   client: { id: string; name: string };
   user: { id: string; name: string };

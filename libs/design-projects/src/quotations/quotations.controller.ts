@@ -20,6 +20,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
+import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
 import { QuotationData } from '@clients/clients/interfaces';
 
 @ApiTags('Quotation')
@@ -47,8 +48,8 @@ export class QuotationsController {
   @ApiOkResponse({ description: 'Get quotation by id' })
   @ApiNotFoundResponse({ description: 'Quotation not found' })
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.quotationsService.findOne(id);
+  findOne(@Param('id') id: string, @GetUser() user: UserData) {
+    return this.quotationsService.findOne(id, user);
   }
 
   /**
@@ -80,8 +81,29 @@ export class QuotationsController {
     return await this.quotationsService.updateStatus(id, newStatus, user);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.quotationsService.remove(+id);
+  @ApiOkResponse({
+    description: 'Deletes (sets status to REJECTED) the passed quotations',
+  })
+  @ApiBadRequestResponse({
+    description: 'Validation error or ids not found',
+  })
+  @Delete('remove/all')
+  deactivate(
+    @Body() deleteDto: DeleteQuotationsDto,
+    @GetUser() user: UserData,
+  ) {
+    return this.quotationsService.removeAll(deleteDto, user);
+  }
+
+  @ApiOkResponse({ description: 'Reactivates the passed quotatinos' })
+  @ApiBadRequestResponse({
+    description: 'Validation error or ids not found',
+  })
+  @Patch('reactivate/all')
+  reactivateAll(
+    @GetUser() user: UserData,
+    @Body() quotations: DeleteQuotationsDto,
+  ) {
+    return this.quotationsService.reactivateAll(user, quotations);
   }
 }
