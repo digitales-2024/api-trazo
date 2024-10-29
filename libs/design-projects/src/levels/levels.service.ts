@@ -1,11 +1,11 @@
 import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateLevelDto } from './dto/create-level.dto';
 import { UpdateLevelDto } from './dto/update-level.dto';
-import { UserData } from '@login/login/interfaces';
+import { HttpResponse, UserData } from '@login/login/interfaces';
 import { PrismaService } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
 import { QuotationsService } from '../quotations/quotations.service';
-import { AuditActionType } from '@prisma/client';
+import { AuditActionType, Level } from '@prisma/client';
 
 @Injectable()
 export class LevelsService {
@@ -20,11 +20,14 @@ export class LevelsService {
    * @param createLevelDto the data of the level to create
    * @param user the user that performs this action
    */
-  async create(createLevelDto: CreateLevelDto, user: UserData) {
+  async create(
+    createLevelDto: CreateLevelDto,
+    user: UserData,
+  ): Promise<HttpResponse<Level>> {
     const { name, quotationId } = createLevelDto;
-    await this.prisma.$transaction(async (prisma) => {
+    const newLevel = await this.prisma.$transaction(async (prisma) => {
       // verify the passed quotation exists
-      const quotation = await this.quotationService.findOne(quotationId);
+      const quotation = await this.quotationService.findOne(quotationId, user);
 
       // check the quotation is PENDING
       if (quotation.status !== 'PENDING') {
@@ -42,9 +45,6 @@ export class LevelsService {
             },
           },
         },
-        select: {
-          id: true,
-        },
       });
 
       // Registrar la accion en Audit
@@ -55,12 +55,14 @@ export class LevelsService {
         performedById: user.id,
         createdAt: new Date(),
       });
+
+      return newLevel;
     });
 
     return {
       statusCode: HttpStatus.OK,
       message: 'Level created',
-      data: undefined,
+      data: newLevel,
     };
   }
 
