@@ -26,10 +26,10 @@ export class LevelsService {
       // verify the passed quotation exists
       const quotation = await this.quotationService.findOne(quotationId);
 
-      // check the quotation is not APPROVED
-      if (quotation.status === 'APPROVED') {
+      // check the quotation is PENDING
+      if (quotation.status !== 'PENDING') {
         throw new BadRequestException(
-          'Quotation is APPROVED, cannot create a new level',
+          `Quotation is ${quotation.status}, cannot create a new level`,
         );
       }
 
