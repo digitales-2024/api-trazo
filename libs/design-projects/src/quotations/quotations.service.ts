@@ -2,20 +2,28 @@ import {
   BadRequestException,
   HttpStatus,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
 import { UpdateQuotationStatusDto } from './dto/update-status.dto';
-import { AuditActionType, Quotation } from '@prisma/client';
+import {
+  AuditActionType,
+  Quotation,
+  QuotationStatusType,
+} from '@prisma/client';
 import { UserData, UserPayload } from '@login/login/interfaces';
 import { PrismaService } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
 import { ClientsService } from '@clients/clients';
 import { UsersService } from '@login/login/admin/users/users.service';
+import { QuotationData } from '@clients/clients/interfaces';
+import { handleException } from '@login/login/utils';
 
 @Injectable()
 export class QuotationsService {
+  private readonly logger = new Logger(QuotationsService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
@@ -108,8 +116,87 @@ export class QuotationsService {
    * Obtener todas las cotizaciones
    * @returns Todas las cotizaciones
    */
-  async findAll(): Promise<Array<Quotation>> {
-    return await this.prisma.quotation.findMany();
+  async findAll(user: UserPayload): Promise<QuotationData[]> {
+    try {
+      const products = await this.prisma.quotation.findMany({
+        where: {
+          ...(user.isSuperAdmin
+            ? {}
+            : {
+                status: {
+                  in: [
+                    QuotationStatusType.PENDING,
+                    QuotationStatusType.APPROVED,
+                  ],
+                },
+              }), // Filtrar por status solo si no es super admin
+        },
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          status: true,
+          discount: true,
+          totalAmount: true,
+          deliveryTime: true,
+          exchangeRate: true,
+          landArea: true,
+          paymentSchedule: true,
+          integratedProjectDetails: true,
+          architecturalCost: true,
+          structuralCost: true,
+          electricCost: true,
+          sanitaryCost: true,
+          metrado: true,
+          client: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          seller: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+
+      // Mapea los resultados al tipo QuotationData
+      return products.map((product) => ({
+        id: product.id,
+        name: product.name,
+        code: product.code,
+        status: product.status,
+        discount: product.discount,
+        totalAmount: product.totalAmount,
+        deliveryTime: product.deliveryTime,
+        exchangeRate: product.exchangeRate,
+        landArea: product.landArea,
+        paymentSchedule: product.paymentSchedule,
+        integratedProjectDetails: product.integratedProjectDetails,
+        architecturalCost: product.architecturalCost,
+        structuralCost: product.structuralCost,
+        electricCost: product.electricCost,
+        sanitaryCost: product.sanitaryCost,
+        metrado: product.metrado,
+        client: {
+          id: product.client.id,
+          name: product.client.name,
+        },
+        user: {
+          id: product.seller.id,
+          name: product.seller.name,
+        },
+      })) as QuotationData[];
+    } catch (error) {
+      this.logger.error('Error getting all quotations');
+      handleException(error, 'Error getting all quotations');
+    }
   }
 
   /**
