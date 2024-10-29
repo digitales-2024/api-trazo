@@ -28,7 +28,7 @@ model User {
   userRols UserRol[] @relation("UserId")
 
   // Relacion con Quotation
-  userQuotations Quotation[]    @relation("seller")
+  userQuotations Quotation[] @relation("seller")
 
   @@unique([email, isActive])
 }
@@ -141,41 +141,40 @@ enum AuditActionType {
 }
 
 model Client {
-  id         String   @id @unique @default(uuid())
+  id         String  @id @unique @default(uuid())
   name       String
-  rucDni     String   @unique
+  rucDni     String  @unique
   address    String
   province   String
   department String
   phone      String?
-  isActive   Boolean  @default(true)
+  isActive   Boolean @default(true)
 
   // Relacion con Quotation
-  clientQuotations Quotation[]    @relation("client")
-
-  createdAt  DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt  DateTime @updatedAt
-}
-
-// tabla ambientes
-model Spaces {
-  id       String  @id @unique @default(uuid())
-  name     String @unique
-  description String?
-  isActive Boolean  @default(true)
+  clientQuotations Quotation[] @relation("client")
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
 }
 
+// tabla ambientes
+model Spaces {
+  id          String  @id @unique @default(uuid())
+  name        String  @unique
+  description String?
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
 
 model BusinessConfig {
-  id            String          @id @unique @default(uuid())
-  name          String
-  ruc           String
-  address       String
-  legalRepName  String
-  legalRepDni   String
+  id           String @id @unique @default(uuid())
+  name         String
+  ruc          String
+  address      String
+  legalRepName String
+  legalRepDni  String
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
@@ -183,38 +182,38 @@ model BusinessConfig {
 
 // Tabla de cotizaciones (Quotation)
 model Quotation {
-  id                      String @id @unique @default(uuid()) // Clave primaria
-  name                    String                              // Nombre del proyecto
-  code                    String @unique                      // Código especial para cada cotización
+  id   String @id @unique @default(uuid()) // Clave primaria
+  name String // Nombre del proyecto
+  code String // Código de la cotizacion.
 
   // Relacion con Client
-  client                  Client @relation("client", fields: [clientId], references: [id])
-  clientId                String                              // Llave foránea a la tabla de clientes
+  client   Client @relation("client", fields: [clientId], references: [id])
+  clientId String // Llave foránea a la tabla de clientes
 
   // Relacion con User
-  seller                  User @relation("seller", fields: [sellerId], references: [id])
-  sellerId                String                              // Llave foránea a la tabla de usuarios (vendedor)
+  seller   User   @relation("seller", fields: [sellerId], references: [id])
+  sellerId String // Llave foránea a la tabla de usuarios (vendedor)
 
-  status                  QuotationStatusType                 // Estado de la cotización
-  discount                Float                               // Descuento aplicado
-  totalAmount             Float @default(0)                   // Monto total de la cotización
-  deliveryTime            Int                                 // Tiempo de entrega en meses
-  exchangeRate            Float                               // Tasa de cambio
-  landArea                Float                               // Área del terreno en m²
+  status       QuotationStatusType // Estado de la cotización
+  discount     Float // Descuento aplicado
+  totalAmount  Float               @default(0) // Monto total de la cotización
+  deliveryTime Int // Tiempo de entrega en meses
+  exchangeRate Float // Tasa de cambio
+  landArea     Float // Área del terreno en m²
 
-  paymentSchedule         Json                                // Cronograma de pagos (30%, 50%, 20%)
+  paymentSchedule Json // Cronograma de pagos (30%, 50%, 20%)
 
   // Proyecto integral: Planos y detalles de cada área
-  integratedProjectDetails Json                               // JSON con detalles del proyecto integral (descripción, unidad, metraje, costo por m²)
+  integratedProjectDetails Json // JSON con detalles del proyecto integral (descripción, unidad, metraje, costo por m²)
 
-  architecturalCost       Float
-  structuralCost          Float
-  electricCost            Float
-  sanitaryCost            Float
-  metering                 Float                               // Metrado total del proyecto
+  architecturalCost Float
+  structuralCost    Float
+  electricCost      Float
+  sanitaryCost      Float
+  metering          Float // Metrado total del proyecto
 
-  createdAt               DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt               DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
 }
 
 // Estado de una cotizacion

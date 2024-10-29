@@ -6,5 +6,6 @@
 
 */
 -- AlterTable
-ALTER TABLE "Quotation" DROP COLUMN "metrado",
-ADD COLUMN     "metering" DOUBLE PRECISION NOT NULL;
+ALTER TABLE "Quotation" RENAME COLUMN "metrado" TO "metering";
+-- ALTER TABLE "Quotation" DROP COLUMN "metrado",
+-- ADD COLUMN     "metering" DOUBLE PRECISION NOT NULL;
