@@ -16,6 +16,7 @@ import { ClientsService } from '@clients/clients';
 import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
 import { QuotationData } from '@clients/clients/interfaces';
 import { handleException } from '@login/login/utils';
+import { QuotationDataNested } from '@clients/clients/interfaces/quotation.interface';
 
 @Injectable()
 export class QuotationsService {
@@ -192,7 +193,7 @@ export class QuotationsService {
    * @param user usuario que realiza la peticion
    * @returns Cotizacion encontrado
    */
-  async findOne(id: string, user: UserData): Promise<QuotationData> {
+  async findOne(id: string, user: UserData): Promise<QuotationDataNested> {
     // If the user is a superadmin include all 3 statuses,
     // otherwise hide the REJECTED quotations
     const selectedStatus: QuotationStatusType[] = user.isSuperAdmin
@@ -229,6 +230,24 @@ export class QuotationsService {
             name: true,
           },
         },
+        levels: {
+          select: {
+            id: true,
+            name: true,
+            LevelsOnSpaces: {
+              select: {
+                id: true,
+                amount: true,
+                area: true,
+                space: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -257,6 +276,16 @@ export class QuotationsService {
         id: quotation.client.id,
         name: quotation.client.name,
       },
+      levels: quotation.levels.map((level) => ({
+        id: level.id,
+        name: level.name,
+        spaces: level.LevelsOnSpaces.map((space) => ({
+          id: space.id,
+          name: space.space.name,
+          amount: space.amount,
+          area: space.area,
+        })),
+      })),
     };
   }
 
