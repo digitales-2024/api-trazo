@@ -166,6 +166,9 @@ model Spaces {
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
+
+  // relacion muchos-a-muchos con Level
+  LevelsOnSpaces LevelsOnSpaces[]
 }
 
 model BusinessConfig {
@@ -236,4 +239,23 @@ model Level {
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
+
+  // Relacion muchos-a-muchos con Spaces
+  LevelsOnSpaces LevelsOnSpaces[]
+}
+
+model LevelsOnSpaces {
+  id String @id @unique @default(uuid()) // Clave primaria
+
+  amount Int // cantidad de ambientes
+  area   Float // area del ambiente en m2
+
+  level   Level  @relation(fields: [levelId], references: [id])
+  levelId String
+
+  space   Spaces @relation(fields: [spaceId], references: [id])
+  spaceId String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt
 }
