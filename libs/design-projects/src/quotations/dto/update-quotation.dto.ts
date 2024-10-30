@@ -1,10 +1,8 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateQuotationDto } from './create-quotation.dto';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsInt, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 
-export class UpdateQuotationDto extends PartialType(CreateQuotationDto) {
+export class UpdateQuotationDto {
   @ApiProperty({
     name: 'name',
     description: 'Name of the project this quotation belongs to',

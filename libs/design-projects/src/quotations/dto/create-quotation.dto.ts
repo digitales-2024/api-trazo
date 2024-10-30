@@ -1,11 +1,20 @@
+import { CreateLevelFromQuotationDto } from '@design-projects/design-projects/levels/dto/create-level-quotation.dto';
 import { ApiProperty } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsArray,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 
 export class CreateQuotationDto {
   @ApiProperty({
     name: 'name',
     description: 'Name of the project this quotation belongs to',
+    example: 'Nombre del proyecto',
   })
   @IsString()
   @IsNotEmpty()
@@ -19,7 +28,6 @@ export class CreateQuotationDto {
     required: false,
   })
   @IsString()
-  @IsNotEmpty()
   @Transform(({ value }) => value.trim())
   code: string;
 
@@ -27,6 +35,7 @@ export class CreateQuotationDto {
   @ApiProperty({
     name: 'clientId',
     description: 'Id of the person that requests this quotation',
+    example: 'aaaaa-0000-ffff',
   })
   @IsString()
   @IsNotEmpty()
@@ -174,4 +183,17 @@ export class CreateQuotationDto {
     { message: 'metering must be a number' },
   )
   metering: number;
+
+  // levels
+  @ApiProperty({
+    name: 'levels',
+    description:
+      'Array of Levels to create and link with this quotation. If empty, wont create any level',
+    required: false,
+    example: [{ name: 'aaa', spaces: [] }],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateLevelFromQuotationDto)
+  levels: CreateLevelFromQuotationDto[];
 }
