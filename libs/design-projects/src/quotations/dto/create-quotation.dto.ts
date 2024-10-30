@@ -32,15 +32,6 @@ export class CreateQuotationDto {
   @IsNotEmpty()
   clientId: string;
 
-  // Relacion con Client
-  @ApiProperty({
-    name: 'sellerId',
-    description: 'Id of the person that leads this quotation',
-  })
-  @IsString()
-  @IsNotEmpty()
-  sellerId: string;
-
   @ApiProperty({
     name: 'discount',
     description: 'Discount to be applied to the square meter price.',

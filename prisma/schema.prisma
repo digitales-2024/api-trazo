@@ -25,10 +25,8 @@ model User {
   auditsPerformed Audit[] @relation("AuditPerformedBy")
 
   // Relación con UserRol
-  userRols UserRol[] @relation("UserId")
-
-  // Relacion con Quotation
-  userQuotations Quotation[] @relation("seller")
+  userRols  UserRol[]   @relation("UserId")
+  Quotation Quotation[]
 
   @@unique([email, isActive])
 }
@@ -193,10 +191,6 @@ model Quotation {
   client   Client @relation("client", fields: [clientId], references: [id])
   clientId String // Llave foránea a la tabla de clientes
 
-  // Relacion con User
-  seller   User   @relation("seller", fields: [sellerId], references: [id])
-  sellerId String // Llave foránea a la tabla de usuarios (vendedor)
-
   status       QuotationStatusType @default(PENDING) // Estado de la cotización
   discount     Float // Descuento aplicado
   totalAmount  Float               @default(0) // Monto total de la cotización
@@ -220,6 +214,8 @@ model Quotation {
 
   // Relacion con Level
   levels Level[] @relation("level")
+  User   User?   @relation(fields: [userId], references: [id])
+  userId String?
 }
 
 // Estado de una cotizacion

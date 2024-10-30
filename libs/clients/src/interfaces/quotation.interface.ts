@@ -20,5 +20,4 @@ export type QuotationData = Pick<
   | 'metering'
 > & {
   client: { id: string; name: string };
-  user: { id: string; name: string };
 };
