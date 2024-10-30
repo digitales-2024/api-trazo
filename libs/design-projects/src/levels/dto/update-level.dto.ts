@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class UpdateLevelDto {
@@ -9,7 +9,8 @@ export class UpdateLevelDto {
     example: 'Primer nivel',
     required: false,
   })
+  @IsNotEmpty()
   @IsString({ message: 'name should be a string' })
-  @Transform(({ value }) => value?.trim?.())
+  @Transform(({ value }) => value?.trim?.()?.toLowerCase?.())
   name: string;
 }

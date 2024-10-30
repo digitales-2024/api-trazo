@@ -141,7 +141,7 @@ export class LevelsService {
 
         // if the quotation is not editable, throw
         if (currentLevel.quotation.status !== 'PENDING') {
-          throw new BadRequestException('Quotation is not editable');
+          throw new BadRequestException('Cannot update level');
         }
 
         if (currentLevel.name === updateDto.name) {
@@ -208,7 +208,7 @@ export class LevelsService {
 
       // if the quotation is not editable, throw
       if (currentLevel.quotation.status !== 'PENDING') {
-        throw new BadRequestException('Quotation is not editable');
+        throw new BadRequestException('Cannot delete level');
       }
 
       // delete all LevelSpace related to this level
