@@ -25,10 +25,8 @@ model User {
   auditsPerformed Audit[] @relation("AuditPerformedBy")
 
   // Relación con UserRol
-  userRols UserRol[] @relation("UserId")
-
-  // Relacion con Quotation
-  userQuotations Quotation[] @relation("seller")
+  userRols  UserRol[]   @relation("UserId")
+  Quotation Quotation[]
 
   @@unique([email, isActive])
 }
@@ -166,6 +164,9 @@ model Spaces {
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
+
+  // relacion muchos-a-muchos con Level
+  LevelsOnSpaces LevelsOnSpaces[]
 }
 
 model BusinessConfig {
@@ -190,10 +191,6 @@ model Quotation {
   client   Client @relation("client", fields: [clientId], references: [id])
   clientId String // Llave foránea a la tabla de clientes
 
-  // Relacion con User
-  seller   User   @relation("seller", fields: [sellerId], references: [id])
-  sellerId String // Llave foránea a la tabla de usuarios (vendedor)
-
   status       QuotationStatusType @default(PENDING) // Estado de la cotización
   discount     Float // Descuento aplicado
   totalAmount  Float               @default(0) // Monto total de la cotización
@@ -217,6 +214,8 @@ model Quotation {
 
   // Relacion con Level
   levels Level[] @relation("level")
+  User   User?   @relation(fields: [userId], references: [id])
+  userId String?
 }
 
 // Estado de una cotizacion
@@ -236,4 +235,23 @@ model Level {
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
+
+  // Relacion muchos-a-muchos con Spaces
+  LevelsOnSpaces LevelsOnSpaces[]
+}
+
+model LevelsOnSpaces {
+  id String @id @unique @default(uuid()) // Clave primaria
+
+  amount Int // cantidad de ambientes
+  area   Float // area del ambiente en m2
+
+  level   Level  @relation(fields: [levelId], references: [id])
+  levelId String
+
+  space   Spaces @relation(fields: [spaceId], references: [id])
+  spaceId String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt
 }

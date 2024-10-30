@@ -13,7 +13,6 @@ import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { PrismaService } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
 import { ClientsService } from '@clients/clients';
-import { UsersService } from '@login/login/admin/users/users.service';
 import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
 import { QuotationData } from '@clients/clients/interfaces';
 import { handleException } from '@login/login/utils';
@@ -25,11 +24,12 @@ export class QuotationsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly clientService: ClientsService,
-    private readonly usersService: UsersService,
   ) {}
 
   /**
-   * Crea una cotizacion.
+   * Crea una cotizacion y todos sus datos asociados.
+   * Recibe los datos de la cotizacion, niveles y ambientes.
+   * Los crea según el orden necesario, asignando ids correctos
    *
    * @param createQuotationDto datos con los que crear la cotizacion
    * @param user usuario que realiza la accion
@@ -42,7 +42,6 @@ export class QuotationsService {
       name,
       code,
       clientId,
-      sellerId,
       discount,
       deliveryTime,
       exchangeRate,
@@ -57,8 +56,7 @@ export class QuotationsService {
     } = createQuotationDto;
 
     await this.prisma.$transaction(async (prisma) => {
-      // get client and seller via their services
-      const sellerUser = await this.usersService.findById(sellerId);
+      // get client via their services
       const client = await this.clientService.findById(clientId);
 
       const newQuotation = await prisma.quotation.create({
@@ -69,12 +67,6 @@ export class QuotationsService {
           client: {
             connect: {
               id: client.id,
-            },
-          },
-          // tabla user
-          seller: {
-            connect: {
-              id: sellerUser.id,
             },
           },
           totalAmount: 0,
@@ -113,7 +105,7 @@ export class QuotationsService {
   }
 
   /**
-   * Obtener todas las cotizaciones
+   * Obtener todas las cotizaciones, sus niveles y sus ambientes.
    * Incluye las cotizaciones REJECTED solo si el usuario es un superadmin
    *
    * @param user usuario que realiza la peticion
@@ -157,12 +149,6 @@ export class QuotationsService {
               name: true,
             },
           },
-          seller: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
         },
         orderBy: {
           createdAt: 'asc',
@@ -190,10 +176,6 @@ export class QuotationsService {
         client: {
           id: product.client.id,
           name: product.client.name,
-        },
-        user: {
-          id: product.seller.id,
-          name: product.seller.name,
         },
       })) as QuotationData[];
     } catch (error) {
@@ -247,12 +229,6 @@ export class QuotationsService {
             name: true,
           },
         },
-        seller: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
       },
     });
 
@@ -280,10 +256,6 @@ export class QuotationsService {
       client: {
         id: quotation.client.id,
         name: quotation.client.name,
-      },
-      user: {
-        id: quotation.seller.id,
-        name: quotation.seller.name,
       },
     };
   }
