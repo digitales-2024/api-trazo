@@ -30,7 +30,9 @@ export class QuotationsController {
   constructor(private readonly quotationsService: QuotationsService) {}
 
   @ApiCreatedResponse({ description: 'Creates a Quotation' })
-  @ApiBadRequestResponse({ description: 'Validation error' })
+  @ApiBadRequestResponse({
+    description: 'Validation error, duplicate level name',
+  })
   @Post()
   create(
     @Body() createQuotationDto: CreateQuotationDto,

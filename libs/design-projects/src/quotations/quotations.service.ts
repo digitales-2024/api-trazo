@@ -2,6 +2,7 @@ import {
   BadRequestException,
   HttpStatus,
   Injectable,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
@@ -54,12 +55,14 @@ export class QuotationsService {
       electricCost,
       sanitaryCost,
       metering,
+      levels,
     } = createQuotationDto;
 
     await this.prisma.$transaction(async (prisma) => {
       // get client via their services
       const client = await this.clientService.findById(clientId);
 
+      // create the quotation along with its associated levels
       const newQuotation = await prisma.quotation.create({
         data: {
           name,
@@ -82,11 +85,70 @@ export class QuotationsService {
           electricCost,
           sanitaryCost,
           metering,
+          levels: {
+            create: levels.map((levelsObj) => ({
+              name: levelsObj.name,
+            })),
+          },
         },
         select: {
           id: true,
+          levels: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       });
+
+      // if there are levels, create and link their LevelsToSpaces
+      if (levels.length > 0) {
+        // ensure no 2 levels have the same name.
+        // search for any duplicate
+        const duplicateIdx = {};
+        for (const level of levels) {
+          if (duplicateIdx[level.name] !== undefined) {
+            // duplicate found - throw error
+            this.logger.error(
+              `create: tried to create two levels with the same name: ${level.name}`,
+            );
+            throw new BadRequestException('Error creating quotation');
+          }
+          duplicateIdx[level.name] = true;
+        }
+
+        // create a list of LevelsToSpaces to create
+        const levelsToSpaces = [];
+        const storedLevels = newQuotation.levels;
+
+        for (const level of levels) {
+          const levelStored = storedLevels.find((l) => l.name === level.name);
+          if (levelStored === undefined) {
+            this.logger.error(
+              `create: a quotation ${newQuotation.id} child level with name ${level.name} was not found`,
+            );
+            throw new InternalServerErrorException('Error creating quotation');
+          }
+          const levelId = levelStored.id;
+
+          for (const space of level.spaces) {
+            levelsToSpaces.push({
+              amount: space.amount,
+              area: space.area,
+              levelId,
+              spaceId: space.spaceId,
+            });
+          }
+        }
+
+        // create those
+        await prisma.levelsOnSpaces.createMany({
+          data: levelsToSpaces,
+        });
+
+        // continue
+      }
 
       // Registrar la accion en Audit
       await this.audit.create({
