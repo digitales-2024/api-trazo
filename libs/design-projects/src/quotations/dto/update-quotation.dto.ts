@@ -25,6 +25,17 @@ export class UpdateQuotationDto {
   code: string;
 
   @ApiProperty({
+    name: 'description',
+    description: 'Description of the quotation',
+    example: 'Se planifica diseño de una vivienda...',
+    required: false,
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Transform(({ value }) => value.trim())
+  description: string;
+
+  @ApiProperty({
     name: 'discount',
     description: 'Discount to be applied to the square meter price.',
     example: 0.5,

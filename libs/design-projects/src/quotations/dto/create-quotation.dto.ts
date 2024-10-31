@@ -31,6 +31,16 @@ export class CreateQuotationDto {
   @Transform(({ value }) => value.trim())
   code: string;
 
+  @ApiProperty({
+    name: 'description',
+    description: 'Description of the quotation',
+    example: 'Se planifica diseño de una vivienda...',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Transform(({ value }) => value.trim())
+  description: string;
+
   // Relacion con Client
   @ApiProperty({
     name: 'clientId',
