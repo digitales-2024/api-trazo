@@ -43,6 +43,7 @@ export class QuotationsService {
     const {
       name,
       code,
+      description,
       clientId,
       discount,
       deliveryTime,
@@ -91,6 +92,7 @@ export class QuotationsService {
         data: {
           name,
           code,
+          description,
           // tabla client
           client: {
             connect: {
@@ -254,6 +256,7 @@ export class QuotationsService {
           id: true,
           name: true,
           code: true,
+          description: true,
           status: true,
           discount: true,
           totalAmount: true,
@@ -284,6 +287,7 @@ export class QuotationsService {
         id: product.id,
         name: product.name,
         code: product.code,
+        description: product.description,
         status: product.status,
         discount: product.discount,
         totalAmount: product.totalAmount,
@@ -334,6 +338,7 @@ export class QuotationsService {
         id: true,
         name: true,
         code: true,
+        description: true,
         status: true,
         discount: true,
         totalAmount: true,
@@ -382,6 +387,7 @@ export class QuotationsService {
       id: quotation.id,
       name: quotation.name,
       code: quotation.code,
+      description: quotation.description,
       status: quotation.status,
       discount: quotation.discount,
       totalAmount: quotation.totalAmount,
