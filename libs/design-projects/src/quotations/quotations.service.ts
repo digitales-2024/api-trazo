@@ -83,7 +83,7 @@ export class QuotationsService {
         this.logger.error(
           `create: attempted to create with an invalid spaceId`,
         );
-        throw new BadRequestException('Error creating quotaion');
+        throw new NotFoundException('Space not found');
       }
 
       // create the quotation along with its associated levels
