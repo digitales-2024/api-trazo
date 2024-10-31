@@ -190,7 +190,12 @@ export class CreateQuotationDto {
     description:
       'Array of Levels to create and link with this quotation. If empty, wont create any level',
     required: false,
-    example: [{ name: 'aaa', spaces: [] }],
+    example: [
+      {
+        name: 'primer nivel',
+        spaces: [{ amount: 2, area: 25.0, spaceId: 'aaaa-bbbb-ccc' }],
+      },
+    ],
   })
   @IsArray()
   @ValidateNested({ each: true })
