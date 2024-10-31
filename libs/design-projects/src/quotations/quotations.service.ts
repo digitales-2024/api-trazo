@@ -64,9 +64,10 @@ export class QuotationsService {
 
       // validate that all the spaceIds exist
       // get all spaceids
-      const spaceIds = levels.flatMap((level) =>
+      const spaceIdsRepeated = levels.flatMap((level) =>
         level.spaces.map((space) => space.spaceId),
       );
+      const spaceIds = [...new Set(spaceIdsRepeated)];
       // test database
       const spacesDb = await prisma.spaces.findMany({
         where: {
@@ -170,17 +171,53 @@ export class QuotationsService {
           data: levelsToSpaces,
         });
 
+        // get the ids of the levelsOnSpaces just created
+        const levelsOnSpacesIds = await prisma.levelsOnSpaces.findMany({
+          where: {
+            levelId: {
+              in: storedLevels.map((l) => l.id),
+            },
+          },
+          select: { id: true },
+        });
+
+        // insert those in the audit db
+        const now = new Date();
+        await prisma.audit.createMany({
+          data: levelsOnSpacesIds.map((l) => ({
+            entityId: l.id,
+            entityType: 'levelsOnSpaces',
+            action: AuditActionType.CREATE,
+            performedById: user.id,
+            createdAt: now,
+          })),
+        });
+
         // continue
       }
 
-      // TODO: registrar en audit todos los niveles y nivel-ambiente creados
-      // Registrar la accion en Audit
-      await this.audit.create({
-        entityId: newQuotation.id,
-        entityType: 'business',
+      // collect all levels created
+      const now = new Date();
+      const levelsAudits = newQuotation.levels.map((level) => ({
+        entityId: level.id,
+        entityType: 'level',
         action: AuditActionType.CREATE,
         performedById: user.id,
-        createdAt: new Date(),
+        createdAt: now,
+      }));
+
+      // Registar creacion de la cotizacion y sus niveles
+      await prisma.audit.createMany({
+        data: [
+          {
+            entityId: newQuotation.id,
+            entityType: 'quotation',
+            action: AuditActionType.CREATE,
+            performedById: user.id,
+            createdAt: new Date(),
+          },
+          ...levelsAudits,
+        ],
       });
     });
 
