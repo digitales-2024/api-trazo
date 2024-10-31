@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  StreamableFile,
 } from '@nestjs/common';
 import { QuotationsService } from './quotations.service';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
@@ -107,5 +108,10 @@ export class QuotationsController {
     @Body() quotations: DeleteQuotationsDto,
   ) {
     return this.quotationsService.reactivateAll(user, quotations);
+  }
+
+  @Get(':id/pdf')
+  genPdf(): Promise<StreamableFile> {
+    return this.quotationsService.genPdf();
   }
 }

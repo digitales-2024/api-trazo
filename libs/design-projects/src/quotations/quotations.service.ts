@@ -5,6 +5,7 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  StreamableFile,
 } from '@nestjs/common';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
@@ -18,6 +19,8 @@ import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
 import { QuotationData } from '@clients/clients/interfaces';
 import { handleException } from '@login/login/utils';
 import { QuotationDataNested } from '@clients/clients/interfaces/quotation.interface';
+import * as PDF from 'pdfkit';
+import { PassThrough } from 'stream';
 
 @Injectable()
 export class QuotationsService {
@@ -725,5 +728,22 @@ export class QuotationsService {
       statusCode: HttpStatus.OK,
       message: 'Quotations reactivated successfully',
     };
+  }
+
+  async genPdf(): Promise<StreamableFile> {
+    const document = new PDF();
+    const intermediate_stream = new PassThrough();
+
+    document.pipe(intermediate_stream);
+
+    document
+      .fontSize(24)
+      .text(`omg! a pdf file! (it's ${Date.now()} since unix)`);
+
+    document.end();
+    return new StreamableFile(intermediate_stream, {
+      type: 'application/pdf',
+      disposition: 'attachment; filename="cotizacion_demo.pdf"',
+    });
   }
 }
