@@ -212,7 +212,11 @@ export class LevelsService {
       }
 
       // delete all LevelSpace related to this level
-      // TODO: do it when LevelSpace is implemented
+      await prisma.levelsOnSpaces.deleteMany({
+        where: {
+          levelId: id,
+        },
+      });
 
       // delete level
       await prisma.level.delete({

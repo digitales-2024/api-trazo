@@ -2,6 +2,7 @@ import {
   BadRequestException,
   HttpStatus,
   Injectable,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { ClientsService } from '@clients/clients';
 import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
 import { QuotationData } from '@clients/clients/interfaces';
 import { handleException } from '@login/login/utils';
+import { QuotationDataNested } from '@clients/clients/interfaces/quotation.interface';
 
 @Injectable()
 export class QuotationsService {
@@ -53,12 +55,38 @@ export class QuotationsService {
       electricCost,
       sanitaryCost,
       metering,
+      levels,
     } = createQuotationDto;
 
     await this.prisma.$transaction(async (prisma) => {
       // get client via their services
       const client = await this.clientService.findById(clientId);
 
+      // validate that all the spaceIds exist
+      // get all spaceids
+      const spaceIdsRepeated = levels.flatMap((level) =>
+        level.spaces.map((space) => space.spaceId),
+      );
+      const spaceIds = [...new Set(spaceIdsRepeated)];
+      // test database
+      const spacesDb = await prisma.spaces.findMany({
+        where: {
+          id: {
+            in: spaceIds,
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+      if (spacesDb.length !== spaceIds.length) {
+        this.logger.error(
+          `create: attempted to create with an invalid spaceId`,
+        );
+        throw new BadRequestException('Error creating quotaion');
+      }
+
+      // create the quotation along with its associated levels
       const newQuotation = await prisma.quotation.create({
         data: {
           name,
@@ -81,19 +109,115 @@ export class QuotationsService {
           electricCost,
           sanitaryCost,
           metering,
+          levels: {
+            create: levels.map((levelsObj) => ({
+              name: levelsObj.name,
+            })),
+          },
         },
         select: {
           id: true,
+          levels: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       });
 
-      // Registrar la accion en Audit
-      await this.audit.create({
-        entityId: newQuotation.id,
-        entityType: 'business',
+      // if there are levels, create and link their LevelsToSpaces
+      if (levels.length > 0) {
+        // ensure no 2 levels have the same name.
+        // search for any duplicate
+        const duplicateIdx = {};
+        for (const level of levels) {
+          if (duplicateIdx[level.name] !== undefined) {
+            // duplicate found - throw error
+            this.logger.error(
+              `create: tried to create two levels with the same name: ${level.name}`,
+            );
+            throw new BadRequestException('Error creating quotation');
+          }
+          duplicateIdx[level.name] = true;
+        }
+
+        // create a list of LevelsToSpaces to create
+        const levelsToSpaces = [];
+        const storedLevels = newQuotation.levels;
+
+        for (const level of levels) {
+          const levelStored = storedLevels.find((l) => l.name === level.name);
+          if (levelStored === undefined) {
+            this.logger.error(
+              `create: a quotation ${newQuotation.id} child level with name ${level.name} was not found`,
+            );
+            throw new InternalServerErrorException('Error creating quotation');
+          }
+          const levelId = levelStored.id;
+
+          for (const space of level.spaces) {
+            levelsToSpaces.push({
+              amount: space.amount,
+              area: space.area,
+              levelId,
+              spaceId: space.spaceId,
+            });
+          }
+        }
+
+        // create those
+        await prisma.levelsOnSpaces.createMany({
+          data: levelsToSpaces,
+        });
+
+        // get the ids of the levelsOnSpaces just created
+        const levelsOnSpacesIds = await prisma.levelsOnSpaces.findMany({
+          where: {
+            levelId: {
+              in: storedLevels.map((l) => l.id),
+            },
+          },
+          select: { id: true },
+        });
+
+        // insert those in the audit db
+        const now = new Date();
+        await prisma.audit.createMany({
+          data: levelsOnSpacesIds.map((l) => ({
+            entityId: l.id,
+            entityType: 'levelsOnSpaces',
+            action: AuditActionType.CREATE,
+            performedById: user.id,
+            createdAt: now,
+          })),
+        });
+
+        // continue
+      }
+
+      // collect all levels created
+      const now = new Date();
+      const levelsAudits = newQuotation.levels.map((level) => ({
+        entityId: level.id,
+        entityType: 'level',
         action: AuditActionType.CREATE,
         performedById: user.id,
-        createdAt: new Date(),
+        createdAt: now,
+      }));
+
+      // Registar creacion de la cotizacion y sus niveles
+      await prisma.audit.createMany({
+        data: [
+          {
+            entityId: newQuotation.id,
+            entityType: 'quotation',
+            action: AuditActionType.CREATE,
+            performedById: user.id,
+            createdAt: new Date(),
+          },
+          ...levelsAudits,
+        ],
       });
     });
 
@@ -192,7 +316,7 @@ export class QuotationsService {
    * @param user usuario que realiza la peticion
    * @returns Cotizacion encontrado
    */
-  async findOne(id: string, user: UserData): Promise<QuotationData> {
+  async findOne(id: string, user: UserData): Promise<QuotationDataNested> {
     // If the user is a superadmin include all 3 statuses,
     // otherwise hide the REJECTED quotations
     const selectedStatus: QuotationStatusType[] = user.isSuperAdmin
@@ -229,6 +353,24 @@ export class QuotationsService {
             name: true,
           },
         },
+        levels: {
+          select: {
+            id: true,
+            name: true,
+            LevelsOnSpaces: {
+              select: {
+                id: true,
+                amount: true,
+                area: true,
+                space: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -257,6 +399,16 @@ export class QuotationsService {
         id: quotation.client.id,
         name: quotation.client.name,
       },
+      levels: quotation.levels.map((level) => ({
+        id: level.id,
+        name: level.name,
+        spaces: level.LevelsOnSpaces.map((space) => ({
+          id: space.id,
+          name: space.space.name,
+          amount: space.amount,
+          area: space.area,
+        })),
+      })),
     };
   }
 
