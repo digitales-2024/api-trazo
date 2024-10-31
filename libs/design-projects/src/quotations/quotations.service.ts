@@ -62,6 +62,29 @@ export class QuotationsService {
       // get client via their services
       const client = await this.clientService.findById(clientId);
 
+      // validate that all the spaceIds exist
+      // get all spaceids
+      const spaceIds = levels.flatMap((level) =>
+        level.spaces.map((space) => space.spaceId),
+      );
+      // test database
+      const spacesDb = await prisma.spaces.findMany({
+        where: {
+          id: {
+            in: spaceIds,
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+      if (spacesDb.length !== spaceIds.length) {
+        this.logger.error(
+          `create: attempted to create with an invalid spaceId`,
+        );
+        throw new BadRequestException('Error creating quotaion');
+      }
+
       // create the quotation along with its associated levels
       const newQuotation = await prisma.quotation.create({
         data: {
@@ -150,6 +173,7 @@ export class QuotationsService {
         // continue
       }
 
+      // TODO: registrar en audit todos los niveles y nivel-ambiente creados
       // Registrar la accion en Audit
       await this.audit.create({
         entityId: newQuotation.id,

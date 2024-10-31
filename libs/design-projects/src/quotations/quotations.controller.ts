@@ -31,7 +31,7 @@ export class QuotationsController {
 
   @ApiCreatedResponse({ description: 'Creates a Quotation' })
   @ApiBadRequestResponse({
-    description: 'Validation error, duplicate level name',
+    description: 'Validation error, duplicate level name, invalid spaceId',
   })
   @Post()
   create(
