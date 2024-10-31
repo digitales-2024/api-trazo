@@ -183,9 +183,10 @@ model BusinessConfig {
 
 // Tabla de cotizaciones (Quotation)
 model Quotation {
-  id   String @id @unique @default(uuid()) // Clave primaria
-  name String @default("SGC-P-04-F3") // Nombre del proyecto
-  code String // Código de la cotizacion.
+  id          String @id @unique @default(uuid()) // Clave primaria
+  name        String @default("SGC-P-04-F3") // Nombre del proyecto
+  description String @default("") // Descripcion del proyecto. Ejm: "Se planifica diseño de una vivienda multifamiliar..."
+  code        String // Código de la cotizacion.
 
   // Relacion con Client
   client   Client @relation("client", fields: [clientId], references: [id])
