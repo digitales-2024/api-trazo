@@ -20,6 +20,7 @@ import { QuotationData } from '@clients/clients/interfaces';
 import { handleException } from '@login/login/utils';
 import { QuotationDataNested } from '@clients/clients/interfaces/quotation.interface';
 import * as Puppeteer from 'puppeteer';
+import { QuotationTemplate } from './quotations.template';
 
 @Injectable()
 export class QuotationsService {
@@ -28,6 +29,7 @@ export class QuotationsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly clientService: ClientsService,
+    private readonly template: QuotationTemplate,
   ) {}
 
   /**
@@ -730,21 +732,12 @@ export class QuotationsService {
   }
 
   async genPdf(): Promise<StreamableFile> {
-    const pdf_html = `
-<!DOCTYPE html>
-<html>
-<head>
-</head>
-<body>
-<h1>PDF avec Puppeteer :D</h1>
-</body>
-</html>
-`;
+    const pdf_html = this.template.renderPdf();
 
     // Generar el PDF usando Puppeteer
     const browser = await Puppeteer.launch();
     const page = await browser.newPage();
-    await page.setContent(pdf_html);
+    await page.setContent(await pdf_html);
     const pdfBufferUint8Array = await page.pdf({ format: 'A4' });
     await browser.close();
 

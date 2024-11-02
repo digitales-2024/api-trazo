@@ -12,7 +12,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.{ts,tsx}\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -21,12 +21,14 @@
     "prepare": "husky install"
   },
   "lint-staged": {
-    "*.{js,ts}": [
+    "*.{js,ts,tsx}": [
       "eslint --fix",
       "prettier --write"
     ]
   },
   "dependencies": {
+    "@kitajs/html": "^4.2.4",
+    "@kitajs/ts-html-plugin": "^4.1.0",
     "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.2.3",

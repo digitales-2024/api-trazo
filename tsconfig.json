@@ -17,6 +17,9 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
+    "jsx": "react-jsx",
+    "jsxImportSource": "@kitajs/html",
+    "plugins": [{ "name": "@kitajs/ts-html-plugin" }],
     "paths": {
       "@login/login": [
         "libs/login/src"

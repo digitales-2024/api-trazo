@@ -5,11 +5,12 @@ import { AuditModule } from '@login/login/admin/audit/audit.module';
 import { PrismaModule } from '@prisma/prisma';
 import { ClientsModule } from '@clients/clients';
 import { UsersModule } from '@login/login/admin/users/users.module';
+import { QuotationTemplate } from './quotations.template';
 
 @Module({
   imports: [AuditModule, PrismaModule, ClientsModule, UsersModule],
   exports: [QuotationsService],
   controllers: [QuotationsController],
-  providers: [QuotationsService],
+  providers: [QuotationsService, QuotationTemplate],
 })
 export class QuotationsModule {}
