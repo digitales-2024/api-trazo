@@ -23,6 +23,7 @@ import {
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
 import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
 import { QuotationData } from '@clients/clients/interfaces';
+import { QuotationDataNested } from '@clients/clients/interfaces/quotation.interface';
 
 @ApiTags('Quotation')
 @Controller({ path: 'quotation', version: '1' })
@@ -110,8 +111,51 @@ export class QuotationsController {
     return this.quotationsService.reactivateAll(user, quotations);
   }
 
+  @Get(':id/pdflayout')
+  async pdfTemplate(): Promise<string> {
+    const testQuotation: QuotationDataNested = {
+      id: '16eee435-e80f-49d8-a6b7-4ce8fcb36cae',
+      name: 'Proyecto de prueba',
+      code: 'SGC-P-04-F3',
+      description: '',
+      status: 'PENDING',
+      discount: 0.5,
+      totalAmount: 0,
+      deliveryTime: 4,
+      exchangeRate: 3.85,
+      landArea: 250,
+      paymentSchedule: '{}',
+      integratedProjectDetails: '{}',
+      architecturalCost: 3,
+      structuralCost: 3.5,
+      electricCost: 1.5,
+      sanitaryCost: 1.5,
+      metering: 750,
+      client: { id: '1483fb91-0531-4ab5-9c25-bdcd5130e5cc', name: 'aaa' },
+      levels: [
+        {
+          id: '084a581a-2330-4ba2-9234-807d25840a59',
+          name: 'nivel 1',
+          spaces: [
+            {
+              id: '4a5ce796-0ddb-4748-9303-2cf07cc83560',
+              name: 'biblioteca',
+              amount: 1,
+              area: 15,
+            },
+          ],
+        },
+      ],
+    };
+
+    return await this.quotationsService.genPdfTemplate(testQuotation);
+  }
+
   @Get(':id/pdf')
-  genPdf(): Promise<StreamableFile> {
-    return this.quotationsService.genPdf();
+  genPdf(
+    @Param('id') id: string,
+    @GetUser() user: UserData,
+  ): Promise<StreamableFile> {
+    return this.quotationsService.genPdf(id, user);
   }
 }

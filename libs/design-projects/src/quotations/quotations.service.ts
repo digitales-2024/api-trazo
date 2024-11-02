@@ -731,8 +731,12 @@ export class QuotationsService {
     };
   }
 
-  async genPdf(): Promise<StreamableFile> {
-    const pdf_html = this.template.renderPdf();
+  async genPdf(id: string, user: UserData): Promise<StreamableFile> {
+    // Get the quotation
+    const quotation = await this.findOne(id, user);
+
+    // Render the quotation into HTML
+    const pdf_html = this.template.renderPdf(quotation);
 
     // Generar el PDF usando Puppeteer
     const browser = await Puppeteer.launch();
@@ -745,5 +749,9 @@ export class QuotationsService {
       type: 'application/pdf',
       disposition: 'attachment; filename="cotizacion_demo_2.pdf"',
     });
+  }
+
+  async genPdfTemplate(quot: QuotationDataNested): Promise<string> {
+    return this.template.renderPdf(quot);
   }
 }
