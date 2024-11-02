@@ -11,10 +11,18 @@ export class ChangeService {
   private readonly historyFilePath = 'history-change.json';
   private readonly changeUrl = process.env.CHANGE_SUNAT;
 
+  /**
+   *  funcuion para obtener el tipo de cambio cada 12 horas
+   * Constructor de la clase
+   */
   constructor() {
     this.scheduleDataFetch();
   }
 
+  /**
+   * Obtiene los datos de la URL y los registra en el historial
+   * @returns Datos obtenidos de la URL
+   */
   async fetchData(): Promise<HistoryChanges> {
     try {
       const response = await axios.get(this.changeUrl);
@@ -23,24 +31,6 @@ export class ChangeService {
 
       // Obtener la hora actual de Perú
       const hora = moment().tz('America/Lima').format('HH:mm');
-
-      // Verificar si los datos están vacíos
-      if (!fecha || !cambio || !venta) {
-        this.logger.warn(
-          'Datos incompletos recibidos de la URL, creando objeto vacío',
-        );
-        const emptyData: HistoryChanges = {
-          hora: '',
-          fecha: '',
-          cambio: '',
-          venta: '',
-        };
-        return emptyData;
-      }
-
-      this.logger.log(
-        `Hora: ${hora}, Fecha: ${fecha}, Compra: ${cambio}, Venta: ${venta}`,
-      );
 
       // Actualizar el historial con los nuevos datos
       await this.updateHistory({ hora, fecha, cambio, venta });
@@ -51,6 +41,31 @@ export class ChangeService {
     }
   }
 
+  /**
+   * Obtiene los datos de la URL sin actualizar el historial
+   * @returns Datos obtenidos de la URL
+   */
+  async dataUrl(): Promise<HistoryChanges> {
+    try {
+      const response = await axios.get(this.changeUrl);
+      const data = response.data.trim().split('|');
+      const [fecha, cambio, venta] = data;
+
+      // Obtener la hora actual de Perú
+      const hora = moment().tz('America/Lima').format('HH:mm');
+
+      return { hora, fecha, cambio, venta };
+    } catch (error) {
+      this.logger.error('Error al obtener los datos', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Actualiza el historial con el nuevo dato
+   * @param nuevaEntrada Datos a registrar en el historial
+   * @returns Historial actualizado
+   */
   async updateHistory(nuevaEntrada: HistoryChanges): Promise<HistoryChanges[]> {
     try {
       let history: HistoryChanges[] = [];
@@ -69,12 +84,26 @@ export class ChangeService {
       const data = fs.readFileSync(this.historyFilePath, 'utf8');
       history = JSON.parse(data).historyChages || [];
 
-      // Limitar el historial a un máximo de 2 registros
-      if (history.length >= 2) {
-        history.shift(); // Eliminar el primer registro
+      // Validar que el nuevo dato no sea vacío o nulo
+      if (
+        !nuevaEntrada.hora ||
+        !nuevaEntrada.fecha ||
+        !nuevaEntrada.cambio ||
+        !nuevaEntrada.venta
+      ) {
+        return history;
       }
 
-      history.push(nuevaEntrada); // Agregar el nuevo dato al final
+      // Validar la actualización del historial
+      if (history.length > 0) {
+        // Si hay registros y la hora es la misma que la del nuevo dato, no registrar nada
+        if (history[history.length - 1].hora === nuevaEntrada.hora) {
+          return history;
+        }
+      }
+
+      // Limitar el historial a un máximo de 2 registros
+      history = [nuevaEntrada, nuevaEntrada];
 
       // Guardar el historial actualizado en el archivo JSON
       const dataToSave = { historyChages: history };
@@ -91,10 +120,14 @@ export class ChangeService {
     }
   }
 
+  /**
+   * Lee el historial de cambios
+   * @returns Historial de cambios
+   */
   readHistory(): HistoryChanges[] {
     try {
       if (!fs.existsSync(this.historyFilePath)) {
-        throw new Error('El archivo history-change.json no existe');
+        throw new Error('El history-change no existe');
       }
       const data = fs.readFileSync(this.historyFilePath, 'utf8');
       return JSON.parse(data).historyChages || [];
@@ -103,65 +136,89 @@ export class ChangeService {
       throw error;
     }
   }
+  /**
+   * funcion para validar si existe el archivo JSON
+   * @returns true si existe, false si no existe
+   */
+  readArchJson(): boolean {
+    try {
+      if (fs.existsSync(this.historyFilePath)) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      this.logger.error('Error al verificar el archivo JSON', error);
+      return false;
+    }
+  }
 
+  /**
+   * Obtiene el último registro válido del historial
+   * @returns Último registro válido
+   */
   getLastValidEntry(): HistoryChanges | null {
     try {
       const history = this.readHistory();
 
-      // Verificar si hay al menos un registro
-      if (history.length === 0) {
-        return null;
-      }
+      // Obtener el registro backap
+      const lastEntry = history[history.length - 0];
 
-      // Obtener el último registro
-      const lastEntry = history[history.length - 1];
-
-      // Verificar si el último registro está vacío
-      if (!lastEntry.cambio || !lastEntry.venta) {
-        // Si el último registro está vacío, devolver el registro anterior
-        if (history.length > 1) {
-          return history[history.length - 2];
-        } else {
-          return null; // No hay registros válidos
-        }
-      }
-
-      // Devolver el último registro si no está vacío
+      // Devolver el registro backap
       return lastEntry;
     } catch (error) {
-      this.logger.error('Error al obtener el último registro válido', error);
+      this.logger.error('Error al obtener el backap ', error);
       throw error;
     }
   }
 
+  /**
+   * Programa la tarea de obtención de datos
+   */
   scheduleDataFetch() {
-    // Programar la tarea para ejecutarse cada 12 horas a partir de las 00:00
+    // Programar la tarea para ejecutarse cada 30 segundos
     cron.schedule('0 0,12 * * *', () => {
       this.logger.log('Obteniendo datos de la SUNAT...');
       this.fetchData();
     });
   }
 
+  /**
+   * Obtiene todos los registros
+   * @returns venta, tipo de cambio actual
+   */
   async findAll() {
     try {
+      // Verificar si el archivo existe
+      const fileExists = this.readArchJson();
+      if (!fileExists) {
+        // Si el archivo no existe, obtener y registrar los datos inmediatamente
+        await this.fetchData();
+      }
+
       // Obtener el dato de la última fecha registrada en el historial
       const lastEntry = this.getLastValidEntry();
-      // Obtener el dato de la última fecha que devuelve la URL
-      const changeData = await this.fetchData();
+      // Obtener el dato de la última fecha que devuelve la URL sin actualizar el historial
+      const changeData = await this.dataUrl();
 
-      // Comparar las fechas y horas de ambos datos
+      // Validar el dato 'venta' de ambos datos
       if (lastEntry) {
-        const lastEntryDate = new Date(`${lastEntry.fecha} ${lastEntry.hora}`);
-        const changeDataDate = new Date(
-          `${changeData.fecha} ${changeData.hora}`,
-        );
+        const lastEntryVenta = lastEntry.venta;
+        const changeDataVenta = changeData.venta;
 
-        if (changeDataDate > lastEntryDate) {
-          return changeData.venta;
+        // Comparar los datos 'venta'
+        if (!changeDataVenta || changeDataVenta === '') {
+          // Si el dato 'venta' de la URL es nulo o vacío, devolver el del historial
+          return lastEntryVenta;
+        } else if (changeDataVenta !== lastEntryVenta) {
+          // Si los datos 'venta' son distintos, devolver el de la URL
+          return changeDataVenta;
         } else {
-          return lastEntry.venta;
+          // Si los datos 'venta' son iguales, devolver el del historial
+          return lastEntryVenta;
         }
       } else {
+        // Si no hay datos en el historial, devolver el dato de la URL
         return changeData.venta;
       }
     } catch (error) {
@@ -169,6 +226,4 @@ export class ChangeService {
       throw error;
     }
   }
-  /*   console.log(changeData);
-  console.log(lastEntry); */
 }
