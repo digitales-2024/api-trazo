@@ -8,6 +8,7 @@ import { UsersModule } from '@login/login/admin/users/users.module';
 
 @Module({
   imports: [AuditModule, PrismaModule, ClientsModule, UsersModule],
+  exports: [QuotationsService],
   controllers: [QuotationsController],
   providers: [QuotationsService],
 })

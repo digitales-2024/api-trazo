@@ -1,12 +1,20 @@
+import { CreateLevelFromQuotationDto } from '@design-projects/design-projects/levels/dto/create-level-quotation.dto';
 import { ApiProperty } from '@nestjs/swagger';
-import { QuotationStatusType } from '@prisma/client';
-import { Transform } from 'class-transformer';
-import { IsIn, IsInt, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsArray,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 
 export class CreateQuotationDto {
   @ApiProperty({
     name: 'name',
     description: 'Name of the project this quotation belongs to',
+    example: 'Nombre del proyecto',
   })
   @IsString()
   @IsNotEmpty()
@@ -17,42 +25,31 @@ export class CreateQuotationDto {
     name: 'code',
     description: 'Code of the quotation',
     example: 'SGC-P-04-F3',
+    required: false,
+  })
+  @IsString()
+  @Transform(({ value }) => value.trim())
+  code: string;
+
+  @ApiProperty({
+    name: 'description',
+    description: 'Description of the quotation',
+    example: 'Se planifica diseño de una vivienda...',
   })
   @IsString()
   @IsNotEmpty()
   @Transform(({ value }) => value.trim())
-  code: string;
+  description: string;
 
   // Relacion con Client
   @ApiProperty({
     name: 'clientId',
     description: 'Id of the person that requests this quotation',
+    example: 'aaaaa-0000-ffff',
   })
   @IsString()
   @IsNotEmpty()
   clientId: string;
-
-  // Relacion con Client
-  @ApiProperty({
-    name: 'sellerId',
-    description: 'Id of the person that leads this quotation',
-  })
-  @IsString()
-  @IsNotEmpty()
-  sellerId: string;
-
-  @ApiProperty({
-    name: 'status',
-    description:
-      'Status to set the quotation to. Can only be PENDING, APPROVED, REJECTED',
-    example: 'PENDING',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @IsIn(['PENDING', 'APPROVED', 'REJECTED'], {
-    message: "newStatus must be either 'PENDING', 'APPROVED' or 'REJECTED'",
-  })
-  status: QuotationStatusType;
 
   @ApiProperty({
     name: 'discount',
@@ -184,7 +181,7 @@ export class CreateQuotationDto {
   sanitaryCost: number;
 
   @ApiProperty({
-    name: 'metrado',
+    name: 'metering',
     description: 'Total area of the project',
     example: 750,
   })
@@ -193,7 +190,25 @@ export class CreateQuotationDto {
       allowNaN: false,
       allowInfinity: false,
     },
-    { message: 'metrado must be a number' },
+    { message: 'metering must be a number' },
   )
-  metrado: number;
+  metering: number;
+
+  // levels
+  @ApiProperty({
+    name: 'levels',
+    description:
+      'Array of Levels to create and link with this quotation. If empty, wont create any level',
+    required: false,
+    example: [
+      {
+        name: 'primer nivel',
+        spaces: [{ amount: 2, area: 25.0, spaceId: 'aaaa-bbbb-ccc' }],
+      },
+    ],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateLevelFromQuotationDto)
+  levels: CreateLevelFromQuotationDto[];
 }
