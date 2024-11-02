@@ -26,7 +26,6 @@ model User {
 
   // Relación con UserRol
   userRols  UserRol[]   @relation("UserId")
-  Quotation Quotation[]
 
   @@unique([email, isActive])
 }
@@ -215,8 +214,6 @@ model Quotation {
 
   // Relacion con Level
   levels Level[] @relation("level")
-  User   User?   @relation(fields: [userId], references: [id])
-  userId String?
 }
 
 // Estado de una cotizacion

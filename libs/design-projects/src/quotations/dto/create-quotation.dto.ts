@@ -2,6 +2,7 @@ import { CreateLevelFromQuotationDto } from '@design-projects/design-projects/le
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
+  ArrayNotEmpty,
   IsArray,
   IsInt,
   IsNotEmpty,
@@ -104,25 +105,23 @@ export class CreateQuotationDto {
   @ApiProperty({
     name: 'paymentSchedule',
     description:
-      'Schedule that dictates how many and when payments are made. Stored as a JSON.',
-    example: '{}',
+      'Array of JSON objects that dictate how many and when payments are made.',
+    example: '[{}]',
   })
-  @IsString()
-  @IsNotEmpty()
-  @Transform(({ value }) => value.trim())
-  paymentSchedule: string;
+  @IsArray()
+  @ArrayNotEmpty()
+  paymentSchedule: string[];
 
   // Proyecto integral: Planos y detalles de cada área
   @ApiProperty({
     name: 'integratedProjectDetails',
     description:
-      'JSON object that defines the integrated project and its fields.',
-    example: '{}',
+      'Array of JSON objects that define the integrated project and its fields.',
+    example: '[{}]',
   })
-  @IsString()
-  @IsNotEmpty()
-  @Transform(({ value }) => value.trim())
-  integratedProjectDetails: string;
+  @IsArray()
+  @ArrayNotEmpty()
+  integratedProjectDetails: string[];
 
   @ApiProperty({
     name: 'architecturalCost',
