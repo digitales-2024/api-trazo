@@ -19,8 +19,7 @@ import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
 import { QuotationData } from '@clients/clients/interfaces';
 import { handleException } from '@login/login/utils';
 import { QuotationDataNested } from '@clients/clients/interfaces/quotation.interface';
-import * as PDF from 'pdfkit';
-import { PassThrough } from 'stream';
+import * as Puppeteer from 'puppeteer';
 
 @Injectable()
 export class QuotationsService {
@@ -731,19 +730,27 @@ export class QuotationsService {
   }
 
   async genPdf(): Promise<StreamableFile> {
-    const document = new PDF();
-    const intermediate_stream = new PassThrough();
+    const pdf_html = `
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+<h1>PDF avec Puppeteer :D</h1>
+</body>
+</html>
+`;
 
-    document.pipe(intermediate_stream);
+    // Generar el PDF usando Puppeteer
+    const browser = await Puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(pdf_html);
+    const pdfBufferUint8Array = await page.pdf({ format: 'A4' });
+    await browser.close();
 
-    document
-      .fontSize(24)
-      .text(`omg! a pdf file! (it's ${Date.now()} since unix)`);
-
-    document.end();
-    return new StreamableFile(intermediate_stream, {
+    return new StreamableFile(pdfBufferUint8Array, {
       type: 'application/pdf',
-      disposition: 'attachment; filename="cotizacion_demo.pdf"',
+      disposition: 'attachment; filename="cotizacion_demo_2.pdf"',
     });
   }
 }

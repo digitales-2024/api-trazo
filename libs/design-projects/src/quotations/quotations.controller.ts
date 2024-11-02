@@ -98,7 +98,7 @@ export class QuotationsController {
     return this.quotationsService.removeAll(deleteDto, user);
   }
 
-  @ApiOkResponse({ description: 'Reactivates the passed quotatinos' })
+  @ApiOkResponse({ description: 'Reactivates the passed quotations' })
   @ApiBadRequestResponse({
     description: 'Validation error or ids not found',
   })
