@@ -43,28 +43,7 @@ export class QuotationTemplate {
             quotationVersion={quotationVersion}
             quotationCreatedAt={quotation.createdAt}
           />
-          <div class="py-4 grid grid-cols-[5fr_2fr] text-sm">
-            <div>
-              <span class="font-bold uppercase">Proyecto:&nbsp;</span>
-              <span safe>{quotation.name}</span>
-              <br />
-              <span class="font-bold uppercase">Propietario:&nbsp;</span>
-              <span safe>{quotation.client.name}</span>
-            </div>
-            <div>
-              <span class="font-bold uppercase">
-                Fecha de cotización:&nbsp;
-              </span>
-              <span safe>{QuotationTemplate.formatDate(new Date())}</span>
-              <br />
-              <span class="font-bold uppercase">Plazo de propuesta:&nbsp;</span>
-              <span>{quotation.deliveryTime} dias</span>
-            </div>
-          </div>
-          <p>HTML rendered with JSX on the server</p>
-          <p class="font-black" safe>
-            Cotizacion {quotation.name}
-          </p>
+          <QuotationTemplate.datosProyecto quotation={quotation} />
         </div>
       </QuotationTemplate.Skeleton>
     );
@@ -100,6 +79,51 @@ export class QuotationTemplate {
           <div>2</div>
         </div>
       </header>
+    );
+  }
+
+  private static datosProyecto({
+    quotation,
+  }: {
+    quotation: QuotationDataNested;
+  }) {
+    return (
+      <>
+        <div class="py-4 grid grid-cols-[5fr_2fr]">
+          <div>
+            <span class="font-bold uppercase">Proyecto:&nbsp;</span>
+            <span safe>{quotation.name}</span>
+            <br />
+            <span class="font-bold uppercase">Propietario:&nbsp;</span>
+            <span class="font-bold" safe>
+              {quotation.client.name}
+            </span>
+          </div>
+          <div>
+            <span class="font-bold uppercase">Fecha de cotización:&nbsp;</span>
+            <span safe>{QuotationTemplate.formatDate(new Date())}</span>
+            <br />
+            <span class="font-bold uppercase">Plazo de propuesta:&nbsp;</span>
+            <span>{quotation.deliveryTime} dias</span>
+          </div>
+        </div>
+        <div class="text-sm">
+          <span class="font-bold uppercase">Levantamiento</span>
+          <br />
+          <div class="grid grid-cols-[1fr_2fr]">
+            <span class="uppercase">
+              Área del terreno:&nbsp;&emsp;&emsp;&emsp;
+            </span>
+            <span class="font-bold">{quotation.landArea} m2</span>
+            <span class="uppercase">
+              Descripción del proyecto:&nbsp;&emsp;&emsp;&emsp;
+            </span>
+            <span class="uppercase" safe>
+              {quotation.description}
+            </span>
+          </div>
+        </div>
+      </>
     );
   }
 

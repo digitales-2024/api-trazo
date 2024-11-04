@@ -117,7 +117,8 @@ export class QuotationsController {
       id: '16eee435-e80f-49d8-a6b7-4ce8fcb36cae',
       name: 'Proyecto de prueba',
       code: 'SGC-P-04-F5',
-      description: '',
+      description:
+        'Se planifica diseño de una vivienda multifamiliar con condiciones programaticas entregadas por el propietario',
       status: 'PENDING',
       discount: 0.5,
       totalAmount: 0,
