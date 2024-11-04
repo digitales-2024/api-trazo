@@ -1,4 +1,7 @@
-import { QuotationDataNested } from '@clients/clients/interfaces/quotation.interface';
+import {
+  LevelData,
+  QuotationDataNested,
+} from '@clients/clients/interfaces/quotation.interface';
 import { Injectable } from '@nestjs/common';
 import * as Fs from 'fs';
 import * as Path from 'path';
@@ -44,6 +47,7 @@ export class QuotationTemplate {
             quotationCreatedAt={quotation.createdAt}
           />
           <QuotationTemplate.datosProyecto quotation={quotation} />
+          <QuotationTemplate.levelsContainer quotation={quotation} />
         </div>
       </QuotationTemplate.Skeleton>
     );
@@ -123,6 +127,53 @@ export class QuotationTemplate {
             </span>
           </div>
         </div>
+      </>
+    );
+  }
+
+  private static levelsContainer(props: { quotation: QuotationDataNested }) {
+    const levelElements = props.quotation.levels.map((level) => (
+      <QuotationTemplate.levelElement level={level} />
+    ));
+
+    return (
+      <div class="grid grid-cols-[4fr_6fr_2fr_1fr] py-12 gap-y-8">
+        {levelElements}
+      </div>
+    );
+  }
+
+  private static levelElement(props: { level: LevelData }) {
+    let levelArea = 0;
+    for (const space of props.level.spaces) {
+      levelArea += space.area;
+    }
+    const levelAreaStr = (Math.round(levelArea * 100) / 100).toFixed(2);
+
+    const spaceElements = props.level.spaces.map((space) => (
+      <div class="grid grid-cols-[auto_5rem]">
+        <div>
+          {space.amount}&nbsp;
+          <span class="uppercase" safe>
+            {space.name}
+          </span>
+        </div>
+        <span class="inline-block text-right" safe>
+          {(Math.round(space.area * 100) / 100).toFixed(2)}
+        </span>
+      </div>
+    ));
+
+    return (
+      <>
+        <span class="uppercase" safe>
+          {props.level.name}
+        </span>
+        <div>{spaceElements}</div>
+        <span class="font-bold flex items-end justify-center" safe>
+          {levelAreaStr}
+        </span>
+        <span class="flex items-end justify-center">m2</span>
       </>
     );
   }

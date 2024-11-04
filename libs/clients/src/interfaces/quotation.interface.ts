@@ -50,7 +50,7 @@ export type QuotationDataNested = Pick<
   levels: Array<LevelData>;
 };
 
-type LevelData = {
+export type LevelData = {
   id: string;
   name: string;
   spaces: Array<SpaceData>;
