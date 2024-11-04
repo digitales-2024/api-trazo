@@ -1,14 +1,21 @@
 import { QuotationDataNested } from '@clients/clients/interfaces/quotation.interface';
 import { Injectable } from '@nestjs/common';
+import * as Fs from 'fs';
+import * as Path from 'path';
 
 Injectable();
 export class QuotationTemplate {
   private static Skeleton({ children }: { children: JSX.Element }) {
+    // TODO: On production, compile and include the css file only once
+    const tailwindFile = Fs.readFileSync(
+      Path.join(process.cwd(), 'static', 'tailwind-output.css'),
+    ).toString();
+
     return (
       <>
         {'<!DOCTYPE html>'}
         <head>
-          <style safe>{QuotationTemplate.normalizeCss}</style>
+          <style safe>{tailwindFile}</style>
         </head>
         <body style="width: 297mm;">{children}</body>
       </>
@@ -22,6 +29,7 @@ export class QuotationTemplate {
     return (
       <QuotationTemplate.Skeleton>
         <div>
+          <span>text</span>
           <p>HTML rendered with JSX on the server</p>
           <p safe>{quotation.name}</p>
         </div>
