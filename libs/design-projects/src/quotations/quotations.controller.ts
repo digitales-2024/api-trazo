@@ -131,6 +131,7 @@ export class QuotationsController {
       electricCost: 1.5,
       sanitaryCost: 1.5,
       metering: 750,
+      createdAt: new Date('2023-12-02'),
       client: { id: '1483fb91-0531-4ab5-9c25-bdcd5130e5cc', name: 'aaa' },
       levels: [
         {

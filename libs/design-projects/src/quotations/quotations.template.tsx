@@ -41,8 +41,26 @@ export class QuotationTemplate {
           <QuotationTemplate.header
             quotationCode={quotation.code}
             quotationVersion={quotationVersion}
+            quotationCreatedAt={quotation.createdAt}
           />
-          <span>text</span>
+          <div class="py-4 grid grid-cols-[5fr_2fr] text-sm">
+            <div>
+              <span class="font-bold uppercase">Proyecto:&nbsp;</span>
+              <span safe>{quotation.name}</span>
+              <br />
+              <span class="font-bold uppercase">Propietario:&nbsp;</span>
+              <span safe>{quotation.client.name}</span>
+            </div>
+            <div>
+              <span class="font-bold uppercase">
+                Fecha de cotización:&nbsp;
+              </span>
+              <span safe>{QuotationTemplate.formatDate(new Date())}</span>
+              <br />
+              <span class="font-bold uppercase">Plazo de propuesta:&nbsp;</span>
+              <span>{quotation.deliveryTime} dias</span>
+            </div>
+          </div>
           <p>HTML rendered with JSX on the server</p>
           <p class="font-black" safe>
             Cotizacion {quotation.name}
@@ -55,11 +73,12 @@ export class QuotationTemplate {
   private static header({
     quotationCode,
     quotationVersion,
+    quotationCreatedAt,
   }: {
     quotationCode: string;
     quotationVersion: number;
+    quotationCreatedAt: Date;
   }) {
-    const date = QuotationTemplate.getDateToday();
     return (
       <header class="border-2 border-black grid grid-cols-[4fr_6fr_4fr]">
         <div>Logo</div>
@@ -75,7 +94,7 @@ export class QuotationTemplate {
           <div class="border-b border-black">{quotationVersion}</div>
           <div class="border-b border-r border-black">Fecha</div>
           <div class="border-b border-black" safe>
-            {date}
+            {QuotationTemplate.formatDate(quotationCreatedAt)}
           </div>
           <div class="border-r border-black">Páginas</div>
           <div>2</div>
@@ -84,11 +103,13 @@ export class QuotationTemplate {
     );
   }
 
-  private static getDateToday(): string {
-    const today = new Date();
-    const day = today.getDay().toString().padStart(2, '0');
-    const month = today.getMonth().toString().padStart(2, '0');
-    const year = today.getFullYear().toString().padStart(4, '0');
+  /**
+   * Formats a date to DD/MM/YYYY
+   */
+  private static formatDate(d: Date): string {
+    const day = d.getDay().toString().padStart(2, '0');
+    const month = d.getMonth().toString().padStart(2, '0');
+    const year = d.getFullYear().toString().padStart(4, '0');
 
     return `${day}/${month}/${year}`;
   }

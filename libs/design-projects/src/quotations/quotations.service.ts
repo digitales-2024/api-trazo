@@ -356,6 +356,7 @@ export class QuotationsService {
         electricCost: true,
         sanitaryCost: true,
         metering: true,
+        createdAt: true,
         client: {
           select: {
             id: true,
@@ -405,6 +406,7 @@ export class QuotationsService {
       electricCost: quotation.electricCost,
       sanitaryCost: quotation.sanitaryCost,
       metering: quotation.metering,
+      createdAt: quotation.createdAt,
       client: {
         id: quotation.client.id,
         name: quotation.client.name,
