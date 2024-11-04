@@ -747,7 +747,10 @@ export class QuotationsService {
     const browser = await Puppeteer.launch();
     const page = await browser.newPage();
     await page.setContent(await pdf_html);
-    const pdfBufferUint8Array = await page.pdf({ format: 'A4' });
+    const pdfBufferUint8Array = await page.pdf({
+      format: 'A4',
+      preferCSSPageSize: true,
+    });
     await browser.close();
 
     return new StreamableFile(pdfBufferUint8Array, {

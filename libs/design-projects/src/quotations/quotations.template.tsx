@@ -25,6 +25,15 @@ export class QuotationTemplate {
         {'<!DOCTYPE html>'}
         <head>
           <style safe>{tailwindFile}</style>
+          <style>
+            {`@media print {
+            @page {
+                size: A4 portrait;
+                margin-top: 0.6in;
+                margin-bottom: 0.6in;
+            }
+        }`}
+          </style>
         </head>
         <body style="width: 297mm;">{children}</body>
       </>
@@ -40,7 +49,7 @@ export class QuotationTemplate {
   renderPdf(quotation: QuotationDataNested, quotationVersion: number) {
     return (
       <QuotationTemplate.Skeleton>
-        <div class="p-16">
+        <div class="px-16">
           <QuotationTemplate.header
             quotationCode={quotation.code}
             quotationVersion={quotationVersion}
@@ -48,6 +57,11 @@ export class QuotationTemplate {
           />
           <QuotationTemplate.datosProyecto quotation={quotation} />
           <QuotationTemplate.levelsContainer quotation={quotation} />
+          <QuotationTemplate.integralProyect
+            items={
+              quotation.integratedProjectDetails as unknown as Array<IntegralProjectItem>
+            }
+          />
         </div>
       </QuotationTemplate.Skeleton>
     );
@@ -77,7 +91,7 @@ export class QuotationTemplate {
           <div class="border-b border-black">{quotationVersion}</div>
           <div class="border-b border-r border-black">Fecha</div>
           <div class="border-b border-black" safe>
-            {QuotationTemplate.formatDate(quotationCreatedAt)}
+            {formatDate(quotationCreatedAt)}
           </div>
           <div class="border-r border-black">Páginas</div>
           <div>2</div>
@@ -105,7 +119,7 @@ export class QuotationTemplate {
           </div>
           <div>
             <span class="font-bold uppercase">Fecha de cotización:&nbsp;</span>
-            <span safe>{QuotationTemplate.formatDate(new Date())}</span>
+            <span safe>{formatDate(new Date())}</span>
             <br />
             <span class="font-bold uppercase">Plazo de propuesta:&nbsp;</span>
             <span>{quotation.deliveryTime} dias</span>
@@ -134,8 +148,8 @@ export class QuotationTemplate {
   private static levelsContainer(props: { quotation: QuotationDataNested }) {
     const availableArea = props.quotation.landArea * 0.65;
     const freeArea = props.quotation.landArea - availableArea;
-    const availableAreaStr = QuotationTemplate.twoDecimals(availableArea);
-    const freeAreaStr = QuotationTemplate.twoDecimals(freeArea);
+    const availableAreaStr = twoDecimals(availableArea);
+    const freeAreaStr = twoDecimals(freeArea);
 
     const levelsAreas: Array<[string, number]> = props.quotation.levels.map(
       (level) => [
@@ -153,7 +167,7 @@ export class QuotationTemplate {
           {l[0]}
         </span>
         <span class="text-right" safe>
-          {QuotationTemplate.twoDecimals(l[1])}
+          {twoDecimals(l[1])}
         </span>
         <span class="pl-16">m2</span>
       </>
@@ -168,7 +182,7 @@ export class QuotationTemplate {
         <div class="grid grid-cols-[4fr_5fr_3fr_1fr] py-12 gap-y-8">
           {levelElements}
         </div>
-        <div class="grid grid-cols-[20rem_5rem_auto] py-8">
+        <div class="grid grid-cols-[20rem_15rem_auto] py-8">
           <div>
             <span class="uppercase">Area construible&nbsp;</span>
             65%
@@ -194,7 +208,7 @@ export class QuotationTemplate {
           {areasElements}
           <span></span>
           <span class="font-bold text-right" safe>
-            {QuotationTemplate.twoDecimals(totalArea)}
+            {twoDecimals(totalArea)}
           </span>
           <span class="font-bold pl-16">m2</span>
         </div>
@@ -237,23 +251,97 @@ export class QuotationTemplate {
     );
   }
 
-  /**
-   * Formats a date to DD/MM/YYYY
-   */
-  private static formatDate(d: Date): string {
-    const day = d.getDay().toString().padStart(2, '0');
-    const month = d.getMonth().toString().padStart(2, '0');
-    const year = d.getFullYear().toString().padStart(4, '0');
+  private static integralProyect(props: { items: Array<IntegralProjectItem> }) {
+    const integralProyectItemElements = props.items.map((i) => (
+      <QuotationTemplate.integralProjectItem item={i} />
+    ));
 
-    return `${day}/${month}/${year}`;
+    return (
+      <div>
+        <div class="font-bold uppercase">Proyecto integral</div>
+        <div class="grid grid-cols-[4fr_1fr_1fr_1fr_2fr]">
+          <span class="font-bold uppercase">Descripción</span>
+          <span class="font-bold uppercase text-center">Und</span>
+          <span class="font-bold uppercase text-center">Metrado</span>
+          <span class="font-bold uppercase text-center">Costo x m2</span>
+          <span />
+
+          {integralProyectItemElements}
+        </div>
+      </div>
+    );
   }
 
-  /**
-   * Given a number n, returns it as a string with 2 decimals.
-   *
-   * E.g.: 120 -> "120.00", 85.5 -> "85.50"
-   */
-  private static twoDecimals(n: number): string {
-    return (Math.round(n * 100) / 100).toFixed(2);
+  private static integralProjectItem(props: { item: IntegralProjectItem }) {
+    return (
+      <>
+        <div class="font-bold uppercase" safe>
+          {props.item.project}
+        </div>
+        <span />
+        <span />
+        <span />
+        <span />
+
+        <div class="uppercase">
+          {props.item.items.map((i) => (
+            <p safe>{i.description}</p>
+          ))}
+        </div>
+        <div>
+          {props.item.items.map((i) => (
+            <p safe>{i.unit}</p>
+          ))}
+        </div>
+        <div class="text-center flex items-center justify-center" safe>
+          {twoDecimals(props.item.area)}
+        </div>
+        <div
+          class="font-bold text-center flex items-center justify-center"
+          safe
+        >
+          ${twoDecimals(props.item.cost)}
+        </div>
+        <span />
+
+        <span class="inline-block h-8" />
+        <span />
+        <span />
+        <span />
+        <span />
+      </>
+    );
   }
+}
+
+/**
+ * Formats a date to DD/MM/YYYY
+ */
+function formatDate(d: Date): string {
+  const day = d.getDay().toString().padStart(2, '0');
+  const month = d.getMonth().toString().padStart(2, '0');
+  const year = d.getFullYear().toString().padStart(4, '0');
+
+  return `${day}/${month}/${year}`;
+}
+
+/**
+ * Given a number n, returns it as a string with 2 decimals.
+ *
+ * E.g.: 120 -> "120.00", 85.5 -> "85.50"
+ */
+function twoDecimals(n: number): string {
+  return (Math.round(n * 100) / 100).toFixed(2);
+}
+
+interface IntegralProjectItem {
+  area: number;
+  cost: number;
+  items: Item[];
+  project: string;
+}
+
+interface Item {
+  unit: string;
+  description: string;
 }
