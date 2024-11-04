@@ -735,8 +735,11 @@ export class QuotationsService {
     // Get the quotation
     const quotation = await this.findOne(id, user);
 
+    // TODO: Get how many times this quotation has been edited, and pass it to the template
+    const editCount = 1;
+
     // Render the quotation into HTML
-    const pdf_html = this.template.renderPdf(quotation);
+    const pdf_html = this.template.renderPdf(quotation, editCount);
 
     // Generar el PDF usando Puppeteer
     const browser = await Puppeteer.launch();
@@ -752,6 +755,6 @@ export class QuotationsService {
   }
 
   async genPdfTemplate(quot: QuotationDataNested): Promise<string> {
-    return this.template.renderPdf(quot);
+    return this.template.renderPdf(quot, 322);
   }
 }

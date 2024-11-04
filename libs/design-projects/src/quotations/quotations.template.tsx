@@ -3,8 +3,14 @@ import { Injectable } from '@nestjs/common';
 import * as Fs from 'fs';
 import * as Path from 'path';
 
-Injectable();
+@Injectable()
 export class QuotationTemplate {
+  /**
+   * Renders the skeleton of a simple html page.
+   * It includes the tailwindcss output.
+   *
+   * @param param0 An object with children to render inside the skeleton
+   */
   private static Skeleton({ children }: { children: JSX.Element }) {
     // TODO: On production, compile and include the css file only once
     const tailwindFile = Fs.readFileSync(
@@ -24,18 +30,66 @@ export class QuotationTemplate {
 
   /**
    * Renderiza una cotizacion como una página html
+   *
+   * @param quotation La cotizacion a renderizar
+   * @param quotationVersion El numero de veces que la cotizacion ha sido editada. Se obtiene de la tabla audit
    */
-  renderPdf(quotation: QuotationDataNested) {
+  renderPdf(quotation: QuotationDataNested, quotationVersion: number) {
     return (
       <QuotationTemplate.Skeleton>
-        <div>
+        <div class="p-8">
+          <QuotationTemplate.header
+            quotationCode={quotation.code}
+            quotationVersion={quotationVersion}
+          />
           <span>text</span>
           <p>HTML rendered with JSX on the server</p>
-          <p safe>{quotation.name}</p>
+          <p class="font-black" safe>
+            Cotizacion {quotation.name}
+          </p>
         </div>
       </QuotationTemplate.Skeleton>
     );
   }
 
-  private static normalizeCss: string = `/*! normalize.css v8.0.1 | MIT License | github.com/necolas/normalize.css */button,hr,input{overflow:visible}progress,sub,sup{vertical-align:baseline}[type=checkbox],[type=radio],legend{box-sizing:border-box;padding:0}html{line-height:1.15;-webkit-text-size-adjust:100%}body{margin:0}details,main{display:block}h1{font-size:2em;margin:.67em 0}hr{box-sizing:content-box;height:0}code,kbd,pre,samp{font-family:monospace,monospace;font-size:1em}a{background-color:transparent}abbr[title]{border-bottom:none;text-decoration:underline;text-decoration:underline dotted}b,strong{font-weight:bolder}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative}sub{bottom:-.25em}sup{top:-.5em}img{border-style:none}button,input,optgroup,select,textarea{font-family:inherit;font-size:100%;line-height:1.15;margin:0}button,select{text-transform:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]::-moz-focus-inner,[type=reset]::-moz-focus-inner,[type=submit]::-moz-focus-inner,button::-moz-focus-inner{border-style:none;padding:0}[type=button]:-moz-focusring,[type=reset]:-moz-focusring,[type=submit]:-moz-focusring,button:-moz-focusring{outline:ButtonText dotted 1px}fieldset{padding:.35em .75em .625em}legend{color:inherit;display:table;max-width:100%;white-space:normal}textarea{overflow:auto}[type=number]::-webkit-inner-spin-button,[type=number]::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}[type=search]::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}[hidden],template{display:none}`;
+  private static header({
+    quotationCode,
+    quotationVersion,
+  }: {
+    quotationCode: string;
+    quotationVersion: number;
+  }) {
+    const date = QuotationTemplate.getDateToday();
+    return (
+      <header class="border-2 border-black grid grid-cols-[4fr_6fr_4fr]">
+        <div>Logo</div>
+        <div class="text-center border-l-2 border-r-2 border-black uppercase flex items-center justify-center font-bold">
+          Cotización
+        </div>
+        <div class="grid grid-cols-2 text-center text-sm font-bold">
+          <div class="border-b border-r border-black">Código</div>
+          <div class="border-b border-black" safe>
+            {quotationCode}
+          </div>
+          <div class="border-b border-r border-black">Versión</div>
+          <div class="border-b border-black">{quotationVersion}</div>
+          <div class="border-b border-r border-black">Fecha</div>
+          <div class="border-b border-black" safe>
+            {date}
+          </div>
+          <div class="border-r border-black">Páginas</div>
+          <div>2</div>
+        </div>
+      </header>
+    );
+  }
+
+  private static getDateToday(): string {
+    const today = new Date();
+    const day = today.getDay().toString().padStart(2, '0');
+    const month = today.getMonth().toString().padStart(2, '0');
+    const year = today.getFullYear().toString().padStart(4, '0');
+
+    return `${day}/${month}/${year}`;
+  }
 }
