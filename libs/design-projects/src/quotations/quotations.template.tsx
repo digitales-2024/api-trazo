@@ -61,6 +61,8 @@ export class QuotationTemplate {
             items={
               quotation.integratedProjectDetails as unknown as Array<IntegralProjectItem>
             }
+            exchangeRate={quotation.exchangeRate}
+            discount={quotation.discount}
           />
         </div>
       </QuotationTemplate.Skeleton>
@@ -251,15 +253,29 @@ export class QuotationTemplate {
     );
   }
 
-  private static integralProyect(props: { items: Array<IntegralProjectItem> }) {
+  private static integralProyect(props: {
+    items: Array<IntegralProjectItem>;
+    exchangeRate: number;
+    discount: number;
+  }) {
     const integralProyectItemElements = props.items.map((i) => (
       <QuotationTemplate.integralProjectItem item={i} />
     ));
+    const squareMeterCost = props.items
+      .map((item) => item.cost)
+      .reduce((acc, next) => acc + next);
+    const totalArea = props.items[0]?.area ?? -1;
+    const priceBeforeDiscount = props.items
+      .map((i) => i.cost * i.area)
+      .reduce((acc, next) => acc + next);
+    const discountedPrice = priceBeforeDiscount - props.discount;
+    const discountedSquareMeterCost =
+      (discountedPrice * squareMeterCost) / priceBeforeDiscount;
 
     return (
       <div>
         <div class="font-bold uppercase">Proyecto integral</div>
-        <div class="grid grid-cols-[4fr_1fr_1fr_1fr_2fr]">
+        <div class="grid grid-cols-[4fr_1fr_1fr_1fr_2fr] pb-8">
           <span class="font-bold uppercase">Descripción</span>
           <span class="font-bold uppercase text-center">Und</span>
           <span class="font-bold uppercase text-center">Metrado</span>
@@ -267,6 +283,66 @@ export class QuotationTemplate {
           <span />
 
           {integralProyectItemElements}
+
+          <span class="font-bold uppercase">Presupuesto de obra</span>
+          <span />
+          <span class="text-center">-</span>
+          <span class="font-bold uppercase text-center">$0.00</span>
+          <span />
+        </div>
+
+        <div class="grid grid-cols-[2fr_2fr_1fr_1fr_1fr_1fr]">
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span class="text-center uppercase font-bold">Total $</span>
+
+          <span />
+          <span class="text-center uppercase">Costo x m2 del proyecto</span>
+          <span />
+          <span class="font-bold uppercase text-center" safe>
+            ${twoDecimals(squareMeterCost)}
+          </span>
+          <span />
+          <span />
+
+          <span />
+          <span class="text-center uppercase">Descuento</span>
+          <span class="text-center uppercase" safe>
+            {twoDecimals(totalArea)}
+          </span>
+          <span class="font-bold uppercase text-center" safe>
+            ${twoDecimals(discountedSquareMeterCost)}
+          </span>
+          <span />
+          <span class="font-bold uppercase text-right" safe>
+            ${twoDecimals(discountedPrice)}
+          </span>
+
+          <span />
+          <span />
+          <span />
+          <span />
+          <span class="uppercase text-center text-sm" safe>
+            Taza de cambio {twoDecimals(props.exchangeRate)}
+          </span>
+          <span class="font-bold uppercase text-right" safe>
+            S/. {twoDecimals(discountedPrice * props.exchangeRate)}
+          </span>
+        </div>
+        <div class="py-8 grid grid-cols-[7fr_4fr_3fr]">
+          <span />
+          <span class="text-center font-bold uppercase">Costo de proyecto</span>
+          <div class="text-right">
+            <span
+              class="inline-block border-4 border-black pl-4 pr-1 font-bold"
+              safe
+            >
+              S/. {twoDecimals(discountedPrice * props.exchangeRate)}
+            </span>
+          </div>
         </div>
       </div>
     );
