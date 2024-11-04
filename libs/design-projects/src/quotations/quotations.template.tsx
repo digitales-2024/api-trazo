@@ -137,6 +137,28 @@ export class QuotationTemplate {
     const availableAreaStr = QuotationTemplate.twoDecimals(availableArea);
     const freeAreaStr = QuotationTemplate.twoDecimals(freeArea);
 
+    const levelsAreas: Array<[string, number]> = props.quotation.levels.map(
+      (level) => [
+        level.name,
+        level.spaces.map((s) => s.area).reduce((acc, next) => acc + next),
+      ],
+    );
+    const totalArea = levelsAreas
+      .map((l) => l[1])
+      .reduce((acc, next) => acc + next);
+
+    const areasElements = levelsAreas.map((l) => (
+      <>
+        <span class="uppercase" safe>
+          {l[0]}
+        </span>
+        <span class="text-right" safe>
+          {QuotationTemplate.twoDecimals(l[1])}
+        </span>
+        <span class="pl-16">m2</span>
+      </>
+    ));
+
     const levelElements = props.quotation.levels.map((level) => (
       <QuotationTemplate.levelElement level={level} />
     ));
@@ -146,21 +168,35 @@ export class QuotationTemplate {
         <div class="grid grid-cols-[4fr_5fr_3fr_1fr] py-12 gap-y-8">
           {levelElements}
         </div>
-        <div class="grid grid-cols-[20rem_auto]">
+        <div class="grid grid-cols-[20rem_5rem_auto] py-8">
           <div>
             <span class="uppercase">Area construible&nbsp;</span>
             65%
           </div>
-          <div class="font-bold" safe>
-            {availableAreaStr}&emsp;&emsp;m2
+          <div class="font-bold text-right" safe>
+            {availableAreaStr}
           </div>
+          <span class="pl-16 font-bold">m2</span>
+
           <div>
             <span class="uppercase">Area libre&nbsp;&emsp;&emsp;&emsp;</span>
             45%
           </div>
-          <div class="font-bold" safe>
-            {freeAreaStr}&emsp;&emsp;m2
+          <div class="font-bold text-right" safe>
+            {freeAreaStr}
           </div>
+          <span class="pl-16 font-bold">m2</span>
+
+          <span class="inline-block h-8" />
+          <span />
+          <span />
+
+          {areasElements}
+          <span></span>
+          <span class="font-bold text-right" safe>
+            {QuotationTemplate.twoDecimals(totalArea)}
+          </span>
+          <span class="font-bold pl-16">m2</span>
         </div>
       </>
     );
