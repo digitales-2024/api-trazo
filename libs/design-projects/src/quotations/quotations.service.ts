@@ -756,7 +756,10 @@ export class QuotationsService {
     });
   }
 
-  async genPdfTemplate(quot: QuotationDataNested): Promise<string> {
-    return this.template.renderPdf(quot, 322);
+  async genPdfTemplate(id: string, user: UserData): Promise<string> {
+    // Get the quotation
+    const quotation = await this.findOne(id, user);
+
+    return this.template.renderPdf(quotation, 322);
   }
 }

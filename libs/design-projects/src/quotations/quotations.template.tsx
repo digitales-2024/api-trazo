@@ -40,7 +40,7 @@ export class QuotationTemplate {
   renderPdf(quotation: QuotationDataNested, quotationVersion: number) {
     return (
       <QuotationTemplate.Skeleton>
-        <div class="p-8">
+        <div class="p-16">
           <QuotationTemplate.header
             quotationCode={quotation.code}
             quotationVersion={quotationVersion}
@@ -65,7 +65,7 @@ export class QuotationTemplate {
     return (
       <header class="border-2 border-black grid grid-cols-[4fr_6fr_4fr]">
         <div>Logo</div>
-        <div class="text-center border-l-2 border-r-2 border-black uppercase flex items-center justify-center font-bold">
+        <div class="text-center border-l-2 border-r-2 border-black uppercase flex items-center justify-center font-bold text-xl">
           Cotización
         </div>
         <div class="grid grid-cols-2 text-center text-sm font-bold">
@@ -132,14 +132,37 @@ export class QuotationTemplate {
   }
 
   private static levelsContainer(props: { quotation: QuotationDataNested }) {
+    const availableArea = props.quotation.landArea * 0.65;
+    const freeArea = props.quotation.landArea - availableArea;
+    const availableAreaStr = QuotationTemplate.twoDecimals(availableArea);
+    const freeAreaStr = QuotationTemplate.twoDecimals(freeArea);
+
     const levelElements = props.quotation.levels.map((level) => (
       <QuotationTemplate.levelElement level={level} />
     ));
 
     return (
-      <div class="grid grid-cols-[4fr_6fr_2fr_1fr] py-12 gap-y-8">
-        {levelElements}
-      </div>
+      <>
+        <div class="grid grid-cols-[4fr_5fr_3fr_1fr] py-12 gap-y-8">
+          {levelElements}
+        </div>
+        <div class="grid grid-cols-[20rem_auto]">
+          <div>
+            <span class="uppercase">Area construible&nbsp;</span>
+            65%
+          </div>
+          <div class="font-bold" safe>
+            {availableAreaStr}&emsp;&emsp;m2
+          </div>
+          <div>
+            <span class="uppercase">Area libre&nbsp;&emsp;&emsp;&emsp;</span>
+            45%
+          </div>
+          <div class="font-bold" safe>
+            {freeAreaStr}&emsp;&emsp;m2
+          </div>
+        </div>
+      </>
     );
   }
 
@@ -187,5 +210,14 @@ export class QuotationTemplate {
     const year = d.getFullYear().toString().padStart(4, '0');
 
     return `${day}/${month}/${year}`;
+  }
+
+  /**
+   * Given a number n, returns it as a string with 2 decimals.
+   *
+   * E.g.: 120 -> "120.00", 85.5 -> "85.50"
+   */
+  private static twoDecimals(n: number): string {
+    return (Math.round(n * 100) / 100).toFixed(2);
   }
 }
