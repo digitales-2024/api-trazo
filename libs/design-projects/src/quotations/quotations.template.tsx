@@ -59,15 +59,18 @@ export class QuotationTemplate {
   renderPdf(quotation: QuotationDataNested, quotationVersion: number) {
     // calculate all the neccesary values once
     const totalArea = quotation.levels
-      .map((l) => l.spaces.map((space) => space.area).reduce((a, b) => a + b))
-      .reduce((a, b) => a + b);
+      .map(
+        (l) => l.spaces.map((space) => space.area).reduce((a, b) => a + b),
+        0,
+      )
+      .reduce((a, b) => a + b, 0);
 
     const integralProjectDetails =
       quotation.integratedProjectDetails as unknown as Array<IntegralProjectItem>;
     // Cost of each m2 of construction, as a sum of all parts (architectural, structural, etc)
     const pricePerSquareMeter = integralProjectDetails
       .map((item) => item.cost)
-      .reduce((acc, next) => acc + next);
+      .reduce((acc, next) => acc + next, 0);
     const priceBeforeDiscount = totalArea * pricePerSquareMeter;
     // Final price in USD after discount
     const priceAfterDiscount = priceBeforeDiscount - quotation.discount;
@@ -203,7 +206,7 @@ export class QuotationTemplate {
     const levelsAreas: Array<[string, number]> = props.quotation.levels.map(
       (level) => [
         level.name,
-        level.spaces.map((s) => s.area).reduce((acc, next) => acc + next),
+        level.spaces.map((s) => s.area).reduce((acc, next) => acc + next, 0),
       ],
     );
 
