@@ -47,6 +47,29 @@ export class QuotationTemplate {
    * @param quotationVersion El numero de veces que la cotizacion ha sido editada. Se obtiene de la tabla audit
    */
   renderPdf(quotation: QuotationDataNested, quotationVersion: number) {
+    // calculate all the neccesary values once
+    const totalArea = quotation.levels
+      .map((l) =>
+        l.spaces
+          .map((space) => space.area * space.amount)
+          .reduce((a, b) => a + b),
+      )
+      .reduce((a, b) => a + b);
+
+    const integralProjectDetails =
+      quotation.integratedProjectDetails as unknown as Array<IntegralProjectItem>;
+    // Cost of each m2 of construction, as a sum of all parts (architectural, structural, etc)
+    const pricePerSquareMeter = integralProjectDetails
+      .map((item) => item.cost)
+      .reduce((acc, next) => acc + next);
+    const priceBeforeDiscount = totalArea * pricePerSquareMeter;
+    // Final price in USD after discount
+    const priceAfterDiscount = priceBeforeDiscount - quotation.discount;
+    // The price of each m2, after the discount is applied
+    const pricePerSquareMeterDiscounted =
+      (priceAfterDiscount * pricePerSquareMeter) / priceBeforeDiscount;
+    const finalPriceSoles = priceAfterDiscount * quotation.exchangeRate;
+
     return (
       <QuotationTemplate.Skeleton>
         <div class="px-16">
@@ -56,19 +79,26 @@ export class QuotationTemplate {
             quotationCreatedAt={quotation.createdAt}
           />
           <QuotationTemplate.datosProyecto quotation={quotation} />
-          <QuotationTemplate.levelsContainer quotation={quotation} />
+          <QuotationTemplate.levelsContainer
+            quotation={quotation}
+            totalArea={totalArea}
+          />
           <QuotationTemplate.integralProyect
             items={
               quotation.integratedProjectDetails as unknown as Array<IntegralProjectItem>
             }
             exchangeRate={quotation.exchangeRate}
             discount={quotation.discount}
+            pricePerSquareMeter={pricePerSquareMeter}
+            pricePerSquareMeterDiscounted={pricePerSquareMeterDiscounted}
+            priceAfterDiscount={priceAfterDiscount}
+            totalArea={totalArea}
           />
           <QuotationTemplate.projectNotes />
           <div class="h-[3px] w-full bg-black my-8" />
           <QuotationTemplate.paymentSchedule
             scheduledDays={quotation.deliveryTime}
-            finalPriceSoles={32200}
+            finalPriceSoles={finalPriceSoles}
             costItems={quotation.paymentSchedule as unknown as Array<CostItem>}
           />
         </div>
@@ -154,7 +184,10 @@ export class QuotationTemplate {
     );
   }
 
-  private static levelsContainer(props: { quotation: QuotationDataNested }) {
+  private static levelsContainer(props: {
+    quotation: QuotationDataNested;
+    totalArea: number;
+  }) {
     const availableArea = props.quotation.landArea * 0.65;
     const freeArea = props.quotation.landArea - availableArea;
     const availableAreaStr = twoDecimals(availableArea);
@@ -166,9 +199,6 @@ export class QuotationTemplate {
         level.spaces.map((s) => s.area).reduce((acc, next) => acc + next),
       ],
     );
-    const totalArea = levelsAreas
-      .map((l) => l[1])
-      .reduce((acc, next) => acc + next);
 
     const areasElements = levelsAreas.map((l) => (
       <>
@@ -217,7 +247,7 @@ export class QuotationTemplate {
           {areasElements}
           <span></span>
           <span class="font-bold text-right" safe>
-            {twoDecimals(totalArea)}
+            {twoDecimals(props.totalArea)}
           </span>
           <span class="font-bold pl-16">m2</span>
         </div>
@@ -264,17 +294,15 @@ export class QuotationTemplate {
     items: Array<IntegralProjectItem>;
     exchangeRate: number;
     discount: number;
+    pricePerSquareMeter: number;
+    totalArea: number;
+    priceAfterDiscount: number;
+    pricePerSquareMeterDiscounted: number;
   }) {
-    const squareMeterCost = props.items
-      .map((item) => item.cost)
-      .reduce((acc, next) => acc + next);
-    const totalArea = props.items[0]?.area ?? -1;
-    const priceBeforeDiscount = props.items
-      .map((i) => i.cost * i.area)
-      .reduce((acc, next) => acc + next);
-    const discountedPrice = priceBeforeDiscount - props.discount;
-    const discountedSquareMeterCost =
-      (discountedPrice * squareMeterCost) / priceBeforeDiscount;
+    const pricePerSquareMeter = props.pricePerSquareMeter;
+    const pricePerSquareMeterDiscounted = props.pricePerSquareMeterDiscounted;
+    const totalArea = props.totalArea;
+    const discountedPrice = props.priceAfterDiscount;
 
     return (
       <div>
@@ -309,7 +337,7 @@ export class QuotationTemplate {
           <span class="text-center uppercase">Costo x m2 del proyecto</span>
           <span />
           <span class="font-bold uppercase text-center" safe>
-            ${twoDecimals(squareMeterCost)}
+            ${twoDecimals(pricePerSquareMeter)}
           </span>
           <span />
           <span />
@@ -320,7 +348,7 @@ export class QuotationTemplate {
             {twoDecimals(totalArea)}
           </span>
           <span class="font-bold uppercase text-center" safe>
-            ${twoDecimals(discountedSquareMeterCost)}
+            ${twoDecimals(pricePerSquareMeterDiscounted)}
           </span>
           <span />
           <span class="font-bold uppercase text-right" safe>
