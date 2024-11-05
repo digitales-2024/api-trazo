@@ -13,6 +13,8 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.{ts,tsx}\" --fix",
+    "tailwind": "npm run tailwind:dev",
+    "tailwind:build": "tailwindcss -i ./static/tailwind-input.css -o ./static/tailwind-output.css --minify",
     "tailwind:dev": "tailwindcss -i ./static/tailwind-input.css -o ./static/tailwind-output.css --watch --minify",
     "test": "jest",
     "test:watch": "jest --watch",

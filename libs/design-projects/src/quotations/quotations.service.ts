@@ -726,16 +726,38 @@ export class QuotationsService {
     // Get the quotation
     const quotation = await this.findOne(id, user);
 
-    // TODO: Get how many times this quotation has been edited, and pass it to the template
-    const editCount = 1;
+    const editCount = await this.prisma.audit.count({
+      where: {
+        entityId: quotation.id,
+      },
+    });
 
     // Render the quotation into HTML
-    const pdf_html = this.template.renderPdf(quotation, editCount);
+    const pdfHtml = await this.template.renderPdf(quotation, editCount);
 
     // Generar el PDF usando Puppeteer
     const browser = await Puppeteer.launch();
     const page = await browser.newPage();
-    await page.setContent(await pdf_html);
+    await page.setContent(pdfHtml);
+
+    // The size of the page in px, before accounting for the pdf margin
+    const pageBody = await page.$('body');
+    const boundingBox = await pageBody.boundingBox();
+    const pageHeight = boundingBox.height;
+    const pageHeightMilli = pageHeight * 0.2645833333;
+
+    // A4 paper is 297mm in heigth. The PDF has 5mm margin top & bottom.
+    // So we count the number of pages as its height / 287mm
+    const numberOfPages = Math.ceil(pageHeightMilli / 287);
+
+    // Replace this value in the html
+    const newPageHtml = pdfHtml.replace(
+      '{{pageCount}}',
+      numberOfPages.toString(),
+    );
+    // Set the page with the number of pages
+    await page.setContent(newPageHtml);
+
     const pdfBufferUint8Array = await page.pdf({
       format: 'A4',
       preferCSSPageSize: true,
@@ -752,6 +774,12 @@ export class QuotationsService {
     // Get the quotation
     const quotation = await this.findOne(id, user);
 
-    return this.template.renderPdf(quotation, 322);
+    const editCount = await this.prisma.audit.count({
+      where: {
+        entityId: quotation.id,
+      },
+    });
+
+    return this.template.renderPdf(quotation, editCount);
   }
 }
