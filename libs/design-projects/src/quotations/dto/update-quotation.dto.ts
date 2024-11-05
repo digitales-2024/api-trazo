@@ -1,8 +1,16 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { ApiProperty, PartialType } from '@nestjs/swagger';
+import {
+  ArrayNotEmpty,
+  IsArray,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
+import { CreateQuotationPartialDto } from './create-quotation.dto';
 
-export class UpdateQuotationDto {
+export class UpdateQuotationDto extends PartialType(CreateQuotationPartialDto) {
   @ApiProperty({
     name: 'name',
     description: 'Name of the project this quotation belongs to',
@@ -11,7 +19,7 @@ export class UpdateQuotationDto {
   @IsString()
   @IsNotEmpty()
   @Transform(({ value }) => value.trim())
-  name: string;
+  name?: string;
 
   @ApiProperty({
     name: 'code',
@@ -22,7 +30,7 @@ export class UpdateQuotationDto {
   @IsString()
   @IsNotEmpty()
   @Transform(({ value }) => value.trim())
-  code: string;
+  code?: string;
 
   @ApiProperty({
     name: 'description',
@@ -33,7 +41,7 @@ export class UpdateQuotationDto {
   @IsString()
   @IsNotEmpty()
   @Transform(({ value }) => value.trim())
-  description: string;
+  description?: string;
 
   @ApiProperty({
     name: 'discount',
@@ -48,7 +56,7 @@ export class UpdateQuotationDto {
     },
     { message: 'discount must be a floating point number' },
   )
-  discount: number;
+  discount?: number;
 
   @ApiProperty({
     name: 'deliveryTime',
@@ -57,7 +65,7 @@ export class UpdateQuotationDto {
     required: false,
   })
   @IsInt({ message: 'deliveryTime must be an integer' })
-  deliveryTime: number;
+  deliveryTime?: number;
 
   @ApiProperty({
     name: 'exchangeRate',
@@ -72,7 +80,7 @@ export class UpdateQuotationDto {
     },
     { message: 'exchangeRate must be a floating point number' },
   )
-  exchangeRate: number;
+  exchangeRate?: number;
 
   @ApiProperty({
     name: 'landArea',
@@ -87,32 +95,30 @@ export class UpdateQuotationDto {
     },
     { message: 'landArea must be a number point number' },
   )
-  landArea: number;
+  landArea?: number;
 
   @ApiProperty({
     name: 'paymentSchedule',
     description:
       'Schedule that dictates how many and when payments are made. Stored as a JSON.',
-    example: '{}',
+    example: [],
     required: false,
   })
-  @IsString()
-  @IsNotEmpty()
-  @Transform(({ value }) => value.trim())
-  paymentSchedule: string;
+  @IsArray()
+  @ArrayNotEmpty()
+  paymentSchedule?: string[];
 
   // Proyecto integral: Planos y detalles de cada área
   @ApiProperty({
     name: 'integratedProjectDetails',
     description:
       'JSON object that defines the integrated project and its fields.',
-    example: '{}',
+    example: [],
     required: false,
   })
-  @IsString()
-  @IsNotEmpty()
-  @Transform(({ value }) => value.trim())
-  integratedProjectDetails: string;
+  @IsArray()
+  @ArrayNotEmpty()
+  integratedProjectDetails?: string[];
 
   @ApiProperty({
     name: 'architecturalCost',
@@ -127,7 +133,7 @@ export class UpdateQuotationDto {
     },
     { message: 'architecturalCost must be a number' },
   )
-  architecturalCost: number;
+  architecturalCost?: number;
 
   @ApiProperty({
     name: 'structuralCost',
@@ -142,7 +148,7 @@ export class UpdateQuotationDto {
     },
     { message: 'structuralCost must be a number' },
   )
-  structuralCost: number;
+  structuralCost?: number;
 
   @ApiProperty({
     name: 'electricCost',
@@ -157,7 +163,7 @@ export class UpdateQuotationDto {
     },
     { message: 'structuralCost must be a number' },
   )
-  electricCost: number;
+  electricCost?: number;
 
   @ApiProperty({
     name: 'sanitaryCost',
@@ -172,7 +178,7 @@ export class UpdateQuotationDto {
     },
     { message: 'structuralCost must be a number' },
   )
-  sanitaryCost: number;
+  sanitaryCost?: number;
 
   @ApiProperty({
     name: 'metering',
@@ -187,5 +193,5 @@ export class UpdateQuotationDto {
     },
     { message: 'metering must be a number' },
   )
-  metering: number;
+  metering?: number;
 }
