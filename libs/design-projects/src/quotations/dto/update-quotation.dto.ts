@@ -8,9 +8,9 @@ import {
   IsString,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { CreateQuotationDto } from './create-quotation.dto';
+import { CreateQuotationPartialDto } from './create-quotation.dto';
 
-export class UpdateQuotationDto extends PartialType(CreateQuotationDto) {
+export class UpdateQuotationDto extends PartialType(CreateQuotationPartialDto) {
   @ApiProperty({
     name: 'name',
     description: 'Name of the project this quotation belongs to',
@@ -106,7 +106,7 @@ export class UpdateQuotationDto extends PartialType(CreateQuotationDto) {
   })
   @IsArray()
   @ArrayNotEmpty()
-  paymentSchedule?: string;
+  paymentSchedule?: string[];
 
   // Proyecto integral: Planos y detalles de cada área
   @ApiProperty({
