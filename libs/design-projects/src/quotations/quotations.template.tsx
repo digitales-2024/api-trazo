@@ -64,6 +64,12 @@ export class QuotationTemplate {
             exchangeRate={quotation.exchangeRate}
             discount={quotation.discount}
           />
+          <QuotationTemplate.projectNotes />
+          <div class="h-[3px] w-full bg-black my-8" />
+          <QuotationTemplate.paymentSchedule
+            scheduledDays={quotation.deliveryTime}
+            costItems={quotation.paymentSchedule as unknown as Array<CostItem>}
+          />
         </div>
       </QuotationTemplate.Skeleton>
     );
@@ -258,9 +264,6 @@ export class QuotationTemplate {
     exchangeRate: number;
     discount: number;
   }) {
-    const integralProyectItemElements = props.items.map((i) => (
-      <QuotationTemplate.integralProjectItem item={i} />
-    ));
     const squareMeterCost = props.items
       .map((item) => item.cost)
       .reduce((acc, next) => acc + next);
@@ -275,14 +278,16 @@ export class QuotationTemplate {
     return (
       <div>
         <div class="font-bold uppercase">Proyecto integral</div>
-        <div class="grid grid-cols-[4fr_1fr_1fr_1fr_2fr] pb-8">
+        <div class="grid grid-cols-[4fr_1fr_1fr_1fr_2fr] mb-8">
           <span class="font-bold uppercase">Descripción</span>
           <span class="font-bold uppercase text-center">Und</span>
           <span class="font-bold uppercase text-center">Metrado</span>
           <span class="font-bold uppercase text-center">Costo x m2</span>
           <span />
 
-          {integralProyectItemElements}
+          {props.items.map((i) => (
+            <QuotationTemplate.integralProjectItem item={i} />
+          ))}
 
           <span class="font-bold uppercase">Presupuesto de obra</span>
           <span />
@@ -332,7 +337,7 @@ export class QuotationTemplate {
             S/. {twoDecimals(discountedPrice * props.exchangeRate)}
           </span>
         </div>
-        <div class="py-8 grid grid-cols-[7fr_4fr_3fr]">
+        <div class="my-8 grid grid-cols-[7fr_4fr_3fr]">
           <span />
           <span class="text-center font-bold uppercase">Costo de proyecto</span>
           <div class="text-right">
@@ -388,6 +393,69 @@ export class QuotationTemplate {
       </>
     );
   }
+
+  private static projectNotes() {
+    return (
+      <div class="relative my-8">
+        <span class="font-bold absolute -left-12">Nota:&nbsp;</span>
+        <p>La entrega del proyecto incluye:</p>
+        <p>
+          Un juego de planos de arquitectura y detalles con la firma del
+          profesional Correspondiente
+        </p>
+        <p>
+          Un juego de planos de Estructuras y detalles, Instalaciones Electricas
+          y Sanitarias con las firmas de los profesionales correspondientes
+        </p>
+        <p>
+          Armado del Expediente Tecnico que contiene; Memoria Descriptiva,
+          Especificaciones Tecnicas
+        </p>
+        <p>Fotografias de Maqueta Virtual (3D) en Archivo Digital</p>
+      </div>
+    );
+  }
+
+  private static paymentSchedule(props: {
+    scheduledDays: number;
+    costItems: Array<CostItem>;
+  }) {
+    return (
+      <div class="my-8 grid grid-cols-[8fr_1fr_2fr_4fr]">
+        <p class="font-bold uppercase pb-4">
+          Cronograma de ejecución de proyecto
+        </p>
+        <span />
+        <span />
+        <span />
+
+        <p class="uppercase pb-8">
+          Plazo hasta entrega de expediente al propietario
+        </p>
+        <span />
+        <span class="font-bold uppercase text-center">
+          {props.scheduledDays} días
+        </span>
+        <span />
+
+        <p class="font-bold uppercase pb-4">Cronograma de forma de pagos</p>
+        <span />
+        <span />
+        <span />
+
+        {props.costItems.map((i) => (
+          <>
+            <p class="uppercase pb-4" safe>
+              {i.name}
+            </p>
+            <span class="text-center">{i.percentage}%</span>
+            <span />
+            <span />
+          </>
+        ))}
+      </div>
+    );
+  }
 }
 
 /**
@@ -420,4 +488,11 @@ interface IntegralProjectItem {
 interface Item {
   unit: string;
   description: string;
+}
+
+interface CostItem {
+  cost: number;
+  name: string;
+  percentage: number;
+  description?: string;
 }
