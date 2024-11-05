@@ -106,7 +106,7 @@ export class CreateQuotationDto {
     name: 'paymentSchedule',
     description:
       'Array of JSON objects that dictate how many and when payments are made.',
-    example: '[{}]',
+    example: [],
   })
   @IsArray()
   @ArrayNotEmpty()
@@ -117,7 +117,7 @@ export class CreateQuotationDto {
     name: 'integratedProjectDetails',
     description:
       'Array of JSON objects that define the integrated project and its fields.',
-    example: '[{}]',
+    example: [],
   })
   @IsArray()
   @ArrayNotEmpty()
