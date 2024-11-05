@@ -66,6 +66,7 @@ export class QuotationsService {
       sanitaryCost,
       metering,
       levels,
+      totalAmount,
     } = createQuotationDto;
 
     await this.prisma.$transaction(async (prisma) => {
@@ -108,7 +109,7 @@ export class QuotationsService {
               id: client.id,
             },
           },
-          totalAmount: 0,
+          totalAmount,
           discount,
           deliveryTime,
           exchangeRate,

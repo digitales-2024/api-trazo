@@ -33,6 +33,19 @@ export class CreateQuotationDto {
   code: string;
 
   @ApiProperty({
+    name: 'totalAmount',
+    description: 'Total Amount of the quotation',
+  })
+  @IsNumber(
+    {
+      allowNaN: false,
+      allowInfinity: false,
+    },
+    { message: 'totalAmount must be a number' },
+  )
+  totalAmount: number;
+
+  @ApiProperty({
     name: 'description',
     description: 'Description of the quotation',
     example: 'Se planifica diseño de una vivienda...',
