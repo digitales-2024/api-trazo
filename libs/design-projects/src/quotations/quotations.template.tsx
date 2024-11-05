@@ -39,8 +39,8 @@ export class QuotationTemplate {
             {`@media print {
             @page {
                 size: A4 portrait;
-                margin-top: 0.6in;
-                margin-bottom: 0.6in;
+                margin-top: 15mm;
+                margin-bottom: 15mm;
             }
         }`}
           </style>
@@ -140,7 +140,7 @@ export class QuotationTemplate {
             {formatDate(quotationCreatedAt)}
           </div>
           <div class="border-r border-black">Páginas</div>
-          <div>2</div>
+          <div>{'{{pageCount}}'}</div>
         </div>
       </header>
     );
