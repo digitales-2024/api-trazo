@@ -25,6 +25,13 @@ export type QuotationData = Pick<
   client: { id: string; name: string };
 };
 
+export type QuotationSummaryData = Pick<
+  Quotation,
+  'id' | 'name' | 'status' | 'totalAmount' | 'metering'
+> & {
+  client: { id: string; name: string };
+};
+
 export type QuotationDataNested = Pick<
   Quotation,
   | 'id'
