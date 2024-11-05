@@ -101,6 +101,7 @@ export class QuotationTemplate {
             finalPriceSoles={finalPriceSoles}
             costItems={quotation.paymentSchedule as unknown as Array<CostItem>}
           />
+          <QuotationTemplate.finalNotes />
         </div>
       </QuotationTemplate.Skeleton>
     );
@@ -499,6 +500,42 @@ export class QuotationTemplate {
         <span />
         <span />
       </div>
+    );
+  }
+
+  private static finalNotes() {
+    return (
+      <footer class="uppercase">
+        <p class="font-bold">Compromiso del equipo de desarrollo</p>
+        <p>
+          1.- DESARROLLAR EL PROYECTO HASTA QUE SE ENCUENTRE EL PROPIETARIO
+          TOTALMENTE COMPLACIDO
+        </p>
+        <p>
+          2.- CONSTANTES REUNIONES CON LOS PROPIETARIOS PARA COORDINAR EL DISEÑO
+          DEL PROYECTO
+        </p>
+        <p>3.- CUMPLIMIENTO ESTRICTO CON LAS FECHAS ESTABLECIDAS</p>
+        <p>
+          4.- REUNIONES CONSTANTES CON LOS ACTORES DEL PROYECTO, INGENIEROS
+          ESPECIALISTAS
+        </p>
+
+        <p class="font-bold mt-8">Obligaciones del propietario</p>
+        <p>
+          1.- PROPORCIONAR AL PROYECTISTA, LA INFORMACION PERTINENTE, NECESARIA
+          PARA ENTREGAR EL EXPEDIENTE
+        </p>
+        <p>
+          2.- PARTICIPAR EN LAS REUNIONES PARA LA TOMA DE DESICIONES SOBRE EL
+          PROYECTO
+        </p>
+        <p>
+          3.- SUFRAGAR LOS COSTOS POR CONCEPTOS DE CERTIFICADO DE PARAMETROS Y
+          LICENCIA DE OBRA
+        </p>
+        <p>4.- SUFRAGAR EL COSTO DEL PROYECTO</p>
+      </footer>
     );
   }
 }
