@@ -22,7 +22,7 @@ import {
 } from '@nestjs/swagger';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
 import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
-import { QuotationData } from '@clients/clients/interfaces';
+import { QuotationSummaryData } from '@clients/clients/interfaces';
 
 @ApiTags('Quotation')
 @Controller({ path: 'quotation', version: '1' })
@@ -44,7 +44,7 @@ export class QuotationsController {
 
   @ApiOkResponse({ description: 'Get all quotations' })
   @Get()
-  findAll(@GetUser() user: UserPayload): Promise<QuotationData[]> {
+  findAll(@GetUser() user: UserPayload): Promise<QuotationSummaryData[]> {
     return this.quotationsService.findAll(user);
   }
 

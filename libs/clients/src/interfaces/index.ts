@@ -1,2 +1,6 @@
 export { ClientData, ClientDescriptionData } from './clients.interface';
-export { QuotationData, LevelData } from './quotation.interface';
+export {
+  QuotationData,
+  LevelData,
+  QuotationSummaryData,
+} from './quotation.interface';
