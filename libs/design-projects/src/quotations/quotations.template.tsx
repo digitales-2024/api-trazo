@@ -49,11 +49,7 @@ export class QuotationTemplate {
   renderPdf(quotation: QuotationDataNested, quotationVersion: number) {
     // calculate all the neccesary values once
     const totalArea = quotation.levels
-      .map((l) =>
-        l.spaces
-          .map((space) => space.area * space.amount)
-          .reduce((a, b) => a + b),
-      )
+      .map((l) => l.spaces.map((space) => space.area).reduce((a, b) => a + b))
       .reduce((a, b) => a + b);
 
     const integralProjectDetails =
