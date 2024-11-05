@@ -12,6 +12,7 @@ import { AuditService } from '@login/login/admin/audit/audit.service';
 import { QuotationsService } from '../quotations/quotations.service';
 import { AuditActionType, Level } from '@prisma/client';
 import { LevelUpdateData } from '../interfaces/levels.interfaces';
+import { LevelData } from '@clients/clients/interfaces';
 
 @Injectable()
 export class LevelsService {
@@ -78,11 +79,11 @@ export class LevelsService {
    * @param id id de la *cotizacion* de la cual obtener sus niveles
    * @returns la lista de niveles que pertenecen a la *cotizacion* con `id`
    */
-  async findOne(id: string, user: UserData): Promise<Array<Level>> {
+  async findOne(id: string, user: UserData): Promise<LevelData[]> {
     // check there is a quotation with the given id
     await this.quotationService.findOne(id, user);
 
-    return await this.prisma.level.findMany({
+    const levels = await this.prisma.level.findMany({
       where: {
         quotation: {
           is: {
@@ -90,7 +91,25 @@ export class LevelsService {
           },
         },
       },
+      include: {
+        LevelsOnSpaces: {
+          include: {
+            space: true,
+          },
+        },
+      },
     });
+
+    return levels.map((level) => ({
+      id: level.id,
+      name: level.name,
+      spaces: level.LevelsOnSpaces.map((levelOnSpace) => ({
+        id: levelOnSpace.space.id,
+        name: levelOnSpace.space.name,
+        amount: levelOnSpace.amount,
+        area: levelOnSpace.area,
+      })),
+    }));
   }
 
   /**
