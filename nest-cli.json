@@ -51,6 +51,15 @@
       "compilerOptions": {
         "tsConfigPath": "libs/design-projects/tsconfig.lib.json"
       }
+    },
+    "sunat-change": {
+      "type": "library",
+      "root": "libs/sunat-change",
+      "entryFile": "index",
+      "sourceRoot": "libs/sunat-change/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/sunat-change/tsconfig.lib.json"
+      }
     }
   }
 }
