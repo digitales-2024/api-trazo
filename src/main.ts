@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { apiReference } from '@scalar/nestjs-api-reference';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -46,6 +47,15 @@ async function bootstrap() {
   ];
 
   SwaggerModule.setup('api', app, document);
+
+  app.use(
+    '/reference',
+    apiReference({
+      spec: {
+        content: document,
+      },
+    }),
+  );
 
   await app.listen(process.env.PORT ?? 3000);
 }

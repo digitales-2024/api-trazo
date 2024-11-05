@@ -12,7 +12,8 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.{ts,tsx}\" --fix",
+    "tailwind:dev": "tailwindcss -i ./static/tailwind-input.css -o ./static/tailwind-output.css --watch --minify",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -21,12 +22,14 @@
     "prepare": "husky install"
   },
   "lint-staged": {
-    "*.{js,ts}": [
+    "*.{js,ts,tsx}": [
       "eslint --fix",
       "prettier --write"
     ]
   },
   "dependencies": {
+    "@kitajs/html": "^4.2.4",
+    "@kitajs/ts-html-plugin": "^4.1.0",
     "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.2.3",
@@ -36,8 +39,10 @@
     "@nestjs/mapped-types": "^2.0.5",
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/serve-static": "^4.0.2",
     "@nestjs/swagger": "^7.4.2",
     "@prisma/client": "^5.21.1",
+    "@scalar/nestjs-api-reference": "^0.3.167",
     "axios": "^1.7.7",
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",
@@ -48,6 +53,7 @@
     "moment-timezone": "^0.5.46",
     "node-cron": "^3.0.3",
     "passport-jwt": "^4.0.1",
+    "puppeteer": "^23.5.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1"
   },
@@ -61,6 +67,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.2",
     "@types/node": "^20.3.1",
+    "@types/pdfkit": "^0.13.5",
     "@types/supertest": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
@@ -74,6 +81,7 @@
     "prisma": "^5.21.1",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
+    "tailwindcss": "^3.4.14",
     "ts-jest": "^29.1.0",
     "ts-loader": "^9.4.3",
     "ts-node": "^10.9.1",

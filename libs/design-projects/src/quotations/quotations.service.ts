@@ -7,6 +7,7 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  StreamableFile,
 } from '@nestjs/common';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
@@ -20,6 +21,8 @@ import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
 import { QuotationData } from '@clients/clients/interfaces';
 import { handleException } from '@login/login/utils';
 import { QuotationDataNested } from '@clients/clients/interfaces/quotation.interface';
+import * as Puppeteer from 'puppeteer';
+import { QuotationTemplate } from './quotations.template';
 import { LevelsService } from '../levels/levels.service';
 
 @Injectable()
@@ -29,6 +32,7 @@ export class QuotationsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly clientService: ClientsService,
+    private readonly template: QuotationTemplate,
     @Inject(forwardRef(() => LevelsService))
     private readonly levelsService: LevelsService,
   ) {}
@@ -275,6 +279,7 @@ export class QuotationsService {
           electricCost: true,
           sanitaryCost: true,
           metering: true,
+          createdAt: true,
           client: {
             select: {
               id: true,
@@ -307,6 +312,7 @@ export class QuotationsService {
           electricCost: quotation.electricCost,
           sanitaryCost: quotation.sanitaryCost,
           metering: quotation.metering,
+          createdAt: quotation.createdAt,
           client: {
             id: quotation.client.id,
             name: quotation.client.name,
@@ -362,6 +368,7 @@ export class QuotationsService {
         electricCost: true,
         sanitaryCost: true,
         metering: true,
+        createdAt: true,
         client: {
           select: {
             id: true,
@@ -411,6 +418,7 @@ export class QuotationsService {
       electricCost: quotation.electricCost,
       sanitaryCost: quotation.sanitaryCost,
       metering: quotation.metering,
+      createdAt: quotation.createdAt,
       client: {
         id: quotation.client.id,
         name: quotation.client.name,
@@ -735,5 +743,38 @@ export class QuotationsService {
       statusCode: HttpStatus.OK,
       message: 'Quotations reactivated successfully',
     };
+  }
+
+  async genPdf(id: string, user: UserData): Promise<StreamableFile> {
+    // Get the quotation
+    const quotation = await this.findOne(id, user);
+
+    // TODO: Get how many times this quotation has been edited, and pass it to the template
+    const editCount = 1;
+
+    // Render the quotation into HTML
+    const pdf_html = this.template.renderPdf(quotation, editCount);
+
+    // Generar el PDF usando Puppeteer
+    const browser = await Puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(await pdf_html);
+    const pdfBufferUint8Array = await page.pdf({
+      format: 'A4',
+      preferCSSPageSize: true,
+    });
+    await browser.close();
+
+    return new StreamableFile(pdfBufferUint8Array, {
+      type: 'application/pdf',
+      disposition: 'attachment; filename="cotizacion_demo_2.pdf"',
+    });
+  }
+
+  async genPdfTemplate(id: string, user: UserData): Promise<string> {
+    // Get the quotation
+    const quotation = await this.findOne(id, user);
+
+    return this.template.renderPdf(quotation, 322);
   }
 }

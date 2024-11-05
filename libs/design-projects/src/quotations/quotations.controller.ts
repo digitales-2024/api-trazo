@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  StreamableFile,
 } from '@nestjs/common';
 import { QuotationsService } from './quotations.service';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
@@ -97,7 +98,7 @@ export class QuotationsController {
     return this.quotationsService.removeAll(deleteDto, user);
   }
 
-  @ApiOkResponse({ description: 'Reactivates the passed quotatinos' })
+  @ApiOkResponse({ description: 'Reactivates the passed quotations' })
   @ApiBadRequestResponse({
     description: 'Validation error or ids not found',
   })
@@ -107,5 +108,21 @@ export class QuotationsController {
     @Body() quotations: DeleteQuotationsDto,
   ) {
     return this.quotationsService.reactivateAll(user, quotations);
+  }
+
+  @Get(':id/pdflayout')
+  async pdfTemplate(
+    @Param('id') id: string,
+    @GetUser() user: UserData,
+  ): Promise<string> {
+    return await this.quotationsService.genPdfTemplate(id, user);
+  }
+
+  @Get(':id/pdf')
+  genPdf(
+    @Param('id') id: string,
+    @GetUser() user: UserData,
+  ): Promise<StreamableFile> {
+    return this.quotationsService.genPdf(id, user);
   }
 }
