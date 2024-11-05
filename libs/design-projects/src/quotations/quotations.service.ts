@@ -18,9 +18,11 @@ import { PrismaService } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
 import { ClientsService } from '@clients/clients';
 import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
-import { QuotationData } from '@clients/clients/interfaces';
 import { handleException } from '@login/login/utils';
-import { QuotationDataNested } from '@clients/clients/interfaces/quotation.interface';
+import {
+  QuotationDataNested,
+  QuotationSummaryData,
+} from '@clients/clients/interfaces/quotation.interface';
 import * as Puppeteer from 'puppeteer';
 import { QuotationTemplate } from './quotations.template';
 import { LevelsService } from '../levels/levels.service';
@@ -247,7 +249,7 @@ export class QuotationsService {
    * @param user usuario que realiza la peticion
    * @returns Todas las cotizaciones
    */
-  async findAll(user: UserPayload): Promise<QuotationData[]> {
+  async findAll(user: UserPayload): Promise<QuotationSummaryData[]> {
     try {
       const quotations = await this.prisma.quotation.findMany({
         where: {
@@ -265,22 +267,9 @@ export class QuotationsService {
         select: {
           id: true,
           name: true,
-          code: true,
-          description: true,
           status: true,
-          discount: true,
           totalAmount: true,
-          deliveryTime: true,
-          exchangeRate: true,
-          landArea: true,
-          paymentSchedule: true,
-          integratedProjectDetails: true,
-          architecturalCost: true,
-          structuralCost: true,
-          electricCost: true,
-          sanitaryCost: true,
           metering: true,
-          createdAt: true,
           client: {
             select: {
               id: true,
@@ -298,31 +287,17 @@ export class QuotationsService {
         quotations.map(async (quotation) => ({
           id: quotation.id,
           name: quotation.name,
-          code: quotation.code,
-          description: quotation.description,
           status: quotation.status,
-          discount: quotation.discount,
           totalAmount: quotation.totalAmount,
-          deliveryTime: quotation.deliveryTime,
-          exchangeRate: quotation.exchangeRate,
-          landArea: quotation.landArea,
-          paymentSchedule: quotation.paymentSchedule,
-          integratedProjectDetails: quotation.integratedProjectDetails,
-          architecturalCost: quotation.architecturalCost,
-          structuralCost: quotation.structuralCost,
-          electricCost: quotation.electricCost,
-          sanitaryCost: quotation.sanitaryCost,
           metering: quotation.metering,
-          createdAt: quotation.createdAt,
           client: {
             id: quotation.client.id,
             name: quotation.client.name,
           },
-          levels: await this.levelsService.findOne(quotation.id, user),
         })),
       );
 
-      return quotationsWithLevels as QuotationData[];
+      return quotationsWithLevels as QuotationSummaryData[];
     } catch (error) {
       this.logger.error('Error getting all quotations');
       handleException(error, 'Error getting all quotations');
@@ -387,6 +362,7 @@ export class QuotationsService {
                 area: true,
                 space: {
                   select: {
+                    id: true,
                     name: true,
                   },
                 },
