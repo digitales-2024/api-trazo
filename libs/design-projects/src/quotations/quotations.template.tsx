@@ -68,6 +68,7 @@ export class QuotationTemplate {
           <div class="h-[3px] w-full bg-black my-8" />
           <QuotationTemplate.paymentSchedule
             scheduledDays={quotation.deliveryTime}
+            finalPriceSoles={32200}
             costItems={quotation.paymentSchedule as unknown as Array<CostItem>}
           />
         </div>
@@ -418,6 +419,7 @@ export class QuotationTemplate {
 
   private static paymentSchedule(props: {
     scheduledDays: number;
+    finalPriceSoles: number;
     costItems: Array<CostItem>;
   }) {
     return (
@@ -443,16 +445,31 @@ export class QuotationTemplate {
         <span />
         <span />
 
-        {props.costItems.map((i) => (
-          <>
-            <p class="uppercase pb-4" safe>
-              {i.name}
-            </p>
-            <span class="text-center">{i.percentage}%</span>
-            <span />
-            <span />
-          </>
-        ))}
+        {props.costItems.map((i) => {
+          const percentageCost = props.finalPriceSoles * (i.percentage / 100);
+          return (
+            <>
+              <p class="uppercase pb-4" safe>
+                {i.name}
+              </p>
+              <span class="text-center">{i.percentage}%</span>
+              <span class="text-right font-bold" safe>
+                S/. {twoDecimals(percentageCost)}
+              </span>
+              <span class="text-center" safe>
+                {i.description}
+              </span>
+            </>
+          );
+        })}
+
+        <span />
+        <span class="text-center">100%</span>
+        <span class="text-right font-bold border-t-4 border-black" safe>
+          S/. {twoDecimals(props.finalPriceSoles)}
+        </span>
+        <span />
+        <span />
       </div>
     );
   }
