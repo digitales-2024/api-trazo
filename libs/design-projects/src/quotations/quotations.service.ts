@@ -1,6 +1,8 @@
 import {
   BadRequestException,
+  forwardRef,
   HttpStatus,
+  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -18,6 +20,7 @@ import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
 import { QuotationData } from '@clients/clients/interfaces';
 import { handleException } from '@login/login/utils';
 import { QuotationDataNested } from '@clients/clients/interfaces/quotation.interface';
+import { LevelsService } from '../levels/levels.service';
 
 @Injectable()
 export class QuotationsService {
@@ -26,6 +29,8 @@ export class QuotationsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly clientService: ClientsService,
+    @Inject(forwardRef(() => LevelsService))
+    private readonly levelsService: LevelsService,
   ) {}
 
   /**
@@ -239,7 +244,7 @@ export class QuotationsService {
    */
   async findAll(user: UserPayload): Promise<QuotationData[]> {
     try {
-      const products = await this.prisma.quotation.findMany({
+      const quotations = await this.prisma.quotation.findMany({
         where: {
           ...(user.isSuperAdmin
             ? {}
@@ -282,30 +287,35 @@ export class QuotationsService {
         },
       });
 
-      // Mapea los resultados al tipo QuotationData
-      return products.map((product) => ({
-        id: product.id,
-        name: product.name,
-        code: product.code,
-        description: product.description,
-        status: product.status,
-        discount: product.discount,
-        totalAmount: product.totalAmount,
-        deliveryTime: product.deliveryTime,
-        exchangeRate: product.exchangeRate,
-        landArea: product.landArea,
-        paymentSchedule: product.paymentSchedule,
-        integratedProjectDetails: product.integratedProjectDetails,
-        architecturalCost: product.architecturalCost,
-        structuralCost: product.structuralCost,
-        electricCost: product.electricCost,
-        sanitaryCost: product.sanitaryCost,
-        metering: product.metering,
-        client: {
-          id: product.client.id,
-          name: product.client.name,
-        },
-      })) as QuotationData[];
+      // Mapea los resultados al tipo QuotationData y espera a que se resuelvan las promesas de levels
+      const quotationsWithLevels = await Promise.all(
+        quotations.map(async (quotation) => ({
+          id: quotation.id,
+          name: quotation.name,
+          code: quotation.code,
+          description: quotation.description,
+          status: quotation.status,
+          discount: quotation.discount,
+          totalAmount: quotation.totalAmount,
+          deliveryTime: quotation.deliveryTime,
+          exchangeRate: quotation.exchangeRate,
+          landArea: quotation.landArea,
+          paymentSchedule: quotation.paymentSchedule,
+          integratedProjectDetails: quotation.integratedProjectDetails,
+          architecturalCost: quotation.architecturalCost,
+          structuralCost: quotation.structuralCost,
+          electricCost: quotation.electricCost,
+          sanitaryCost: quotation.sanitaryCost,
+          metering: quotation.metering,
+          client: {
+            id: quotation.client.id,
+            name: quotation.client.name,
+          },
+          levels: await this.levelsService.findOne(quotation.id, user),
+        })),
+      );
+
+      return quotationsWithLevels as QuotationData[];
     } catch (error) {
       this.logger.error('Error getting all quotations');
       handleException(error, 'Error getting all quotations');
