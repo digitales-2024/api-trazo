@@ -9,8 +9,8 @@
             <td align="center">
               <h2>Hola, <strong><%= locals.name %></strong></h2>
               <p>
-                Estamos encantados de que te hayas unido a <%= locals.business %>. Tu cuenta ha sido
-                creada y estás listo para comenzar.
+                Estamos encantados de que te hayas unido a <%= locals.business
+                %>. Tu cuenta ha sido creada y estás listo para comenzar.
               </p>
             </td>
           </tr>
@@ -36,18 +36,27 @@
               </table>
               <p>
                 Para garantizar la seguridad de tu cuenta, te pedimos que
-                <span style="color: #f29c3e; font-style: italic">cambies esta contraseña</span>
+                <span style="color: #f29c3e; font-style: italic"
+                  >cambies esta contraseña</span
+                >
                 tan pronto como inicies sesión.
               </p>
-              <p>Puedes acceder a tu cuenta haciendo clic en el botón de abajo:</p>
               <p>
-                <a target="_blank" href="<%= locals.webAdmin %>">Iniciar sesión</a>
+                Puedes acceder a tu cuenta haciendo clic en el botón de abajo:
               </p>
               <p>
-                Si necesitas ayuda o tienes alguna pregunta, no dudes en ponerte en contacto con
-                nosotros.
+                <a target="_blank" href="<%= locals.webAdmin %>"
+                  >Iniciar sesión</a
+                >
               </p>
-              <p>Gracias por unirte a nosotros. ¡Estamos emocionados de trabajar contigo!</p>
+              <p>
+                Si necesitas ayuda o tienes alguna pregunta, no dudes en ponerte
+                en contacto con nosotros.
+              </p>
+              <p>
+                Gracias por unirte a nosotros. ¡Estamos emocionados de trabajar
+                contigo!
+              </p>
               <p>Saludos,<br />El equipo de <%= locals.business %></p>
             </td>
           </tr>

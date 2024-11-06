@@ -23,10 +23,18 @@ import { EjsAdapter } from '@nestjs-modules/mailer/dist/adapters/ejs.adapter';
           },
         },
         defaults: {
-          from: 'Chaqchao',
+          from: 'Trazo',
         },
         template: {
-          dir: join(__dirname, 'templates'),
+          dir: join(
+            __dirname,
+            '..',
+            'libs',
+            'login',
+            'src',
+            'email',
+            'templates',
+          ),
           adapter: new EjsAdapter(),
           options: {
             strict: true,
