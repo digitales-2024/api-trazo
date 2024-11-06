@@ -7,7 +7,7 @@ import {
 } from '@nestjs/swagger';
 import { Auth } from '@login/login/admin/auth/decorators';
 
-@ApiTags('change-sunat')
+@ApiTags('Change Sunat')
 @ApiBadRequestResponse({ description: 'Solicitud incorrecta' })
 @ApiUnauthorizedResponse({ description: 'No autorizado' })
 @Auth()
