@@ -8,7 +8,7 @@ import { UserData } from '@login/login/interfaces';
 @Controller({ path: 'contracts', version: '1' })
 @Auth()
 export class ContractsController {
-  constructor(private readonly contractsService: ContractsService) { }
+  constructor(private readonly contractsService: ContractsService) {}
 
   @ApiOkResponse({
     description: 'Gets the contract for the quotation passed by id',

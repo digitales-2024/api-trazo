@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { DesignProjectsTemplate } from '../design-projects.template';
+import { QuotationDataNested } from '@clients/clients/interfaces/quotation.interface';
+import { twoDecimals } from '../utils';
 
 @Injectable()
 export class ContractsTemplate {
-  renderContract() {
-    // TODO: Move the template skeleton into design-proyect.template.tsx,
-    // and call it from there
+  renderContract(quotation: QuotationDataNested) {
     return (
       <DesignProjectsTemplate.skeleton>
         <div class="px-44">
@@ -15,14 +15,17 @@ export class ContractsTemplate {
           <p class="my-8 leading-8 text-justify">
             Consta por el presente documento el contrato de locación de
             servicios profesionales, que celebran de una parte, en calidad de{' '}
-            <b>LOCATARIO</b> el __________ con D.N.I. Nº ________ con domicilio
-            legal en ________ y Provincia y Departamento de Arequipa.
+            <b>LOCATARIO</b>
+            <span safe> {quotation.client.name} </span>
+            con D.N.I. Nº ________ con domicilio legal en
+            <span safe> {quotation.client.id} </span>y Provincia y Departamento
+            de Arequipa.
           </p>
           <p class="my-8 leading-8 text-justify">
             Y de la otra parte TRAZO ARQ S.A.C., Ruc 20455937974 domicilio Urb.
             Las Orquídeas LL-6 Arequipa en calidad de <b>LOCADOR</b>, cuyo
             representante legal el Sr. Arq. Joel Jesús Gonzales Flores,
-            identificado don D.N.I. 42578992, en los términos y condiciones
+            identificado con D.N.I. 42578992, en los términos y condiciones
             siguientes:
           </p>
 
@@ -38,7 +41,10 @@ export class ContractsTemplate {
             ____________, Provincia y Departamento de Arequipa.
           </p>
           <p class="my-8 leading-8">
-            <b>El terreno cuenta con un área de _____ m2.</b>
+            <b>
+              El terreno cuenta con un área de{' '}
+              <span safe>{twoDecimals(quotation.metering)}</span> m2.
+            </b>
           </p>
 
           <ul class="list-disc pl-12">

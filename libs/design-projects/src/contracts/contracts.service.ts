@@ -9,15 +9,21 @@ export class ContractsService {
   constructor(
     private readonly quotationService: QuotationsService,
     private readonly template: ContractsTemplate,
-  ) { }
+  ) {}
 
   async findOne(id: string, user: UserData): Promise<string> {
-    return await this.template.renderContract();
+    // Get the quotation
+    const quotation = await this.quotationService.findOne(id, user);
+
+    return await this.template.renderContract(quotation);
   }
 
   async findOnePdf(id: string, user: UserData): Promise<StreamableFile> {
+    // Get the quotation
+    const quotation = await this.quotationService.findOne(id, user);
+
     // Render the quotation into HTML
-    const pdfHtml = await this.template.renderContract();
+    const pdfHtml = await this.template.renderContract(quotation);
 
     // Generar el PDF usando Puppeteer
     const browser = await Puppeteer.launch();
