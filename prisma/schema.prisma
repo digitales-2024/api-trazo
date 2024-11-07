@@ -25,7 +25,7 @@ model User {
   auditsPerformed Audit[] @relation("AuditPerformedBy")
 
   // Relación con UserRol
-  userRols  UserRol[]   @relation("UserId")
+  userRols UserRol[] @relation("UserId")
 
   @@unique([email, isActive])
 }
@@ -182,7 +182,12 @@ model BusinessConfig {
 
 // Tabla de cotizaciones (Quotation)
 model Quotation {
-  id          String @id @unique @default(uuid()) // Clave primaria
+  id String @id @unique @default(uuid()) // Clave primaria
+
+  // Un número autoincrementable que se muestra en el PDF de la cotizacion
+  // TRAZ-140
+  publicCode Int @default(autoincrement())
+
   name        String @default("SGC-P-04-F3") // Nombre del proyecto
   description String @default("") // Descripcion del proyecto. Ejm: "Se planifica diseño de una vivienda multifamiliar..."
   code        String // Código de la cotizacion.
