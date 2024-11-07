@@ -262,7 +262,7 @@ model DesignProject {
     id   String @id @unique @default(uuid())
     code String @unique
 
-    status   DesignProjectStatus
+    status   DesignProjectStatus @default(APPROVED)
     meetings Json
 
     ubicationProject String
