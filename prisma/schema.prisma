@@ -25,7 +25,8 @@ model User {
   auditsPerformed Audit[] @relation("AuditPerformedBy")
 
   // Relación con UserRol
-  userRols  UserRol[]   @relation("UserId")
+  userRols       UserRol[]        @relation("UserId")
+  DesignProjects DesignProjects[]
 
   @@unique([email, isActive])
 }
@@ -150,8 +151,9 @@ model Client {
   // Relacion con Quotation
   clientQuotations Quotation[] @relation("client")
 
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime         @updatedAt
+  DesignProjects DesignProjects[]
 }
 
 // tabla ambientes
@@ -213,7 +215,8 @@ model Quotation {
   updatedAt DateTime @updatedAt
 
   // Relacion con Level
-  levels Level[] @relation("level")
+  levels         Level[]          @relation("level")
+  DesignProjects DesignProjects[]
 }
 
 // Estado de una cotizacion
@@ -252,4 +255,31 @@ model LevelsOnSpaces {
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @default(now()) @updatedAt
+}
+
+model DesignProjects {
+  id          String              @id @unique @default(uuid())
+  code        String              @unique
+  clientId    String
+  designerId  String
+  quotationId String
+  status      DesignProjectStatus
+  meetings    Json
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+
+  client    Client    @relation(fields: [clientId], references: [id])
+  designer  User      @relation(fields: [designerId], references: [id])
+  quotation Quotation @relation(fields: [quotationId], references: [id])
+}
+
+enum DesignProjectStatus {
+  APPROVED
+  ENGINEERING
+  CONFIRMATION
+  PRESENTATION
+  COMPLETED
 }
