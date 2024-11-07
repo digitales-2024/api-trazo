@@ -8,7 +8,7 @@ import { UserData } from '@login/login/interfaces';
 @Controller({ path: 'contracts', version: '1' })
 @Auth()
 export class ContractsController {
-  constructor(private readonly contractsService: ContractsService) {}
+  constructor(private readonly contractsService: ContractsService) { }
 
   @ApiOkResponse({
     description: 'Gets the contract for the quotation passed by id',
@@ -16,5 +16,13 @@ export class ContractsController {
   @Get(':id')
   findOne(@Param('id') id: string, @GetUser() user: UserData) {
     return this.contractsService.findOne(id, user);
+  }
+
+  @ApiOkResponse({
+    description: 'Gets the contract for the quotation passed by id',
+  })
+  @Get(':id/pdf')
+  genPdf(@Param('id') id: string, @GetUser() user: UserData) {
+    return this.contractsService.findOnePdf(id, user);
   }
 }
