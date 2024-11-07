@@ -1,8 +1,6 @@
 import {
   BadRequestException,
-  forwardRef,
   HttpStatus,
-  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -25,7 +23,6 @@ import {
 } from '@clients/clients/interfaces/quotation.interface';
 import * as Puppeteer from 'puppeteer';
 import { QuotationTemplate } from './quotations.template';
-import { LevelsService } from '../levels/levels.service';
 
 @Injectable()
 export class QuotationsService {
@@ -35,8 +32,6 @@ export class QuotationsService {
     private readonly audit: AuditService,
     private readonly clientService: ClientsService,
     private readonly template: QuotationTemplate,
-    @Inject(forwardRef(() => LevelsService))
-    private readonly levelsService: LevelsService,
   ) {}
 
   /**
@@ -330,6 +325,7 @@ export class QuotationsService {
         id: true,
         name: true,
         code: true,
+        publicCode: true,
         description: true,
         status: true,
         discount: true,
@@ -381,6 +377,7 @@ export class QuotationsService {
       id: quotation.id,
       name: quotation.name,
       code: quotation.code,
+      publicCode: quotation.publicCode,
       description: quotation.description,
       status: quotation.status,
       discount: quotation.discount,

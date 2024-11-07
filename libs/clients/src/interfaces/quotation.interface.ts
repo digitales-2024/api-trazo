@@ -52,6 +52,7 @@ export type QuotationDataNested = Pick<
   | 'sanitaryCost'
   | 'metering'
   | 'createdAt'
+  | 'publicCode'
 > & {
   client: { id: string; name: string };
   levels: Array<LevelData>;
