@@ -25,8 +25,8 @@ model User {
   auditsPerformed Audit[] @relation("AuditPerformedBy")
 
   // Relación con UserRol
-  userRols       UserRol[]        @relation("UserId")
-  DesignProjects DesignProjects[]
+  userRols       UserRol[]       @relation("UserId")
+  DesignProjects DesignProject[]
 
   @@unique([email, isActive])
 }
@@ -151,9 +151,9 @@ model Client {
   // Relacion con Quotation
   clientQuotations Quotation[] @relation("client")
 
-  createdAt      DateTime         @default(now()) @db.Timestamptz(6)
-  updatedAt      DateTime         @updatedAt
-  DesignProjects DesignProjects[]
+  createdAt      DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime        @updatedAt
+  DesignProjects DesignProject[]
 }
 
 // tabla ambientes
@@ -215,8 +215,8 @@ model Quotation {
   updatedAt DateTime @updatedAt
 
   // Relacion con Level
-  levels         Level[]          @relation("level")
-  DesignProjects DesignProjects[]
+  levels         Level[]         @relation("level")
+  DesignProjects DesignProject[]
 }
 
 // Estado de una cotizacion
@@ -257,7 +257,7 @@ model LevelsOnSpaces {
   updatedAt DateTime @default(now()) @updatedAt
 }
 
-model DesignProjects {
+model DesignProject {
   id          String              @id @unique @default(uuid())
   code        String              @unique
   clientId    String
