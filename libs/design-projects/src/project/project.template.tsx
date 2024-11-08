@@ -1,25 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { DesignProjectsTemplate } from '../design-projects.template';
-import {
-  LevelData,
-  QuotationDataNested,
-} from '@clients/clients/interfaces/quotation.interface';
+import { LevelData } from '@clients/clients/interfaces/quotation.interface';
 import { spellPricing, twoDecimals } from '../utils';
 import { BusinessGet } from '@business/business/business.service';
-import { ClientData } from '@clients/clients/interfaces';
 import {
   CostItem,
   IntegralProjectItem,
   QuotationTemplate,
 } from '../quotations/quotations.template';
+import { DesignProjectDataNested } from '../interfaces/project.interface';
 
 @Injectable()
 export class ProjectTemplate {
-  renderContract(
-    quotation: QuotationDataNested,
-    business: BusinessGet,
-    client: ClientData,
-  ) {
+  renderContract(data: DesignProjectDataNested, business: BusinessGet) {
+    const project = data;
+    const quotation = data.quotation;
+    const client = data.client;
+
     // compute all the neccesary areas
     const totalArea = quotation.levels
       .map(
@@ -84,9 +81,15 @@ export class ProjectTemplate {
           <p class="my-8 leading-8">
             El Proyecto
             <span safe> {quotation.name}</span>, Ubicada en
-            ______PROYECTO_DIRECCION______, Provincia de
-            ____PROYECTO_PROVINCIA___ y Departamento de
-            ___PROYECTO_DEPARTAMENTO.
+            <span safe> {project.ubicationProject}</span>, Provincia de
+            <span class="capitalize" safe>
+              &nbsp;{project.province}&nbsp;
+            </span>
+            , y Departamento de
+            <span class="capitalize" safe>
+              &nbsp;{project.department}&nbsp;
+            </span>
+            .
           </p>
           <p class="my-8 leading-8">
             <b>
@@ -170,7 +173,7 @@ export class ProjectTemplate {
             </p>
           </div>
 
-          <ProjectTemplate.levels quotation={quotation} />
+          <ProjectTemplate.levels levels={quotation.levels} />
 
           <p class="mt-16 mb-8 leading-8">
             <b>CLAUSULA SEGUNDA:</b> DE LA MODALIDAD DEL CONTRATO
@@ -439,10 +442,10 @@ export class ProjectTemplate {
     );
   }
 
-  private static levels(props: { quotation: QuotationDataNested }) {
+  private static levels(props: { levels: Array<LevelData> }) {
     return (
       <div>
-        {props.quotation.levels.map((l) => (
+        {props.levels.map((l) => (
           <ProjectTemplate.level level={l} />
         ))}
       </div>

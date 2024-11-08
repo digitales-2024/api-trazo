@@ -85,18 +85,18 @@ export class ProjectController {
   // }
 
   @ApiOkResponse({
-    description: 'Gets the contract for the quotation passed by id',
+    description: 'Gets the contract for the project passed by id',
   })
   @Get(':id/pdf')
-  genPdf(@Param('id') id: string, @GetUser() user: UserData) {
-    return this.projectService.findOnePdf(id, user);
+  genPdf(@Param('id') id: string) {
+    return this.projectService.findOnePdf(id);
   }
 
   @ApiOkResponse({
-    description: 'Gets the contract for the quotation passed by id',
+    description: 'Gets the contract for the project passed by id',
   })
   @Get(':id/pdflayout')
-  genPdfLayout(@Param('id') id: string, @GetUser() user: UserData) {
-    return this.projectService.genPdfLayout(id, user);
+  genPdfLayout(@Param('id') id: string) {
+    return this.projectService.genPdfLayout(id);
   }
 }

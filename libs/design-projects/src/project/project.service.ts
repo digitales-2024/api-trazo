@@ -19,6 +19,7 @@ import Puppeteer from 'puppeteer';
 import { BusinessService } from '@business/business';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 import { DesignProjectData } from '../interfaces';
+import { DesignProjectDataNested } from '../interfaces/project.interface';
 
 @Injectable()
 export class ProjectService {
@@ -46,6 +47,7 @@ export class ProjectService {
     const projectCode = `PRY-DIS-${String(lastIncrement + 1).padStart(3, '0')}`;
     return projectCode;
   }
+
   /**
    * Crea un nuevo proyecto de diseño.
    * @param createDesignProjectDto DTO con los datos del proyecto.
@@ -234,28 +236,143 @@ export class ProjectService {
     return project as DesignProjectData;
   }
 
-  // métodos para generar el contrato como PDF
-  async genPdfLayout(id: string, user: UserData): Promise<string> {
-    // Get the quotation
-    const quotation = await this.quotationService.findOne(id, user);
-    const business = (await this.businessService.findAll())[0];
-    const client = await this.client.findOne(quotation.client.id);
+  /**
+   * Gets the project, quotation, levels and spaces by id.
+   * Used by the PDF renderer only
+   */
+  private async findByIdNested(id: string): Promise<DesignProjectDataNested> {
+    const project = await this.prisma.designProject.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        ubicationProject: true,
+        department: true,
+        province: true,
+        status: true,
+        client: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            province: true,
+            department: true,
+            rucDni: true,
+          },
+        },
+        quotation: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            publicCode: true,
+            description: true,
+            status: true,
+            discount: true,
+            totalAmount: true,
+            deliveryTime: true,
+            exchangeRate: true,
+            landArea: true,
+            paymentSchedule: true,
+            integratedProjectDetails: true,
+            architecturalCost: true,
+            structuralCost: true,
+            electricCost: true,
+            sanitaryCost: true,
+            metering: true,
+            createdAt: true,
+            levels: {
+              select: {
+                id: true,
+                name: true,
+                LevelsOnSpaces: {
+                  select: {
+                    id: true,
+                    amount: true,
+                    area: true,
+                    space: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        designer: {
+          select: { id: true, name: true },
+        },
+      },
+    });
 
-    return await this.template.renderContract(quotation, business, client);
+    if (!project) {
+      throw new NotFoundException(`Design project not found`);
+    }
+
+    const quotation = project.quotation;
+    return {
+      id: project.id,
+      code: project.code,
+      name: project.name,
+      ubicationProject: project.ubicationProject,
+      department: project.department,
+      province: project.province,
+      status: project.status,
+      quotation: {
+        id: quotation.id,
+        name: quotation.name,
+        code: quotation.code,
+        publicCode: quotation.publicCode,
+        description: quotation.description,
+        status: quotation.status,
+        discount: quotation.discount,
+        totalAmount: quotation.totalAmount,
+        deliveryTime: quotation.deliveryTime,
+        exchangeRate: quotation.exchangeRate,
+        landArea: quotation.landArea,
+        paymentSchedule: quotation.paymentSchedule,
+        integratedProjectDetails: quotation.integratedProjectDetails,
+        architecturalCost: quotation.architecturalCost,
+        structuralCost: quotation.structuralCost,
+        electricCost: quotation.electricCost,
+        sanitaryCost: quotation.sanitaryCost,
+        metering: quotation.metering,
+        levels: quotation.levels.map((level) => ({
+          id: level.id,
+          name: level.name,
+          spaces: level.LevelsOnSpaces.map((space) => ({
+            id: space.id,
+            name: space.space.name,
+            amount: space.amount,
+            area: space.area,
+          })),
+        })),
+      },
+      designer: project.designer,
+      client: project.client,
+    };
   }
 
-  async findOnePdf(id: string, user: UserData): Promise<StreamableFile> {
-    // Get the quotation
-    const quotation = await this.quotationService.findOne(id, user);
-    const business = (await this.businessService.findAll())[0];
-    const client = await this.client.findOne(quotation.client.id);
+  // métodos para generar el contrato como PDF
+  async genPdfLayout(id: string): Promise<string> {
+    // Get the data
+    const allData = await this.findByIdNested(id);
+    const business = await this.businessService.findAll();
+
+    return await this.template.renderContract(allData, business[0]);
+  }
+
+  async findOnePdf(id: string): Promise<StreamableFile> {
+    // Get the data
+    const allData = await this.findByIdNested(id);
+    const business = await this.businessService.findAll();
 
     // Render the quotation into HTML
-    const pdfHtml = await this.template.renderContract(
-      quotation,
-      business,
-      client,
-    );
+    const pdfHtml = await this.template.renderContract(allData, business[0]);
 
     // Generar el PDF usando Puppeteer
     const browser = await Puppeteer.launch();
