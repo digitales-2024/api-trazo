@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { DesignProjectsTemplate } from '../design-projects.template';
-import { QuotationDataNested } from '@clients/clients/interfaces/quotation.interface';
+import {
+  LevelData,
+  QuotationDataNested,
+} from '@clients/clients/interfaces/quotation.interface';
 import { spellPricing, twoDecimals } from '../utils';
 import { BusinessGet } from '@business/business/business.service';
 import { ClientData } from '@clients/clients/interfaces';
@@ -36,9 +39,6 @@ export class ProjectTemplate {
     const priceBeforeDiscount = totalArea * pricePerSquareMeter;
     // Final price in USD after discount
     const priceAfterDiscount = priceBeforeDiscount - quotation.discount;
-    // The price of each m2, after the discount is applied
-    const pricePerSquareMeterDiscounted =
-      (priceAfterDiscount * pricePerSquareMeter) / priceBeforeDiscount;
     const finalPriceSoles = priceAfterDiscount * quotation.exchangeRate;
 
     return (
@@ -170,7 +170,7 @@ export class ProjectTemplate {
             </p>
           </div>
 
-          <p>_________________________</p>
+          <ProjectTemplate.levels quotation={quotation} />
 
           <p class="mt-16 mb-8 leading-8">
             <b>CLAUSULA SEGUNDA:</b> DE LA MODALIDAD DEL CONTRATO
@@ -436,6 +436,35 @@ export class ProjectTemplate {
           <br />
         </div>
       </DesignProjectsTemplate.skeleton>
+    );
+  }
+
+  private static levels(props: { quotation: QuotationDataNested }) {
+    return (
+      <div>
+        {props.quotation.levels.map((l) => (
+          <ProjectTemplate.level level={l} />
+        ))}
+      </div>
+    );
+  }
+
+  private static level(props: { level: LevelData }) {
+    return (
+      <>
+        <p class="uppercase my-6">
+          <b safe>{props.level.name}</b>
+        </p>
+
+        <ul class="list-disc pl-12 my-4">
+          {props.level.spaces.map((space) => (
+            <li class="uppercase font-bold">
+              {space.amount > 1 ? space.amount.toString() : ''}{' '}
+              <span safe>{space.name}</span>
+            </li>
+          ))}
+        </ul>
+      </>
     );
   }
 }

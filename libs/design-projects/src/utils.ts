@@ -62,7 +62,7 @@ const indices = {
   '600': 'SEISCIENTOS',
   '6XX': 'SEISCIENTOS ',
   '700': 'SETECIENTOS',
-  '7XX': 'SETSCIENTOS ',
+  '7XX': 'SETECIENTOS ',
   '800': 'OCHOCIENTOS',
   '8XX': 'OCHOCIENTOS ',
   '900': 'NOVECIENTOS',
