@@ -6,6 +6,7 @@ import {
   Body,
   HttpStatus,
   HttpCode,
+  Get,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -50,6 +51,18 @@ export class ProjectController {
   ) {
     return this.projectService.updateStatus(id, updateProjectStatusDto, user);
   }
+
+  @Get(':id')
+  @ApiCreatedResponse({
+    description: 'Design project retrieved successfully',
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid project ID or project not found',
+  })
+  findOne(@Param('id') id: string) {
+    return this.projectService.findOne(id);
+  }
+
   // @Get()
   // findAll() {
   //   return this.projectService.findAll();
