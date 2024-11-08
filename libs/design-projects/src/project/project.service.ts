@@ -13,13 +13,13 @@ import { UserData } from '@login/login/interfaces';
 import { ClientsService } from '@clients/clients';
 import { UsersService } from '@login/login/admin/users/users.service';
 import { handleException } from '@login/login/utils';
-import { QuotationsService } from '../quotations/quotations.service';
 import { ProjectTemplate } from './project.template';
 import Puppeteer from 'puppeteer';
 import { BusinessService } from '@business/business';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 import { DesignProjectData } from '../interfaces';
 import { DesignProjectDataNested } from '../interfaces/project.interface';
+import { ExportProjectPdfDto } from './dto/export-project-pdf.dto';
 
 @Injectable()
 export class ProjectService {
@@ -30,10 +30,10 @@ export class ProjectService {
     private readonly audit: AuditService,
     private readonly client: ClientsService,
     private readonly user: UsersService,
-    private readonly quotationService: QuotationsService,
     private readonly businessService: BusinessService,
     private readonly template: ProjectTemplate,
   ) {}
+
   private async generateCodeProjectDesing(): Promise<string> {
     // Generar el siguiente código incremental
     const lastProject = await this.prisma.designProject.findFirst({
@@ -363,16 +363,27 @@ export class ProjectService {
     const allData = await this.findByIdNested(id);
     const business = await this.businessService.findAll();
 
-    return await this.template.renderContract(allData, business[0]);
+    return await this.template.renderContract(
+      allData,
+      business[0],
+      new Date('2024-10-12'),
+    );
   }
 
-  async findOnePdf(id: string): Promise<StreamableFile> {
+  async findOnePdf(
+    id: string,
+    dto: ExportProjectPdfDto,
+  ): Promise<StreamableFile> {
     // Get the data
     const allData = await this.findByIdNested(id);
     const business = await this.businessService.findAll();
 
     // Render the quotation into HTML
-    const pdfHtml = await this.template.renderContract(allData, business[0]);
+    const pdfHtml = await this.template.renderContract(
+      allData,
+      business[0],
+      new Date(dto.signingDate),
+    );
 
     // Generar el PDF usando Puppeteer
     const browser = await Puppeteer.launch();

@@ -12,7 +12,11 @@ import { DesignProjectDataNested } from '../interfaces/project.interface';
 
 @Injectable()
 export class ProjectTemplate {
-  renderContract(data: DesignProjectDataNested, business: BusinessGet) {
+  renderContract(
+    data: DesignProjectDataNested,
+    business: BusinessGet,
+    signingDate: Date,
+  ) {
     const project = data;
     const quotation = data.quotation;
     const client = data.client;
@@ -420,8 +424,15 @@ export class ProjectTemplate {
             <p class="my-8 leading-8 text-justify">
               En la celebración del presente contrato no ha mediado simulación
               ni vicio de voluntad que lo invalide y en señal de conformidad
-              ambas partes lo firmamos en la ciudad de Arequipa el día __ de
-              ________ de ____.
+              ambas partes lo firmamos en la ciudad de Arequipa el día&nbsp;
+              <span safe>
+                {signingDate.toLocaleDateString('es-PE', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </span>
+              .
             </p>
           </div>
 

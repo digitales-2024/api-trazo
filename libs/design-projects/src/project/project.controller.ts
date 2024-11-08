@@ -20,6 +20,7 @@ import {
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import { UserData } from '@login/login/interfaces';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
+import { ExportProjectPdfDto } from './dto/export-project-pdf.dto';
 
 @ApiTags('Design Projects')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -87,9 +88,9 @@ export class ProjectController {
   @ApiOkResponse({
     description: 'Gets the contract for the project passed by id',
   })
-  @Get(':id/pdf')
-  genPdf(@Param('id') id: string) {
-    return this.projectService.findOnePdf(id);
+  @Post(':id/pdf')
+  genPdf(@Body() exportDto: ExportProjectPdfDto, @Param('id') id: string) {
+    return this.projectService.findOnePdf(id, exportDto);
   }
 
   @ApiOkResponse({
