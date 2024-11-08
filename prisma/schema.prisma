@@ -1,260 +1,297 @@
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
 }
 
 model User {
-  id                 String   @id @unique @default(uuid())
-  name               String
-  email              String
-  password           String
-  phone              String?
-  isSuperAdmin       Boolean  @default(false)
-  lastLogin          DateTime @default(now()) @db.Timestamptz(6)
-  isActive           Boolean  @default(true)
-  mustChangePassword Boolean  @default(true)
+    id                 String   @id @unique @default(uuid())
+    name               String
+    email              String
+    password           String
+    phone              String?
+    isSuperAdmin       Boolean  @default(false)
+    lastLogin          DateTime @default(now()) @db.Timestamptz(6)
+    isActive           Boolean  @default(true)
+    mustChangePassword Boolean  @default(true)
 
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now()) @db.Timestamptz(6)
+    updatedAt DateTime @updatedAt
 
-  // Relación con auditorías (acciones realizadas por este usuario)
-  auditsPerformed Audit[] @relation("AuditPerformedBy")
+    // Relación con auditorías (acciones realizadas por este usuario)
+    auditsPerformed Audit[] @relation("AuditPerformedBy")
 
-  // Relación con UserRol
-  userRols UserRol[] @relation("UserId")
+    // Relación con UserRol
+    userRols       UserRol[]       @relation("UserId")
+    designProjects DesignProject[] @relation("DesignerDesignProjects")
 
-  @@unique([email, isActive])
+    @@unique([email, isActive])
 }
 
 model Rol {
-  id          String  @id @unique @default(uuid())
-  name        String
-  description String?
-  isActive    Boolean @default(true)
+    id          String  @id @unique @default(uuid())
+    name        String
+    description String?
+    isActive    Boolean @default(true)
 
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now()) @db.Timestamptz(6)
+    updatedAt DateTime @updatedAt
 
-  // Relación con UserRol
-  rolUsers UserRol[] @relation("RolId")
+    // Relación con UserRol
+    rolUsers UserRol[] @relation("RolId")
 
-  // Relación con RolModulePermissions
-  rolModulePermissions RolModulePermissions[] @relation("RolId")
+    // Relación con RolModulePermissions
+    rolModulePermissions RolModulePermissions[] @relation("RolId")
 
-  @@unique([name, isActive])
+    @@unique([name, isActive])
 }
 
 model UserRol {
-  id       String  @id @unique @default(uuid())
-  user     User    @relation("UserId", fields: [userId], references: [id])
-  userId   String
-  isActive Boolean @default(true)
-  rol      Rol     @relation("RolId", fields: [rolId], references: [id])
-  rolId    String
+    id       String  @id @unique @default(uuid())
+    user     User    @relation("UserId", fields: [userId], references: [id])
+    userId   String
+    isActive Boolean @default(true)
+    rol      Rol     @relation("RolId", fields: [rolId], references: [id])
+    rolId    String
 
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now()) @db.Timestamptz(6)
+    updatedAt DateTime @updatedAt
 
-  @@unique([userId, rolId])
+    @@unique([userId, rolId])
 }
 
 model Permission {
-  id          String  @id @unique @default(uuid())
-  cod         String
-  name        String
-  description String?
+    id          String  @id @unique @default(uuid())
+    cod         String
+    name        String
+    description String?
 
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now()) @db.Timestamptz(6)
+    updatedAt DateTime @updatedAt
 
-  // Relación con ModulePermissions
-  permissionModule ModulePermissions[] @relation("PermissionId")
+    // Relación con ModulePermissions
+    permissionModule ModulePermissions[] @relation("PermissionId")
 
-  @@unique([cod, name])
+    @@unique([cod, name])
 }
 
 model Module {
-  id          String  @id @unique @default(uuid())
-  cod         String
-  name        String
-  description String?
+    id          String  @id @unique @default(uuid())
+    cod         String
+    name        String
+    description String?
 
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now()) @db.Timestamptz(6)
+    updatedAt DateTime @updatedAt
 
-  // Relación con ModulePermissions
-  modulePermissions ModulePermissions[] @relation("ModuleId")
+    // Relación con ModulePermissions
+    modulePermissions ModulePermissions[] @relation("ModuleId")
 
-  @@unique([cod, name])
+    @@unique([cod, name])
 }
 
 model ModulePermissions {
-  id           String     @id @unique @default(uuid())
-  module       Module     @relation("ModuleId", fields: [moduleId], references: [id], onDelete: Cascade)
-  moduleId     String
-  permission   Permission @relation("PermissionId", fields: [permissionId], references: [id], onDelete: Cascade)
-  permissionId String
+    id           String     @id @unique @default(uuid())
+    module       Module     @relation("ModuleId", fields: [moduleId], references: [id], onDelete: Cascade)
+    moduleId     String
+    permission   Permission @relation("PermissionId", fields: [permissionId], references: [id], onDelete: Cascade)
+    permissionId String
 
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now()) @db.Timestamptz(6)
+    updatedAt DateTime @updatedAt
 
-  // Relación con RolModulePermissions
-  rolModulePermissions RolModulePermissions[] @relation("ModulePermissionsId")
+    // Relación con RolModulePermissions
+    rolModulePermissions RolModulePermissions[] @relation("ModulePermissionsId")
 
-  @@unique([moduleId, permissionId])
+    @@unique([moduleId, permissionId])
 }
 
 model RolModulePermissions {
-  id                  String            @id @unique @default(uuid())
-  rol                 Rol               @relation("RolId", fields: [rolId], references: [id], onDelete: Cascade)
-  rolId               String
-  modulePermissions   ModulePermissions @relation("ModulePermissionsId", fields: [modulePermissionsId], references: [id], onDelete: Cascade)
-  modulePermissionsId String
+    id                  String            @id @unique @default(uuid())
+    rol                 Rol               @relation("RolId", fields: [rolId], references: [id], onDelete: Cascade)
+    rolId               String
+    modulePermissions   ModulePermissions @relation("ModulePermissionsId", fields: [modulePermissionsId], references: [id], onDelete: Cascade)
+    modulePermissionsId String
 
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now()) @db.Timestamptz(6)
+    updatedAt DateTime @updatedAt
 
-  @@unique([rolId, modulePermissionsId])
+    @@unique([rolId, modulePermissionsId])
 }
 
 model Audit {
-  id            String          @id @unique @default(uuid())
-  entityId      String
-  entityType    String // Representa el nombre del modelo (ej: User, Rol, etc.)
-  action        AuditActionType // Representa la acción (CREATE, UPDATE, DELETE)
-  performedBy   User            @relation("AuditPerformedBy", fields: [performedById], references: [id])
-  performedById String
-  createdAt     DateTime        @default(now()) @db.Timestamptz(6)
+    id            String          @id @unique @default(uuid())
+    entityId      String
+    entityType    String // Representa el nombre del modelo (ej: User, Rol, etc.)
+    action        AuditActionType // Representa la acción (CREATE, UPDATE, DELETE)
+    performedBy   User            @relation("AuditPerformedBy", fields: [performedById], references: [id])
+    performedById String
+    createdAt     DateTime        @default(now()) @db.Timestamptz(6)
 }
 
 enum AuditActionType {
-  CREATE
-  UPDATE
-  DELETE
+    CREATE
+    UPDATE
+    DELETE
 }
 
 model Client {
-  id         String  @id @unique @default(uuid())
-  name       String
-  rucDni     String  @unique
-  address    String
-  province   String
-  department String
-  phone      String?
-  isActive   Boolean @default(true)
+    id         String  @id @unique @default(uuid())
+    name       String
+    rucDni     String  @unique
+    address    String
+    province   String
+    department String
+    phone      String?
+    isActive   Boolean @default(true)
 
-  // Relacion con Quotation
-  clientQuotations Quotation[] @relation("client")
+    // Relacion con Quotation
+    clientQuotations Quotation[] @relation("client")
 
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt
+    designProjects DesignProject[] @relation("ClientDesignProjects")
+
+    createdAt DateTime @default(now()) @db.Timestamptz(6)
+    updatedAt DateTime @updatedAt
 }
 
 // tabla ambientes
 model Spaces {
-  id          String  @id @unique @default(uuid())
-  name        String  @unique
-  description String?
-  isActive    Boolean @default(true)
+    id          String  @id @unique @default(uuid())
+    name        String  @unique
+    description String?
+    isActive    Boolean @default(true)
 
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now()) @db.Timestamptz(6)
+    updatedAt DateTime @updatedAt
 
-  // relacion muchos-a-muchos con Level
-  LevelsOnSpaces LevelsOnSpaces[]
+    // relacion muchos-a-muchos con Level
+    LevelsOnSpaces LevelsOnSpaces[]
 }
 
 model BusinessConfig {
-  id           String @id @unique @default(uuid())
-  name         String
-  ruc          String
-  address      String
-  legalRepName String
-  legalRepDni  String
+    id           String @id @unique @default(uuid())
+    name         String
+    ruc          String
+    address      String
+    legalRepName String
+    legalRepDni  String
 
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now()) @db.Timestamptz(6)
+    updatedAt DateTime @updatedAt
 }
 
 // Tabla de cotizaciones (Quotation)
 model Quotation {
-  id String @id @unique @default(uuid()) // Clave primaria
+    id String @id @unique @default(uuid()) // Clave primaria
 
-  // Un número autoincrementable que se muestra en el PDF de la cotizacion
-  // TRAZ-140
-  publicCode Int @default(autoincrement())
+    // Un número autoincrementable que se muestra en el PDF de la cotizacion
+    // TRAZ-140
+    publicCode Int @default(autoincrement())
 
-  name        String @default("SGC-P-04-F3") // Nombre del proyecto
-  description String @default("") // Descripcion del proyecto. Ejm: "Se planifica diseño de una vivienda multifamiliar..."
-  code        String // Código de la cotizacion.
+    name        String @default("SGC-P-04-F3") // Nombre del proyecto
+    description String @default("") // Descripcion del proyecto. Ejm: "Se planifica diseño de una vivienda multifamiliar..."
+    code        String // Código de la cotizacion.
 
-  // Relacion con Client
-  client   Client @relation("client", fields: [clientId], references: [id])
-  clientId String // Llave foránea a la tabla de clientes
+    // Relacion con Client
+    client   Client @relation("client", fields: [clientId], references: [id])
+    clientId String // Llave foránea a la tabla de clientes
 
-  status       QuotationStatusType @default(PENDING) // Estado de la cotización
-  discount     Float // Descuento aplicado
-  totalAmount  Float               @default(0) // Monto total de la cotización
-  deliveryTime Int // Tiempo de entrega en meses
-  exchangeRate Float // Tasa de cambio
-  landArea     Float // Área del terreno en m²
+    status       QuotationStatusType @default(PENDING) // Estado de la cotización
+    discount     Float // Descuento aplicado
+    totalAmount  Float               @default(0) // Monto total de la cotización
+    deliveryTime Int // Tiempo de entrega en meses
+    exchangeRate Float // Tasa de cambio
+    landArea     Float // Área del terreno en m²
 
-  paymentSchedule Json // Cronograma de pagos (30%, 50%, 20%)
+    paymentSchedule Json // Cronograma de pagos (30%, 50%, 20%)
 
-  // Proyecto integral: Planos y detalles de cada área
-  integratedProjectDetails Json // JSON con detalles del proyecto integral (descripción, unidad, metraje, costo por m²)
+    // Proyecto integral: Planos y detalles de cada área
+    integratedProjectDetails Json // JSON con detalles del proyecto integral (descripción, unidad, metraje, costo por m²)
 
-  architecturalCost Float
-  structuralCost    Float
-  electricCost      Float
-  sanitaryCost      Float
-  metering          Float // Metrado total del proyecto
+    architecturalCost Float
+    structuralCost    Float
+    electricCost      Float
+    sanitaryCost      Float
+    metering          Float // Metrado total del proyecto
 
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now()) @db.Timestamptz(6)
+    updatedAt DateTime @updatedAt
 
-  // Relacion con Level
-  levels Level[] @relation("level")
+    // Relacion con Level
+    levels         Level[]         @relation("level")
+    designProjects DesignProject[] @relation("QuotationDesignProjects")
 }
 
 // Estado de una cotizacion
 enum QuotationStatusType {
-  PENDING
-  APPROVED
-  REJECTED
+    PENDING
+    APPROVED
+    REJECTED
 }
 
 // Nivel (piso) de una cotizacion
 model Level {
-  id   String @id @unique @default(uuid()) // Clave primaria
-  name String // Nombre del nivel. Ejm: "Primer nivel"
+    id   String @id @unique @default(uuid()) // Clave primaria
+    name String // Nombre del nivel. Ejm: "Primer nivel"
 
-  quotation   Quotation @relation("level", fields: [quotationId], references: [id])
-  quotationId String
+    quotation   Quotation @relation("level", fields: [quotationId], references: [id])
+    quotationId String
 
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now()) @db.Timestamptz(6)
+    updatedAt DateTime @updatedAt
 
-  // Relacion muchos-a-muchos con Spaces
-  LevelsOnSpaces LevelsOnSpaces[]
+    // Relacion muchos-a-muchos con Spaces
+    LevelsOnSpaces LevelsOnSpaces[]
 }
 
 model LevelsOnSpaces {
-  id String @id @unique @default(uuid()) // Clave primaria
+    id String @id @unique @default(uuid()) // Clave primaria
 
-  amount Int // cantidad de ambientes
-  area   Float // area del ambiente en m2
+    amount Int // cantidad de ambientes
+    area   Float // area del ambiente en m2
 
-  level   Level  @relation(fields: [levelId], references: [id])
-  levelId String
+    level   Level  @relation(fields: [levelId], references: [id])
+    levelId String
 
-  space   Spaces @relation(fields: [spaceId], references: [id])
-  spaceId String
+    space   Spaces @relation(fields: [spaceId], references: [id])
+    spaceId String
 
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @default(now()) @updatedAt
+    createdAt DateTime @default(now()) @db.Timestamptz(6)
+    updatedAt DateTime @default(now()) @updatedAt
+}
+
+model DesignProject {
+    id   String @id @unique @default(uuid())
+    code String @unique
+
+    status   DesignProjectStatus @default(APPROVED)
+    meetings Json
+
+    ubicationProject String
+    province         String
+    department       String
+
+    //Relaciones
+    client   Client @relation("ClientDesignProjects", fields: [clientId], references: [id])
+    clientId String
+
+    quotation   Quotation @relation("QuotationDesignProjects", fields: [quotationId], references: [id])
+    quotationId String
+
+    designer   User   @relation("DesignerDesignProjects", fields: [designerId], references: [id])
+    designerId String
+
+    createdAt DateTime @default(now()) @db.Timestamptz(6)
+    updatedAt DateTime @updatedAt
+}
+
+enum DesignProjectStatus {
+    APPROVED
+    ENGINEERING
+    CONFIRMATION
+    PRESENTATION
+    COMPLETED
 }
