@@ -62,9 +62,8 @@ export class ProjectTemplate {
             </span>
             , y Departamento de
             <span class="capitalize" safe>
-              &nbsp;{client.department}
+              &nbsp;{client.department}.
             </span>
-            .
           </p>
           <p class="my-8 leading-8 text-justify">
             Y de la otra parte TRAZO ARQ S.A.C., Ruc 20455937974 domicilio Urb.
@@ -436,6 +435,8 @@ export class ProjectTemplate {
             </p>
           </div>
 
+          <ProjectTemplate.signatures business={business} />
+
           <br />
           <br />
           <br />
@@ -479,6 +480,25 @@ export class ProjectTemplate {
           ))}
         </ul>
       </>
+    );
+  }
+
+  private static signatures(props: { business: BusinessGet }) {
+    return (
+      <div class="grid grid-cols-2 gap-4 pt-32">
+        <div class="text-center border-t-2 border-black mx-12">
+          <p class="uppercase font-bold">Locador</p>
+          <p class="uppercase font-bold" safe>
+            ARQ. {props.business.legalRepName}
+          </p>
+          <p class="uppercase font-bold" safe>
+            D.N.I. {props.business.legalRepDni}
+          </p>
+        </div>
+        <div class="text-center border-t-2 border-black mx-12">
+          <p class="uppercase font-bold">Locatario</p>
+        </div>
+      </div>
     );
   }
 }
