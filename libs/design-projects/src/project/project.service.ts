@@ -82,6 +82,7 @@ export class ProjectService {
         const newProject = await prisma.designProject.create({
           data: {
             code: projectCode,
+            name: quotation.name,
             meetings: meetings, // Parsear JSON de reuniones
             ubicationProject,
             department,
