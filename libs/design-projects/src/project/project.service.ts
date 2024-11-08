@@ -16,6 +16,7 @@ import { handleException } from '@login/login/utils';
 import { QuotationsService } from '../quotations/quotations.service';
 import { ProjectTemplate } from './project.template';
 import Puppeteer from 'puppeteer';
+import { BusinessService } from '@business/business';
 
 @Injectable()
 export class ProjectService {
@@ -27,6 +28,7 @@ export class ProjectService {
     private readonly client: ClientsService,
     private readonly user: UsersService,
     private readonly quotationService: QuotationsService,
+    private readonly businessService: BusinessService,
     private readonly template: ProjectTemplate,
   ) {}
   private async generateCodeProjectDesing(): Promise<string> {
@@ -132,16 +134,24 @@ export class ProjectService {
   async findOne(id: string, user: UserData): Promise<string> {
     // Get the quotation
     const quotation = await this.quotationService.findOne(id, user);
+    const business = (await this.businessService.findAll())[0];
+    const client = await this.client.findOne(quotation.client.id);
 
-    return await this.template.renderContract(quotation);
+    return await this.template.renderContract(quotation, business, client);
   }
 
   async findOnePdf(id: string, user: UserData): Promise<StreamableFile> {
     // Get the quotation
     const quotation = await this.quotationService.findOne(id, user);
+    const business = (await this.businessService.findAll())[0];
+    const client = await this.client.findOne(quotation.client.id);
 
     // Render the quotation into HTML
-    const pdfHtml = await this.template.renderContract(quotation);
+    const pdfHtml = await this.template.renderContract(
+      quotation,
+      business,
+      client,
+    );
 
     // Generar el PDF usando Puppeteer
     const browser = await Puppeteer.launch();

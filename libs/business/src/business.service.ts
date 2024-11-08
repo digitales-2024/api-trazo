@@ -88,12 +88,10 @@ export class BusinessService {
    *
    * @returns Lista de Business
    */
-  async findAll() {
+  async findAll(): Promise<Array<BusinessGet>> {
     const businesses = await this.prisma.businessConfig.findMany();
-    if (businesses.length > 1) {
-      throw new InternalServerErrorException(
-        'Found more than 1 Business record',
-      );
+    if (businesses.length !== 1) {
+      throw new InternalServerErrorException('Expected to find 1 business');
     }
 
     return businesses;
@@ -171,3 +169,14 @@ export class BusinessService {
     };
   }
 }
+
+export type BusinessGet = {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  name: string;
+  address: string;
+  ruc: string;
+  legalRepName: string;
+  legalRepDni: string;
+};

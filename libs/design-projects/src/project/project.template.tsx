@@ -2,10 +2,26 @@ import { Injectable } from '@nestjs/common';
 import { DesignProjectsTemplate } from '../design-projects.template';
 import { QuotationDataNested } from '@clients/clients/interfaces/quotation.interface';
 import { twoDecimals } from '../utils';
+import { BusinessGet } from '@business/business/business.service';
+import { ClientData } from '@clients/clients/interfaces';
 
 @Injectable()
 export class ProjectTemplate {
-  renderContract(quotation: QuotationDataNested) {
+  renderContract(
+    quotation: QuotationDataNested,
+    business: BusinessGet,
+    client: ClientData,
+  ) {
+    // compute all the neccesary areas
+    const totalArea = quotation.levels
+      .map(
+        (level) =>
+          level.spaces.map((space) => space.area).reduce((a, b) => a + b),
+        0,
+      )
+      .reduce((a, b) => a + b, 0);
+    const levelsCount = quotation.levels.length;
+
     return (
       <DesignProjectsTemplate.skeleton>
         <div class="px-44">
@@ -16,17 +32,29 @@ export class ProjectTemplate {
             Consta por el presente documento el contrato de locación de
             servicios profesionales, que celebran de una parte, en calidad de{' '}
             <b>LOCATARIO</b>
-            <span safe> {quotation.client.name} </span>
-            con D.N.I. Nº ________ con domicilio legal en
-            <span safe> {quotation.client.id} </span>y Provincia y Departamento
-            de Arequipa.
+            <span safe> {client.name} </span>
+            con D.N.I. Nº
+            <span safe> {client.rucDni} </span>
+            con domicilio legal en
+            <span safe> {client.address}</span>, Provincia de
+            <span class="capitalize" safe>
+              {' '}
+              {client.province}
+            </span>
+            , y Departamento de
+            <span class="capitalize" safe>
+              {' '}
+              {client.department}
+            </span>
+            .
           </p>
           <p class="my-8 leading-8 text-justify">
             Y de la otra parte TRAZO ARQ S.A.C., Ruc 20455937974 domicilio Urb.
             Las Orquídeas LL-6 Arequipa en calidad de <b>LOCADOR</b>, cuyo
-            representante legal el Sr. Arq. Joel Jesús Gonzales Flores,
-            identificado con D.N.I. 42578992, en los términos y condiciones
-            siguientes:
+            representante legal el Sr. Arq.
+            <span safe> {business.legalRepName}</span>, identificado con D.N.I.
+            <span safe> {business.legalRepDni}</span>, en los términos y
+            condiciones siguientes:
           </p>
 
           <p class="mt-16 mb-8 leading-8">
@@ -37,8 +65,11 @@ export class ProjectTemplate {
             <b>LOCADOR</b> para la ejecución de:
           </p>
           <p class="my-8 leading-8">
-            El Proyecto Integral de Vivienda Unifamiliar, Ubicada en
-            ____________, Provincia y Departamento de Arequipa.
+            El Proyecto
+            <span safe> {quotation.name}</span>, Ubicada en
+            ______PROYECTO_DIRECCION______, Provincia de
+            ____PROYECTO_PROVINCIA___ y Departamento de
+            ___PROYECTO_PROVINCIA____.
           </p>
           <p class="my-8 leading-8">
             <b>
@@ -105,10 +136,14 @@ export class ProjectTemplate {
 
           <div class="pl-12">
             <p class="my-8">
-              <b>ÁREA DE DISEÑO: _____ m2</b>
+              <b>
+                ÁREA DE DISEÑO:
+                <span safe> {twoDecimals(totalArea)} </span>
+                m2
+              </b>
             </p>
             <p class="my-8">
-              <b>NRO DE PISOS: _ pisos</b>
+              <b>NRO DE PISOS: {levelsCount} pisos</b>
             </p>
             <p class="my-8">
               <b>TIPO DE EDIFICACIÓN: Vivienda unifamiliar</b>
@@ -117,6 +152,8 @@ export class ProjectTemplate {
               <b>LISTADO DE ESPACIOS:</b>
             </p>
           </div>
+
+          <p>_________________________</p>
 
           <p class="mt-16 mb-8 leading-8">
             <b>CLAUSULA SEGUNDA:</b> DE LA MODALIDAD DEL CONTRATO
