@@ -404,7 +404,7 @@ export class QuotationsService {
         id: level.id,
         name: level.name,
         spaces: level.LevelsOnSpaces.map((space) => ({
-          id: space.id,
+          id: space.space.id,
           name: space.space.name,
           amount: space.amount,
           area: space.area,
@@ -427,7 +427,27 @@ export class QuotationsService {
     updateQuotationDto: UpdateQuotationDto,
     user: UserPayload,
   ): Promise<HttpResponse<undefined>> {
-    // Si no hay datos que actualizar, salir antes
+    const {
+      name,
+      description,
+      discount,
+      deliveryTime,
+      exchangeRate,
+      landArea,
+      paymentSchedule,
+      integratedProjectDetails,
+      architecturalCost,
+      structuralCost,
+      electricCost,
+      sanitaryCost,
+      metering,
+      levels,
+      clientId,
+      totalAmount,
+    } = updateQuotationDto;
+
+    console.log('lo que me llega:', updateQuotationDto);
+
     if (Object.keys(updateQuotationDto).length === 0) {
       return {
         statusCode: HttpStatus.OK,
@@ -437,17 +457,14 @@ export class QuotationsService {
     }
 
     await this.prisma.$transaction(async (prisma) => {
-      // get the current quotation
       const storedQuotation = await prisma.quotation.findUnique({
         where: { id },
       });
 
-      // if the quotation doesn's exist, throw
       if (storedQuotation === null) {
         throw new NotFoundException('Quotation not found');
       }
 
-      // If the status is APPROVED or PENDING, throw
       if (storedQuotation.status === 'APPROVED') {
         throw new BadRequestException(
           'Attempted to edit an APPROVED quotation',
@@ -457,7 +474,14 @@ export class QuotationsService {
         throw new BadRequestException('Attempted to edit a REJECTED quotation');
       }
 
-      // check there are changed fields
+      const clientExists = await prisma.client.findUnique({
+        where: { id: clientId },
+      });
+
+      if (!clientExists) {
+        throw new BadRequestException('Client not found');
+      }
+
       let changesPresent = false;
       for (const newField in updateQuotationDto) {
         const newValue = updateQuotationDto[newField];
@@ -468,7 +492,6 @@ export class QuotationsService {
       }
 
       if (!changesPresent) {
-        // return early
         return {
           statusCode: HttpStatus.OK,
           message: 'Quotation updated successfully',
@@ -476,15 +499,156 @@ export class QuotationsService {
         };
       }
 
-      // update database
-      await prisma.quotation.update({
+      const dataactualizada = await prisma.quotation.update({
         where: {
           id,
         },
-        data: updateQuotationDto,
+        data: {
+          name,
+          description,
+          client: {
+            connect: {
+              id: clientId,
+            },
+          },
+          totalAmount,
+          discount,
+          deliveryTime,
+          exchangeRate,
+          landArea,
+          paymentSchedule,
+          integratedProjectDetails,
+          architecturalCost,
+          structuralCost,
+          electricCost,
+          sanitaryCost,
+          metering,
+        },
       });
 
-      // update audit log
+      console.log('data actualizada:', dataactualizada);
+
+      const existingLevels = await prisma.level.findMany({
+        where: { quotationId: id },
+        select: {
+          id: true,
+          name: true,
+          LevelsOnSpaces: {
+            select: {
+              id: true,
+              amount: true,
+              area: true,
+              spaceId: true, // Este es el espacio correcto que usaremos para comparar
+            },
+          },
+        },
+      });
+
+      const newLevelNames = levels.map((level) => level.name);
+
+      const levelsToDelete = existingLevels.filter(
+        (level) => !newLevelNames.includes(level.name),
+      );
+
+      console.log(levelsToDelete);
+
+      for (const level of levelsToDelete) {
+        // Primero eliminamos los registros asociados en LevelsOnSpaces
+        await prisma.levelsOnSpaces.deleteMany({
+          where: { levelId: level.id },
+        });
+
+        // Luego eliminamos el nivel en sí
+        await prisma.level.delete({
+          where: { id: level.id },
+        });
+      }
+
+      for (const levelDto of levels) {
+        const existingLevel = existingLevels.find(
+          (level) => level.name === levelDto.name,
+        );
+
+        if (existingLevel) {
+          const existingSpaces = existingLevel.LevelsOnSpaces;
+
+          // Corregimos la comparación entre spaceId de LevelsOnSpaces y el spaceId de levelDto.spaces
+          const spacesToDelete = existingSpaces.filter(
+            (space) =>
+              !levelDto.spaces.some((s) => s.spaceId === space.spaceId),
+          );
+
+          for (const space of spacesToDelete) {
+            await prisma.levelsOnSpaces.delete({
+              where: { id: space.id },
+            });
+          }
+
+          for (const spaceDto of levelDto.spaces) {
+            const existingSpace = existingSpaces.find(
+              (space) => space.spaceId === spaceDto.spaceId,
+            );
+
+            if (existingSpace) {
+              await prisma.levelsOnSpaces.update({
+                where: { id: existingSpace.id },
+                data: {
+                  amount: spaceDto.amount,
+                  area: spaceDto.area,
+                },
+              });
+            } else {
+              const spaceExists = await prisma.spaces.findUnique({
+                where: { id: spaceDto.spaceId },
+              });
+
+              if (!spaceExists) {
+                throw new BadRequestException(
+                  `Space with id ${spaceDto.spaceId} not found`,
+                );
+              }
+
+              await prisma.levelsOnSpaces.create({
+                data: {
+                  amount: spaceDto.amount,
+                  area: spaceDto.area,
+                  levelId: existingLevel.id,
+                  spaceId: spaceDto.spaceId,
+                },
+              });
+            }
+          }
+        } else {
+          const newLevel = await prisma.level.create({
+            data: {
+              name: levelDto.name,
+              quotationId: id,
+            },
+          });
+
+          for (const spaceDto of levelDto.spaces) {
+            const spaceExists = await prisma.spaces.findUnique({
+              where: { id: spaceDto.spaceId },
+            });
+
+            if (!spaceExists) {
+              throw new BadRequestException(
+                `Space with id ${spaceDto.spaceId} not found`,
+              );
+            }
+
+            await prisma.levelsOnSpaces.create({
+              data: {
+                amount: spaceDto.amount,
+                area: spaceDto.area,
+                levelId: newLevel.id,
+                spaceId: spaceDto.spaceId,
+              },
+            });
+          }
+        }
+      }
+
       await this.audit.create({
         entityId: id,
         entityType: 'quotation',
