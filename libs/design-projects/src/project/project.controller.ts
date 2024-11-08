@@ -19,6 +19,8 @@ import {
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import { UserData } from '@login/login/interfaces';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
+import { UpdateChecklistDto } from './dto/update-checklist.dto';
 
 @ApiTags('Design Projects')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -39,6 +41,28 @@ export class ProjectController {
     return this.projectService.create(createDesignProjectDto, user);
   }
 
+  @Get(':id')
+  @ApiCreatedResponse({
+    description: 'Design project retrieved successfully',
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid project ID or project not found',
+  })
+  findOne(@Param('id') id: string) {
+    return this.projectService.findOne(id);
+  }
+
+  @Patch(':id')
+  @ApiCreatedResponse({ description: 'Design project updated successfully' })
+  @ApiBadRequestResponse({ description: 'Validation failed or bad request' })
+  update(
+    @Param('id') id: string,
+    @Body() updateProjectDto: UpdateProjectDto,
+    @GetUser() user: UserData,
+  ) {
+    return this.projectService.update(id, updateProjectDto, user);
+  }
+
   @Patch(':id/status')
   @ApiCreatedResponse({
     description: 'Design project status updated successfully',
@@ -52,15 +76,15 @@ export class ProjectController {
     return this.projectService.updateStatus(id, updateProjectStatusDto, user);
   }
 
-  @Get(':id')
-  @ApiCreatedResponse({
-    description: 'Design project retrieved successfully',
-  })
-  @ApiBadRequestResponse({
-    description: 'Invalid project ID or project not found',
-  })
-  findOne(@Param('id') id: string) {
-    return this.projectService.findOne(id);
+  @Patch(':id/checklist')
+  @ApiCreatedResponse({ description: 'Checklist updated successfully' })
+  @ApiBadRequestResponse({ description: 'Validation failed or bad request' })
+  updateChecklist(
+    @Param('id') id: string,
+    @Body() updateChecklistDto: UpdateChecklistDto,
+    @GetUser() user: UserData,
+  ) {
+    return this.projectService.updateChecklist(id, updateChecklistDto, user);
   }
 
   // @Get()

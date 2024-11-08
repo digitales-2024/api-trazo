@@ -14,6 +14,9 @@ import { UsersService } from '@login/login/admin/users/users.service';
 import { handleException } from '@login/login/utils';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 import { DesignProjectData } from '../interfaces';
+import { QuotationsService } from '../quotations/quotations.service';
+import { UpdateProjectDto } from './dto/update-project.dto';
+import { UpdateChecklistDto } from './dto/update-checklist.dto';
 
 @Injectable()
 export class ProjectService {
@@ -24,6 +27,7 @@ export class ProjectService {
     private readonly audit: AuditService,
     private readonly client: ClientsService,
     private readonly user: UsersService,
+    private readonly quotation: QuotationsService,
   ) {}
   private async generateCodeProjectDesing(): Promise<string> {
     // Generar el siguiente código incremental
@@ -38,6 +42,83 @@ export class ProjectService {
     const projectCode = `PRY-DIS-${String(lastIncrement + 1).padStart(3, '0')}`;
     return projectCode;
   }
+
+  private async validateClientExists(clientId: string): Promise<void> {
+    try {
+      await this.client.findById(clientId);
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw new NotFoundException(`Client does not exist or is inactive`);
+      }
+      this.logger.error(
+        `Error validating client with ID: ${clientId}`,
+        error.stack,
+      );
+      handleException(error, 'Error validating client');
+    }
+  }
+
+  private async validateDesignerExists(designerId: string): Promise<void> {
+    try {
+      await this.user.findById(designerId);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new NotFoundException(`Designer does not exist or is inactive`);
+      }
+      this.logger.error(
+        `Error validating designer with ID: ${designerId}`,
+        error.stack,
+      );
+      handleException(error, 'Error validating designer');
+    }
+  }
+
+  private async validateApprovedQuotation(
+    quotationId: string,
+    user: UserData,
+  ): Promise<void> {
+    const quotation = await this.quotation.findOne(quotationId, user);
+
+    if (!quotation) {
+      throw new NotFoundException(`Quotation not found`);
+    }
+
+    if (quotation.status !== 'APPROVED') {
+      throw new BadRequestException(`Quotation is not approved`);
+    }
+  }
+
+  private async validateDatesForEngineering(id: string): Promise<void> {
+    const project = await this.prisma.designProject.findUnique({
+      where: { id },
+      select: {
+        dateArchitectural: true,
+        dateStructural: true,
+        dateElectrical: true,
+        dateSanitary: true,
+      },
+    });
+
+    if (!project) {
+      throw new NotFoundException(`Design project not found`);
+    }
+
+    const missingDates = [];
+    if (!project.dateArchitectural) missingDates.push('dateArchitectural');
+    if (!project.dateStructural) missingDates.push('dateStructural');
+    if (!project.dateElectrical) missingDates.push('dateElectrical');
+    if (!project.dateSanitary) missingDates.push('dateSanitary');
+
+    if (missingDates.length > 0) {
+      throw new BadRequestException(
+        `Cannot move to ENGINEERING. Missing dates: ${missingDates.join(', ')}`,
+      );
+    }
+  }
+
   /**
    * Crea un nuevo proyecto de diseño.
    * @param createDesignProjectDto DTO con los datos del proyecto.
@@ -124,27 +205,45 @@ export class ProjectService {
       message: 'Design Project created successfully',
     };
   }
-  async updateStatus(
+
+  async update(
     id: string,
-    updateProjectStatusDto: UpdateProjectStatusDto,
+    updateProjectDto: UpdateProjectDto,
     user: UserData,
   ): Promise<{ statusCode: number; message: string }> {
-    const { newStatus } = updateProjectStatusDto;
+    const { clientId, designerId, quotationId } = updateProjectDto;
 
     try {
       await this.prisma.$transaction(async (prisma) => {
-        // Verificar si el proyecto existe
         const project = await this.findById(id);
 
-        if (project.status === newStatus) {
-          return; // No es necesario actualizar
+        if (clientId && clientId !== project.client.id) {
+          await this.validateClientExists(clientId);
         }
 
-        // Actualiza estado
+        if (designerId && designerId !== project.designer.id) {
+          await this.validateDesignerExists(designerId);
+        }
+
+        if (quotationId && quotationId !== project.quotation.id) {
+          await this.validateApprovedQuotation(quotationId, user);
+        }
+
+        const changesPresent = Object.keys(updateProjectDto).some(
+          (key) => updateProjectDto[key] !== project[key],
+        );
+
+        if (!changesPresent) {
+          return;
+        }
 
         await prisma.designProject.update({
           where: { id },
-          data: { status: newStatus },
+          data: {
+            clientId,
+            designerId,
+            quotationId,
+          },
         });
 
         await this.audit.create({
@@ -155,6 +254,11 @@ export class ProjectService {
           createdAt: new Date(),
         });
       });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Design project updated successfully',
+      };
     } catch (error) {
       this.logger.error(
         `Error updating project: ${error.message}`,
@@ -168,19 +272,51 @@ export class ProjectService {
         throw error;
       }
 
-      handleException(error, 'Error updating project status');
+      handleException(error, 'Error updating project');
     }
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'Design project status update successfully',
-    };
   }
-  async findOne(id: string): Promise<DesignProjectData> {
+
+  async updateStatus(
+    id: string,
+    updateProjectStatusDto: UpdateProjectStatusDto,
+    user: UserData,
+  ): Promise<{ statusCode: number; message: string }> {
+    const { newStatus } = updateProjectStatusDto;
+
     try {
-      return await this.findById(id);
+      await this.prisma.$transaction(async (prisma) => {
+        const project = await this.findById(id);
+
+        if (project.status === newStatus) {
+          return; // No es necesario actualizar
+        }
+
+        if (newStatus === 'ENGINEERING') {
+          // Validar que las fechas estén definidas
+          await this.validateDatesForEngineering(id);
+
+          // Validar que la cotización esté aprobada
+          await this.validateApprovedQuotation(project.quotation.id, user);
+        }
+
+        // Actualizar estado
+        await prisma.designProject.update({
+          where: { id },
+          data: { status: newStatus },
+        });
+
+        // Registrar en auditoría
+        await this.audit.create({
+          entityId: id,
+          entityType: 'designProject',
+          action: 'UPDATE',
+          performedById: user.id,
+          createdAt: new Date(),
+        });
+      });
     } catch (error) {
       this.logger.error(
-        `Error retrieving project with ID ${id}: ${error.message}`,
+        `Error updating project status: ${error.message}`,
         error.stack,
       );
 
@@ -191,7 +327,86 @@ export class ProjectService {
         throw error;
       }
 
-      handleException(error, 'Error retrieving project by ID');
+      handleException(error, 'Error updating project status');
+    }
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Design project status updated successfully',
+    };
+  }
+
+  async updateChecklist(
+    id: string,
+    updateChecklistDto: UpdateChecklistDto,
+    user: UserData,
+  ): Promise<{ statusCode: number; message: string }> {
+    try {
+      await this.prisma.$transaction(async (prisma) => {
+        const project = await this.findById(id);
+
+        if (!project) {
+          throw new NotFoundException(`Project with ID ${id} not found`);
+        }
+
+        const changesPresent = Object.keys(updateChecklistDto).length > 0;
+
+        if (!changesPresent) {
+          return; // Si no hay datos a actualizar, salir temprano.
+        }
+
+        await prisma.designProject.update({
+          where: { id },
+          data: updateChecklistDto,
+        });
+
+        await this.audit.create({
+          entityId: id,
+          entityType: 'designProject',
+          action: 'UPDATE',
+          performedById: user.id,
+          createdAt: new Date(),
+        });
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Checklist updated successfully',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error updating checklist for project ${id}: ${error.message}`,
+        error.stack,
+      );
+
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      handleException(error, 'Error updating project checklist');
+    }
+  }
+
+  async findOne(id: string): Promise<DesignProjectData> {
+    try {
+      return await this.findById(id);
+    } catch (error) {
+      this.logger.error(
+        `Error retrieving project: ${error.message}`,
+        error.stack,
+      );
+
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      handleException(error, 'Error retrieving project ');
     }
   }
   async findById(id: string): Promise<DesignProjectData> {
