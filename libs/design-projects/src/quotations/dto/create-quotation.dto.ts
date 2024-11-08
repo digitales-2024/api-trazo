@@ -220,6 +220,7 @@ export class CreateQuotationDto {
     ],
   })
   @IsArray()
+  @ArrayNotEmpty()
   @ValidateNested({ each: true })
   @Type(() => CreateLevelFromQuotationDto)
   levels: CreateLevelFromQuotationDto[];
