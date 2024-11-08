@@ -5,10 +5,11 @@ import { PrismaModule } from '@prisma/prisma';
 import { AuditModule } from '@login/login/admin/audit/audit.module';
 import { ClientsModule } from '@clients/clients';
 import { UsersModule } from '@login/login/admin/users/users.module';
+import { ProjectTemplate } from './project.template';
 
 @Module({
   controllers: [ProjectController],
-  providers: [ProjectService],
+  providers: [ProjectService, ProjectTemplate],
   imports: [PrismaModule, AuditModule, ClientsModule, UsersModule],
 })
 export class ProjectModule {}

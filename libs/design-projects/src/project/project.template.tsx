@@ -4,7 +4,7 @@ import { QuotationDataNested } from '@clients/clients/interfaces/quotation.inter
 import { twoDecimals } from '../utils';
 
 @Injectable()
-export class ContractsTemplate {
+export class ProjectTemplate {
   renderContract(quotation: QuotationDataNested) {
     return (
       <DesignProjectsTemplate.skeleton>

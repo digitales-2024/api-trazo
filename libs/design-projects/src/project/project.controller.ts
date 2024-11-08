@@ -1,4 +1,12 @@
-import { Controller, Post, Body, HttpStatus, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpStatus,
+  HttpCode,
+  Get,
+  Param,
+} from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import {
@@ -6,6 +14,7 @@ import {
   ApiCreatedResponse,
   ApiBadRequestResponse,
   ApiUnauthorizedResponse,
+  ApiOkResponse,
 } from '@nestjs/swagger';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import { UserData } from '@login/login/interfaces';
@@ -47,4 +56,20 @@ export class ProjectController {
   // remove(@Param('id') id: string) {
   //   return this.projectService.remove(+id);
   // }
+
+  @ApiOkResponse({
+    description: 'Gets the contract for the quotation passed by id',
+  })
+  @Get(':id/pdf')
+  genPdf(@Param('id') id: string, @GetUser() user: UserData) {
+    return this.projectService.findOnePdf(id, user);
+  }
+
+  @ApiOkResponse({
+    description: 'Gets the contract for the quotation passed by id',
+  })
+  @Get(':id/pdflayout')
+  findOne(@Param('id') id: string, @GetUser() user: UserData) {
+    return this.projectService.findOne(id, user);
+  }
 }

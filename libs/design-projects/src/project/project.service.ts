@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  StreamableFile,
 } from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { PrismaService } from '@prisma/prisma';
@@ -12,6 +13,9 @@ import { UserData } from '@login/login/interfaces';
 import { ClientsService } from '@clients/clients';
 import { UsersService } from '@login/login/admin/users/users.service';
 import { handleException } from '@login/login/utils';
+import { QuotationsService } from '../quotations/quotations.service';
+import { ProjectTemplate } from './project.template';
+import Puppeteer from 'puppeteer';
 
 @Injectable()
 export class ProjectService {
@@ -22,6 +26,8 @@ export class ProjectService {
     private readonly audit: AuditService,
     private readonly client: ClientsService,
     private readonly user: UsersService,
+    private readonly quotationService: QuotationsService,
+    private readonly template: ProjectTemplate,
   ) {}
   private async generateCodeProjectDesing(): Promise<string> {
     // Generar el siguiente código incremental
@@ -120,5 +126,37 @@ export class ProjectService {
       statusCode: HttpStatus.CREATED,
       message: 'Design Project created successfully',
     };
+  }
+
+  // métodos para generar el contrato como PDF
+  async findOne(id: string, user: UserData): Promise<string> {
+    // Get the quotation
+    const quotation = await this.quotationService.findOne(id, user);
+
+    return await this.template.renderContract(quotation);
+  }
+
+  async findOnePdf(id: string, user: UserData): Promise<StreamableFile> {
+    // Get the quotation
+    const quotation = await this.quotationService.findOne(id, user);
+
+    // Render the quotation into HTML
+    const pdfHtml = await this.template.renderContract(quotation);
+
+    // Generar el PDF usando Puppeteer
+    const browser = await Puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(pdfHtml);
+
+    const pdfBufferUint8Array = await page.pdf({
+      format: 'A4',
+      preferCSSPageSize: true,
+    });
+    await browser.close();
+
+    return new StreamableFile(pdfBufferUint8Array, {
+      type: 'application/pdf',
+      disposition: 'attachment; filename="cotizacion_demo_2.pdf"',
+    });
   }
 }
