@@ -266,6 +266,7 @@ model LevelsOnSpaces {
 model DesignProject {
     id   String @id @unique @default(uuid())
     code String @unique
+    name String
 
     status   DesignProjectStatus @default(APPROVED)
     meetings Json
