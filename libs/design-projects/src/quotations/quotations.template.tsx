@@ -42,6 +42,7 @@ export class QuotationTemplate {
         <div class="px-16">
           <QuotationTemplate.header
             quotationCode={quotation.code}
+            quotationPublicCode={quotation.publicCode}
             quotationVersion={quotationVersion}
             quotationCreatedAt={quotation.createdAt}
           />
@@ -76,13 +77,20 @@ export class QuotationTemplate {
 
   private static header({
     quotationCode,
+    quotationPublicCode,
     quotationVersion,
     quotationCreatedAt,
   }: {
     quotationCode: string;
+    quotationPublicCode: number;
     quotationVersion: number;
     quotationCreatedAt: Date;
   }) {
+    const paddedQuotationCodeNumber = quotationPublicCode
+      .toString()
+      .padStart(3, '0');
+    const formattedQuotationCode = `COT-DIS-${paddedQuotationCodeNumber}`;
+
     return (
       <header class="border-2 border-black grid grid-cols-[4fr_6fr_4fr]">
         <div>Logo</div>
@@ -90,9 +98,13 @@ export class QuotationTemplate {
           Cotización
         </div>
         <div class="grid grid-cols-2 text-center text-sm font-bold">
-          <div class="border-b border-r border-black">Código</div>
+          <div class="border-b border-r border-black">Código de doc.</div>
           <div class="border-b border-black" safe>
             {quotationCode}
+          </div>
+          <div class="border-b border-r border-black">Código de cot.</div>
+          <div class="border-b border-black" safe>
+            {formattedQuotationCode}
           </div>
           <div class="border-b border-r border-black">Versión</div>
           <div class="border-b border-black">{quotationVersion}</div>
