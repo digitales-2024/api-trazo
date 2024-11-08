@@ -12,6 +12,7 @@ import { UserData } from '@login/login/interfaces';
 import { ClientsService } from '@clients/clients';
 import { UsersService } from '@login/login/admin/users/users.service';
 import { handleException } from '@login/login/utils';
+import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 
 @Injectable()
 export class ProjectService {
@@ -119,6 +120,49 @@ export class ProjectService {
     return {
       statusCode: HttpStatus.CREATED,
       message: 'Design Project created successfully',
+    };
+  }
+  async updateStatus(
+    id: string,
+    updateProjectStatusDto: UpdateProjectStatusDto,
+    user: UserData,
+  ): Promise<{ statusCode: number; message: string }> {
+    const { newStatus } = updateProjectStatusDto;
+
+    await this.prisma.$transaction(async (prisma) => {
+      // Verificar si el proyecto existe
+      const project = await prisma.designProject.findUnique({
+        where: { id },
+        select: { status: true },
+      });
+
+      if (!project) {
+        throw new NotFoundException(`Design project not found`);
+      }
+
+      if (project.status === newStatus) {
+        return; // No es necesario actualizar
+      }
+
+      // Actualiza estado
+
+      await prisma.designProject.update({
+        where: { id },
+        data: { status: newStatus },
+      });
+
+      await this.audit.create({
+        entityId: id,
+        entityType: 'designProject',
+        action: 'UPDATE',
+        performedById: user.id,
+        createdAt: new Date(),
+      });
+    });
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Design project status update successfully',
     };
   }
 }
