@@ -1,9 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { DesignProjectsTemplate } from '../design-projects.template';
 import { QuotationDataNested } from '@clients/clients/interfaces/quotation.interface';
-import { twoDecimals } from '../utils';
+import { spellPricing, twoDecimals } from '../utils';
 import { BusinessGet } from '@business/business/business.service';
 import { ClientData } from '@clients/clients/interfaces';
+import {
+  CostItem,
+  IntegralProjectItem,
+  QuotationTemplate,
+} from '../quotations/quotations.template';
 
 @Injectable()
 export class ProjectTemplate {
@@ -22,6 +27,20 @@ export class ProjectTemplate {
       .reduce((a, b) => a + b, 0);
     const levelsCount = quotation.levels.length;
 
+    const integralProjectDetails =
+      quotation.integratedProjectDetails as unknown as Array<IntegralProjectItem>;
+    // Cost of each m2 of construction, as a sum of all parts (architectural, structural, etc)
+    const pricePerSquareMeter = integralProjectDetails
+      .map((item) => item.cost)
+      .reduce((acc, next) => acc + next, 0);
+    const priceBeforeDiscount = totalArea * pricePerSquareMeter;
+    // Final price in USD after discount
+    const priceAfterDiscount = priceBeforeDiscount - quotation.discount;
+    // The price of each m2, after the discount is applied
+    const pricePerSquareMeterDiscounted =
+      (priceAfterDiscount * pricePerSquareMeter) / priceBeforeDiscount;
+    const finalPriceSoles = priceAfterDiscount * quotation.exchangeRate;
+
     return (
       <DesignProjectsTemplate.skeleton>
         <div class="px-44">
@@ -38,13 +57,11 @@ export class ProjectTemplate {
             con domicilio legal en
             <span safe> {client.address}</span>, Provincia de
             <span class="capitalize" safe>
-              {' '}
-              {client.province}
+              &nbsp;{client.province}
             </span>
             , y Departamento de
             <span class="capitalize" safe>
-              {' '}
-              {client.department}
+              &nbsp;{client.department}
             </span>
             .
           </p>
@@ -69,7 +86,7 @@ export class ProjectTemplate {
             <span safe> {quotation.name}</span>, Ubicada en
             ______PROYECTO_DIRECCION______, Provincia de
             ____PROYECTO_PROVINCIA___ y Departamento de
-            ___PROYECTO_PROVINCIA____.
+            ___PROYECTO_DEPARTAMENTO.
           </p>
           <p class="my-8 leading-8">
             <b>
@@ -254,8 +271,7 @@ export class ProjectTemplate {
               </li>
               <li class="leading-8 text-justify">
                 El <b>LOCADOR</b> se compromete a armar los expedientes para que
-                el
-                <b>LOCATARIO</b> pueda tramitar: Certificado de parámetros
+                el <b>LOCATARIO</b> pueda tramitar: Certificado de parámetros
                 urbanos y certificados de factibilidad.
               </li>
               <li class="leading-8 text-justify">
@@ -300,7 +316,7 @@ export class ProjectTemplate {
               necesaria para poder desarrollar y entregar el expediente técnico,
               en un plazo no mayor a 5 días hábiles desde la solicitud del{' '}
               <b>LOCADOR</b>. En caso de no enviar la documentación, el{' '}
-              <b>LOCATARIO</b>
+              <b>LOCATARIO </b>
               asumirá la responsabilidad de presentar la misma a la entidad
               correspondiente.
             </li>
@@ -318,7 +334,7 @@ export class ProjectTemplate {
               El <b>LOCATARIO</b> se compromete a participar en las reuniones
               para la toma de decisiones sobre el proyecto, teniendo como plazo
               máximo de respuesta 5 días hábiles. En caso el
-              <b>LOCATARIO</b> no responda hasta en tres oportunidades al{' '}
+              <b> LOCATARIO</b> no responda hasta en tres oportunidades al{' '}
               <b>LOCADOR</b>, o no asista hasta en 3 oportuniddes a reuniones
               coordinadas, se procederá a aplicar la cláusula quinta del
               presente contrato.
@@ -332,15 +348,27 @@ export class ProjectTemplate {
             <p class="my-8 leading-8">
               Para los efectos de la ejecución del proyecto detallado en la
               Cláusula primera
-              <b>El LOCATARIO</b> contrata los servicios del <b>LOCADOR</b>,
+              <b> El LOCATARIO</b> contrata los servicios del <b>LOCADOR</b>,
               para que asuma la responsabilidad del desarrollo y cumplimiento de
               cada una de las etapas de diseño en el plazo establecido por el
-              monto total de _________. El pago se hará efecto mediante el
-              cronograma de pagos establecidos en la cláusula siguiente.
+              monto total de{' '}
+              <b safe>
+                S/. {twoDecimals(finalPriceSoles)}&nbsp; (
+                {spellPricing(finalPriceSoles)})
+              </b>
+              . El pago se hará efecto mediante el cronograma de pagos
+              establecidos en la cláusula siguiente.
             </p>
             <p class="my-8 leading-8">
               El pago de los honorarios se efectuará de la siguiente manera:
             </p>
+
+            <QuotationTemplate.paymentSchedule
+              finalPriceSoles={finalPriceSoles}
+              costItems={
+                quotation.paymentSchedule as unknown as Array<CostItem>
+              }
+            />
           </div>
 
           <p class="mt-16 mb-8 leading-8">
@@ -348,13 +376,13 @@ export class ProjectTemplate {
           </p>
 
           <div class="pl-12">
-            <p class="my-8 leading-8">
+            <p class="my-8 leading-8 text-justify">
               El LOCATARIO podrá solicitar la resolución del contrato cuando el
               LOCADOR no asistiera a las reuniones del proyecto, o no realizara
               las modificaciones coordinadas en Acta de Proyecto o sus
               Obligaciones establecidas en la Clausula tercera; EL LOCATARIO
               podrá dar a EL LOCADOR quince días calendarios de preavisopor
-              escrito para retomar el proyecto. Si esto último no onurriese, EL
+              escrito para retomar el proyecto. Si esto último no ocurriese, EL
               LOCATARIO podrá ordenar la suspensión del proyecto y declarar
               automáticamente resuelto el contrato, sin necesidad de declaración
               judicial alguna.
@@ -380,13 +408,13 @@ export class ProjectTemplate {
             <b>CLAUSULA SEXTA:</b>
           </p>
           <div class="pl-12">
-            <p class="my-8 leading-8">
+            <p class="my-8 leading-8 text-justify">
               Para efectos de este contrato y todo lo que de él se derive ambas
               partes precisan con carácter de domicilio real referido en la
               introducción de este documento y expresamente se someten a la
               jurisdicción de los jueces de Arequipa.
             </p>
-            <p class="my-8 leading-8">
+            <p class="my-8 leading-8 text-justify">
               En la celebración del presente contrato no ha mediado simulación
               ni vicio de voluntad que lo invalide y en señal de conformidad
               ambas partes lo firmamos en la ciudad de Arequipa el día __ de

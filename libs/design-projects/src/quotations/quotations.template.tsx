@@ -4,7 +4,7 @@ import {
 } from '@clients/clients/interfaces/quotation.interface';
 import { Injectable } from '@nestjs/common';
 import { DesignProjectsTemplate } from '../design-projects.template';
-import { twoDecimals } from '../utils';
+import { spellPricing, twoDecimals } from '../utils';
 
 @Injectable()
 export class QuotationTemplate {
@@ -64,8 +64,10 @@ export class QuotationTemplate {
           />
           <QuotationTemplate.projectNotes />
           <div class="h-[3px] w-full bg-black my-8" />
-          <QuotationTemplate.paymentSchedule
+          <QuotationTemplate.executionSchedule
             scheduledDays={quotation.deliveryTime}
+          />
+          <QuotationTemplate.paymentSchedule
             finalPriceSoles={finalPriceSoles}
             costItems={quotation.paymentSchedule as unknown as Array<CostItem>}
           />
@@ -358,6 +360,10 @@ export class QuotationTemplate {
             </span>
           </div>
         </div>
+
+        <div>
+          <b safe>SON: {spellPricing(discountedPrice * props.exchangeRate)}</b>
+        </div>
       </div>
     );
   }
@@ -425,11 +431,7 @@ export class QuotationTemplate {
     );
   }
 
-  private static paymentSchedule(props: {
-    scheduledDays: number;
-    finalPriceSoles: number;
-    costItems: Array<CostItem>;
-  }) {
+  private static executionSchedule(props: { scheduledDays: number }) {
     return (
       <div class="my-8 grid grid-cols-[8fr_1fr_2fr_4fr]">
         <p class="font-bold uppercase pb-4">
@@ -447,7 +449,16 @@ export class QuotationTemplate {
           {props.scheduledDays} días
         </span>
         <span />
+      </div>
+    );
+  }
 
+  static paymentSchedule(props: {
+    finalPriceSoles: number;
+    costItems: Array<CostItem>;
+  }) {
+    return (
+      <div class="my-8 grid grid-cols-[8fr_1fr_2fr_4fr]">
         <p class="font-bold uppercase pb-4">Cronograma de forma de pagos</p>
         <span />
         <span />
@@ -464,7 +475,7 @@ export class QuotationTemplate {
               <span class="text-right font-bold" safe>
                 S/. {twoDecimals(percentageCost)}
               </span>
-              <span class="text-center" safe>
+              <span class="text-center text-sm" safe>
                 {i.description}
               </span>
             </>
@@ -530,7 +541,7 @@ function formatDate(d: Date): string {
   return `${day}/${month}/${year}`;
 }
 
-interface IntegralProjectItem {
+export interface IntegralProjectItem {
   area: number;
   cost: number;
   items: Item[];
@@ -542,7 +553,7 @@ interface Item {
   description: string;
 }
 
-interface CostItem {
+export interface CostItem {
   cost: number;
   name: string;
   percentage: number;
