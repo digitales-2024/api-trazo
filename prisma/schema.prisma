@@ -275,6 +275,11 @@ model DesignProject {
     province         String
     department       String
 
+    dateArchitectural DateTime?
+    dateStructural    DateTime?
+    dateElectrical    DateTime?
+    dateSanitary      DateTime?
+
     //Relaciones
     client   Client @relation("ClientDesignProjects", fields: [clientId], references: [id])
     clientId String
