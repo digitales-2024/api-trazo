@@ -1,14 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsUUID, IsJSON, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsNotEmpty, IsUUID, IsString, IsArray } from 'class-validator';
 
 export class CreateProjectDto {
   @ApiProperty({
-    description: 'JSON object containing meetings details',
-    example: '[{"date": "2024-01-01", "topic": "Initial Discussion"}]',
+    description: 'Array containing meetings details',
+    example: '[]',
   })
-  @IsJSON()
-  @IsNotEmpty()
-  meetings: string;
+  @IsArray()
+  meetings: string[];
 
   @ApiProperty({
     description: 'Location of the project',
@@ -17,6 +17,23 @@ export class CreateProjectDto {
   @IsString()
   @IsNotEmpty()
   ubicationProject: string;
+
+  @ApiProperty({
+    name: 'province',
+    description: 'Client province',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Transform(({ value }) => value.trim().toLowerCase())
+  province: string;
+
+  @ApiProperty({
+    name: 'department',
+    description: 'Client department',
+  })
+  @IsString()
+  @IsNotEmpty()
+  department: string;
 
   @ApiProperty({
     description: 'Client ID associated with the project',

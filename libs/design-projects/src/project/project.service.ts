@@ -45,8 +45,15 @@ export class ProjectService {
     createDesignProjectDto: CreateProjectDto,
     user: UserData,
   ): Promise<{ statusCode: number; message: string }> {
-    const { meetings, ubicationProject, clientId, quotationId, designerId } =
-      createDesignProjectDto;
+    const {
+      meetings,
+      ubicationProject,
+      clientId,
+      quotationId,
+      designerId,
+      department,
+      province,
+    } = createDesignProjectDto;
 
     try {
       await this.prisma.$transaction(async (prisma) => {
@@ -74,8 +81,10 @@ export class ProjectService {
         const newProject = await prisma.designProject.create({
           data: {
             code: projectCode,
-            meetings: JSON.parse(meetings), // Parsear JSON de reuniones
+            meetings: meetings, // Parsear JSON de reuniones
             ubicationProject,
+            department,
+            province,
             client: { connect: { id: clientId } },
             quotation: { connect: { id: quotation.id } },
             designer: { connect: { id: designer.id } },
