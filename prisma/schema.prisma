@@ -271,6 +271,8 @@ model DesignProject {
     meetings Json
 
     ubicationProject String
+    province         String
+    department       String
 
     //Relaciones
     client   Client @relation("ClientDesignProjects", fields: [clientId], references: [id])
