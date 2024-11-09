@@ -120,6 +120,32 @@ export class ProjectService {
   }
 
   /**
+   * Valida si un DTO tiene cambios significativos para actualizar
+   * @param dto DTO a validar
+   * @throws BadRequestException si no hay cambios o el DTO está vacío
+   */
+  private validateChanges<T extends object>(dto: T): void {
+    // Verifica si el DTO es null o undefined
+    if (!dto) {
+      throw new BadRequestException('No data provided for update');
+    }
+
+    // Verifica si el DTO es un objeto vacío
+    if (Object.keys(dto).length === 0) {
+      throw new BadRequestException('Update data is empty');
+    }
+
+    // Verifica si todos los campos son undefined o null
+    const hasValidValues = Object.values(dto).some(
+      (value) => value !== undefined && value !== null,
+    );
+
+    if (!hasValidValues) {
+      throw new BadRequestException('No valid values provided for update');
+    }
+  }
+
+  /**
    * Crea un nuevo proyecto de diseño.
    * @param createDesignProjectDto DTO con los datos del proyecto.
    * @param user Usuario que realiza la acción.
@@ -140,6 +166,8 @@ export class ProjectService {
 
     try {
       await this.prisma.$transaction(async (prisma) => {
+        // this.validateChanges(createDesignProjectDto);
+
         // Validar que el cliente existe
 
         await this.client.findById(clientId);
@@ -211,10 +239,20 @@ export class ProjectService {
     updateProjectDto: UpdateProjectDto,
     user: UserData,
   ): Promise<{ statusCode: number; message: string }> {
-    const { clientId, designerId, quotationId } = updateProjectDto;
+    const {
+      ubicationProject,
+      clientId,
+      designerId,
+      quotationId,
+      department,
+      province,
+      name,
+    } = updateProjectDto;
 
     try {
       await this.prisma.$transaction(async (prisma) => {
+        this.validateChanges(updateProjectDto);
+
         const project = await this.findById(id);
 
         if (clientId && clientId !== project.client.id) {
@@ -229,20 +267,16 @@ export class ProjectService {
           await this.validateApprovedQuotation(quotationId, user);
         }
 
-        const changesPresent = Object.keys(updateProjectDto).some(
-          (key) => updateProjectDto[key] !== project[key],
-        );
-
-        if (!changesPresent) {
-          return;
-        }
-
         await prisma.designProject.update({
           where: { id },
           data: {
+            ubicationProject,
             clientId,
             designerId,
             quotationId,
+            department,
+            province,
+            name,
           },
         });
 
@@ -286,6 +320,8 @@ export class ProjectService {
     try {
       await this.prisma.$transaction(async (prisma) => {
         const project = await this.findById(id);
+
+        this.validateChanges(updateProjectStatusDto);
 
         if (project.status === newStatus) {
           return; // No es necesario actualizar
@@ -343,17 +379,15 @@ export class ProjectService {
   ): Promise<{ statusCode: number; message: string }> {
     try {
       await this.prisma.$transaction(async (prisma) => {
+        this.validateChanges(updateChecklistDto);
+
         const project = await this.findById(id);
 
         if (!project) {
-          throw new NotFoundException(`Project with ID ${id} not found`);
+          throw new NotFoundException(`Design project not found`);
         }
 
-        const changesPresent = Object.keys(updateChecklistDto).length > 0;
-
-        if (!changesPresent) {
-          return; // Si no hay datos a actualizar, salir temprano.
-        }
+        // Validar cambios usando la nueva función
 
         await prisma.designProject.update({
           where: { id },
@@ -375,7 +409,7 @@ export class ProjectService {
       };
     } catch (error) {
       this.logger.error(
-        `Error updating checklist for project ${id}: ${error.message}`,
+        `Error updating checklist for project: ${error.message}`,
         error.stack,
       );
 
