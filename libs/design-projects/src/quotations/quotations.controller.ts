@@ -20,9 +20,9 @@ import {
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { UpdateQuotationDto } from './dto/update-quotation.dto';
 import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
 import { QuotationSummaryData } from '@clients/clients/interfaces';
+import { UpdateQuotationDto } from './dto/update-quotation.dto';
 
 @ApiTags('Quotation')
 @Controller({ path: 'quotation', version: '1' })
@@ -66,10 +66,10 @@ export class QuotationsController {
   @Patch(':id')
   async update(
     @Param('id') id: string,
-    @Body() newStatus: UpdateQuotationDto,
+    @Body() updateQuotationDto: UpdateQuotationDto,
     @GetUser() user: UserPayload,
   ) {
-    return await this.quotationsService.update(id, newStatus, user);
+    return await this.quotationsService.update(id, updateQuotationDto, user);
   }
 
   @ApiOkResponse({ description: 'Updates the status of this quotation' })
