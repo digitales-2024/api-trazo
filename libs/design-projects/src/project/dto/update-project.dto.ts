@@ -1,8 +1,8 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { IsOptional, IsString, IsUUID } from 'class-validator';
-import { CreateProjectDto } from './create-project.dto';
+import { UpdatePartialProjectDto } from './create-project.dto';
 
-export class UpdateProjectDto extends PartialType(CreateProjectDto) {
+export class UpdateProjectDto extends PartialType(UpdatePartialProjectDto) {
   @ApiProperty({ description: 'Project name', required: false })
   @IsString()
   @IsOptional()

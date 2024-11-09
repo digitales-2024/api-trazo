@@ -1,6 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsUUID, IsString, IsArray } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsUUID,
+  IsString,
+  IsArray,
+  IsOptional,
+} from 'class-validator';
 
 export class CreateProjectDto {
   @ApiProperty({
@@ -58,4 +64,46 @@ export class CreateProjectDto {
   @IsUUID()
   @IsNotEmpty()
   designerId: string;
+}
+
+// update-project.dto.ts
+export class UpdatePartialProjectDto {
+  @ApiProperty({ description: 'Project name', required: false })
+  @IsString()
+  @IsOptional()
+  @Transform(({ value }) => value?.trim())
+  name?: string;
+
+  @ApiProperty({ description: 'Project location', required: false })
+  @IsString()
+  @IsOptional()
+  @Transform(({ value }) => value?.trim())
+  ubicationProject?: string;
+
+  @ApiProperty({ description: 'Province', required: false })
+  @IsString()
+  @IsOptional()
+  @Transform(({ value }) => value?.trim())
+  province?: string;
+
+  @ApiProperty({ description: 'Department', required: false })
+  @IsString()
+  @IsOptional()
+  @Transform(({ value }) => value?.trim())
+  department?: string;
+
+  @ApiProperty({ description: 'Client ID', required: false })
+  @IsUUID()
+  @IsOptional()
+  clientId?: string;
+
+  @ApiProperty({ description: 'Quotation ID', required: false })
+  @IsUUID()
+  @IsOptional()
+  quotationId?: string;
+
+  @ApiProperty({ description: 'Designer ID', required: false })
+  @IsUUID()
+  @IsOptional()
+  designerId?: string;
 }
