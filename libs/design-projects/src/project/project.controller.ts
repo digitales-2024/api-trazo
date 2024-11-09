@@ -15,10 +15,12 @@ import {
   ApiCreatedResponse,
   ApiBadRequestResponse,
   ApiUnauthorizedResponse,
+  ApiOkResponse,
 } from '@nestjs/swagger';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import { UserData } from '@login/login/interfaces';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
+import { ExportProjectPdfDto } from './dto/export-project-pdf.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateChecklistDto } from './dto/update-checklist.dto';
 
@@ -106,4 +108,20 @@ export class ProjectController {
   // remove(@Param('id') id: string) {
   //   return this.projectService.remove(+id);
   // }
+
+  @ApiOkResponse({
+    description: 'Gets the contract for the project passed by id',
+  })
+  @Post(':id/pdf')
+  genPdf(@Body() exportDto: ExportProjectPdfDto, @Param('id') id: string) {
+    return this.projectService.findOnePdf(id, exportDto);
+  }
+
+  @ApiOkResponse({
+    description: 'Gets the contract for the project passed by id',
+  })
+  @Get(':id/pdflayout')
+  genPdfLayout(@Param('id') id: string) {
+    return this.projectService.genPdfLayout(id);
+  }
 }

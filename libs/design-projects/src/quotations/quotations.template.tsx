@@ -3,53 +3,11 @@ import {
   QuotationDataNested,
 } from '@clients/clients/interfaces/quotation.interface';
 import { Injectable } from '@nestjs/common';
-import * as Fs from 'fs';
-import * as Path from 'path';
+import { DesignProjectsTemplate } from '../design-projects.template';
+import { spellPricing, twoDecimals } from '../utils';
 
 @Injectable()
 export class QuotationTemplate {
-  /**
-   * Renders the skeleton of a simple html page.
-   * It includes the tailwindcss output.
-   *
-   * @param param0 An object with children to render inside the skeleton
-   */
-  private static Skeleton({ children }: { children: JSX.Element }) {
-    // Loads the tailwind output to use in the pdf rendering.
-    // Last I measured, this file had a size of 6.8KiB.
-    // Since we don't expect PDF generation to be a feature used
-    // constantly, we rather incur a speed penalty loading the file
-    // over and over rather than using 6.8KiB additional RAM.
-    let tailwindFile = '';
-    try {
-      tailwindFile = Fs.readFileSync(
-        Path.join(process.cwd(), 'static', 'tailwind-output.css'),
-      ).toString();
-    } catch (e) {
-      console.error('Error loading tailwind file:');
-      console.error(e);
-    }
-
-    return (
-      <>
-        {'<!DOCTYPE html>'}
-        <head>
-          <style safe>{tailwindFile}</style>
-          <style>
-            {`@media print {
-            @page {
-                size: A4 portrait;
-                margin-top: 15mm;
-                margin-bottom: 15mm;
-            }
-        }`}
-          </style>
-        </head>
-        <body style="width: 297mm;">{children}</body>
-      </>
-    );
-  }
-
   /**
    * Renderiza una cotizacion como una página html
    *
@@ -80,7 +38,7 @@ export class QuotationTemplate {
     const finalPriceSoles = priceAfterDiscount * quotation.exchangeRate;
 
     return (
-      <QuotationTemplate.Skeleton>
+      <DesignProjectsTemplate.skeleton>
         <div class="px-16">
           <QuotationTemplate.header
             quotationCode={quotation.code}
@@ -106,14 +64,16 @@ export class QuotationTemplate {
           />
           <QuotationTemplate.projectNotes />
           <div class="h-[3px] w-full bg-black my-8" />
-          <QuotationTemplate.paymentSchedule
+          <QuotationTemplate.executionSchedule
             scheduledDays={quotation.deliveryTime}
+          />
+          <QuotationTemplate.paymentSchedule
             finalPriceSoles={finalPriceSoles}
             costItems={quotation.paymentSchedule as unknown as Array<CostItem>}
           />
           <QuotationTemplate.finalNotes />
         </div>
-      </QuotationTemplate.Skeleton>
+      </DesignProjectsTemplate.skeleton>
     );
   }
 
@@ -400,6 +360,10 @@ export class QuotationTemplate {
             </span>
           </div>
         </div>
+
+        <div>
+          <b safe>SON: {spellPricing(discountedPrice * props.exchangeRate)}</b>
+        </div>
       </div>
     );
   }
@@ -467,11 +431,7 @@ export class QuotationTemplate {
     );
   }
 
-  private static paymentSchedule(props: {
-    scheduledDays: number;
-    finalPriceSoles: number;
-    costItems: Array<CostItem>;
-  }) {
+  private static executionSchedule(props: { scheduledDays: number }) {
     return (
       <div class="my-8 grid grid-cols-[8fr_1fr_2fr_4fr]">
         <p class="font-bold uppercase pb-4">
@@ -489,7 +449,16 @@ export class QuotationTemplate {
           {props.scheduledDays} días
         </span>
         <span />
+      </div>
+    );
+  }
 
+  static paymentSchedule(props: {
+    finalPriceSoles: number;
+    costItems: Array<CostItem>;
+  }) {
+    return (
+      <div class="my-8 grid grid-cols-[8fr_1fr_2fr_4fr]">
         <p class="font-bold uppercase pb-4">Cronograma de forma de pagos</p>
         <span />
         <span />
@@ -506,7 +475,7 @@ export class QuotationTemplate {
               <span class="text-right font-bold" safe>
                 S/. {twoDecimals(percentageCost)}
               </span>
-              <span class="text-center" safe>
+              <span class="text-center text-sm" safe>
                 {i.description}
               </span>
             </>
@@ -572,16 +541,7 @@ function formatDate(d: Date): string {
   return `${day}/${month}/${year}`;
 }
 
-/**
- * Given a number n, returns it as a string with 2 decimals.
- *
- * E.g.: 120 -> "120.00", 85.5 -> "85.50"
- */
-function twoDecimals(n: number): string {
-  return (Math.round(n * 100) / 100).toFixed(2);
-}
-
-interface IntegralProjectItem {
+export interface IntegralProjectItem {
   area: number;
   cost: number;
   items: Item[];
@@ -593,7 +553,7 @@ interface Item {
   description: string;
 }
 
-interface CostItem {
+export interface CostItem {
   cost: number;
   name: string;
   percentage: number;

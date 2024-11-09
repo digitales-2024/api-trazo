@@ -6,9 +6,11 @@ import {
   IsNotEmpty,
   IsNumber,
   IsString,
+  ValidateNested,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { CreateQuotationPartialDto } from './create-quotation.dto';
+import { CreateLevelFromQuotationDto } from '@design-projects/design-projects/levels/dto/create-level-quotation.dto';
 
 export class UpdateQuotationDto extends PartialType(CreateQuotationPartialDto) {
   @ApiProperty({
@@ -194,4 +196,46 @@ export class UpdateQuotationDto extends PartialType(CreateQuotationPartialDto) {
     { message: 'metering must be a number' },
   )
   metering?: number;
+
+  // levels
+  @ApiProperty({
+    name: 'levels',
+    description:
+      'Array of Levels to create and link with this quotation. If empty, wont create any level',
+    required: false,
+    example: [
+      {
+        name: 'primer nivel',
+        spaces: [{ amount: 2, area: 25.0, spaceId: 'aaaa-bbbb-ccc' }],
+      },
+    ],
+  })
+  @IsArray()
+  @ArrayNotEmpty()
+  @ValidateNested({ each: true })
+  @Type(() => CreateLevelFromQuotationDto)
+  levels: CreateLevelFromQuotationDto[];
+
+  // Relacion con Client
+  @ApiProperty({
+    name: 'clientId',
+    description: 'Id of the person that requests this quotation',
+    example: 'aaaaa-0000-ffff',
+  })
+  @IsString()
+  @IsNotEmpty()
+  clientId: string;
+
+  @ApiProperty({
+    name: 'totalAmount',
+    description: 'Total Amount of the quotation',
+  })
+  @IsNumber(
+    {
+      allowNaN: false,
+      allowInfinity: false,
+    },
+    { message: 'totalAmount must be a number' },
+  )
+  totalAmount: number;
 }

@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  StreamableFile,
 } from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { PrismaService } from '@prisma/prisma';
@@ -12,8 +13,13 @@ import { UserData } from '@login/login/interfaces';
 import { ClientsService } from '@clients/clients';
 import { UsersService } from '@login/login/admin/users/users.service';
 import { handleException } from '@login/login/utils';
+import { ProjectTemplate } from './project.template';
+import Puppeteer from 'puppeteer';
+import { BusinessService } from '@business/business';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 import { DesignProjectData } from '../interfaces';
+import { DesignProjectDataNested } from '../interfaces/project.interface';
+import { ExportProjectPdfDto } from './dto/export-project-pdf.dto';
 import { QuotationsService } from '../quotations/quotations.service';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateChecklistDto } from './dto/update-checklist.dto';
@@ -27,8 +33,11 @@ export class ProjectService {
     private readonly audit: AuditService,
     private readonly client: ClientsService,
     private readonly user: UsersService,
+    private readonly businessService: BusinessService,
+    private readonly template: ProjectTemplate,
     private readonly quotation: QuotationsService,
   ) {}
+
   private async generateCodeProjectDesing(): Promise<string> {
     // Generar el siguiente código incremental
     const lastProject = await this.prisma.designProject.findFirst({
@@ -443,6 +452,7 @@ export class ProjectService {
       handleException(error, 'Error retrieving project ');
     }
   }
+
   async findById(id: string): Promise<DesignProjectData> {
     const project = await this.prisma.designProject.findUnique({
       where: { id },
@@ -470,5 +480,171 @@ export class ProjectService {
       throw new NotFoundException(`Design project not found`);
     }
     return project as DesignProjectData;
+  }
+
+  /**
+   * Gets the project, quotation, levels and spaces by id.
+   * Used by the PDF renderer only
+   */
+  private async findByIdNested(id: string): Promise<DesignProjectDataNested> {
+    const project = await this.prisma.designProject.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        ubicationProject: true,
+        department: true,
+        province: true,
+        status: true,
+        client: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            province: true,
+            department: true,
+            rucDni: true,
+          },
+        },
+        quotation: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            publicCode: true,
+            description: true,
+            status: true,
+            discount: true,
+            totalAmount: true,
+            deliveryTime: true,
+            exchangeRate: true,
+            landArea: true,
+            paymentSchedule: true,
+            integratedProjectDetails: true,
+            architecturalCost: true,
+            structuralCost: true,
+            electricCost: true,
+            sanitaryCost: true,
+            metering: true,
+            createdAt: true,
+            levels: {
+              select: {
+                id: true,
+                name: true,
+                LevelsOnSpaces: {
+                  select: {
+                    id: true,
+                    amount: true,
+                    area: true,
+                    space: {
+                      select: {
+                        id: true,
+                        name: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        designer: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+
+    if (!project) {
+      throw new NotFoundException(`Design project not found`);
+    }
+
+    const quotation = project.quotation;
+    return {
+      id: project.id,
+      code: project.code,
+      name: project.name,
+      ubicationProject: project.ubicationProject,
+      department: project.department,
+      province: project.province,
+      status: project.status,
+      quotation: {
+        id: quotation.id,
+        name: quotation.name,
+        code: quotation.code,
+        publicCode: quotation.publicCode,
+        description: quotation.description,
+        status: quotation.status,
+        discount: quotation.discount,
+        totalAmount: quotation.totalAmount,
+        deliveryTime: quotation.deliveryTime,
+        exchangeRate: quotation.exchangeRate,
+        landArea: quotation.landArea,
+        paymentSchedule: quotation.paymentSchedule,
+        integratedProjectDetails: quotation.integratedProjectDetails,
+        architecturalCost: quotation.architecturalCost,
+        structuralCost: quotation.structuralCost,
+        electricCost: quotation.electricCost,
+        sanitaryCost: quotation.sanitaryCost,
+        metering: quotation.metering,
+        levels: quotation.levels.map((level) => ({
+          id: level.id,
+          name: level.name,
+          spaces: level.LevelsOnSpaces.map((space) => ({
+            id: space.id,
+            name: space.space.name,
+            amount: space.amount,
+            area: space.area,
+          })),
+        })),
+      },
+      designer: project.designer,
+      client: project.client,
+    };
+  }
+
+  // métodos para generar el contrato como PDF
+  async genPdfLayout(id: string): Promise<string> {
+    // Get the data
+    const allData = await this.findByIdNested(id);
+    const business = await this.businessService.findAll();
+
+    return await this.template.renderContract(
+      allData,
+      business[0],
+      new Date('2024-10-12'),
+    );
+  }
+
+  async findOnePdf(
+    id: string,
+    dto: ExportProjectPdfDto,
+  ): Promise<StreamableFile> {
+    // Get the data
+    const allData = await this.findByIdNested(id);
+    const business = await this.businessService.findAll();
+
+    // Render the quotation into HTML
+    const pdfHtml = await this.template.renderContract(
+      allData,
+      business[0],
+      new Date(dto.signingDate),
+    );
+
+    // Generar el PDF usando Puppeteer
+    const browser = await Puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(pdfHtml);
+
+    const pdfBufferUint8Array = await page.pdf({
+      format: 'A4',
+      preferCSSPageSize: true,
+    });
+    await browser.close();
+
+    return new StreamableFile(pdfBufferUint8Array, {
+      type: 'application/pdf',
+      disposition: 'attachment; filename="cotizacion_demo_2.pdf"',
+    });
   }
 }
