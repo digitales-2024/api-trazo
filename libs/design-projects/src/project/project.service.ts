@@ -85,22 +85,19 @@ export class ProjectService {
     }
   }
 
-  private async validateApprovedQuotation(
-    quotationId: string,
-    user: UserData,
-  ): Promise<void> {
-    const quotation = await this.quotation.findOne(quotationId, user);
+  private async validateEngineeringStatus(id: string): Promise<void> {
+    const designProject = await this.findOne(id);
 
-    if (!quotation) {
-      throw new NotFoundException(`Quotation not found`);
+    if (!designProject) {
+      throw new NotFoundException(`Design Project not found`);
     }
 
-    if (quotation.status !== 'APPROVED') {
-      throw new BadRequestException(`Quotation is not approved`);
+    if (designProject.status !== 'ENGINEERING') {
+      throw new BadRequestException(`Design Project is not engineering`);
     }
   }
 
-  private async validateDatesForEngineering(id: string): Promise<void> {
+  private async validateDatesForConfirmation(id: string): Promise<void> {
     const project = await this.prisma.designProject.findUnique({
       where: { id },
       select: {
@@ -123,7 +120,7 @@ export class ProjectService {
 
     if (missingDates.length > 0) {
       throw new BadRequestException(
-        `Cannot move to ENGINEERING. Missing dates: ${missingDates.join(', ')}`,
+        `Cannot move to ENGINEERING. Missing checks`,
       );
     }
   }
@@ -273,7 +270,7 @@ export class ProjectService {
         }
 
         if (quotationId && quotationId !== project.quotation.id) {
-          await this.validateApprovedQuotation(quotationId, user);
+          await this.quotation.validateApprovedQuotation(quotationId, user);
         }
 
         await prisma.designProject.update({
@@ -336,12 +333,12 @@ export class ProjectService {
           return; // No es necesario actualizar
         }
 
-        if (newStatus === 'ENGINEERING') {
+        if (newStatus === 'CONFIRMATION') {
           // Validar que las fechas estén definidas
-          await this.validateDatesForEngineering(id);
+          await this.validateEngineeringStatus(id);
 
           // Validar que la cotización esté aprobada
-          await this.validateApprovedQuotation(project.quotation.id, user);
+          await this.validateEngineeringStatus(project.quotation.id);
         }
 
         // Actualizar estado
@@ -473,6 +470,10 @@ export class ProjectService {
         designer: {
           select: { id: true, name: true },
         },
+        dateArchitectural: true,
+        dateStructural: true,
+        dateElectrical: true,
+        dateSanitary: true,
       },
     });
 
