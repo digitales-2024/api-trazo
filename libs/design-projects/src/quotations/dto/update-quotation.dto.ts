@@ -9,10 +9,10 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-import { CreateQuotationPartialDto } from './create-quotation.dto';
+import { CreateQuotationDto } from './create-quotation.dto';
 import { CreateLevelFromQuotationDto } from '@design-projects/design-projects/levels/dto/create-level-quotation.dto';
 
-export class UpdateQuotationDto extends PartialType(CreateQuotationPartialDto) {
+export class UpdateQuotationDto extends PartialType(CreateQuotationDto) {
   @ApiProperty({
     name: 'name',
     description: 'Name of the project this quotation belongs to',
@@ -22,17 +22,6 @@ export class UpdateQuotationDto extends PartialType(CreateQuotationPartialDto) {
   @IsNotEmpty()
   @Transform(({ value }) => value.trim())
   name?: string;
-
-  @ApiProperty({
-    name: 'code',
-    description: 'Code of the quotation',
-    example: 'SGC-P-04-F3',
-    required: false,
-  })
-  @IsString()
-  @IsNotEmpty()
-  @Transform(({ value }) => value.trim())
-  code?: string;
 
   @ApiProperty({
     name: 'description',
@@ -102,9 +91,8 @@ export class UpdateQuotationDto extends PartialType(CreateQuotationPartialDto) {
   @ApiProperty({
     name: 'paymentSchedule',
     description:
-      'Schedule that dictates how many and when payments are made. Stored as a JSON.',
+      'Array of JSON objects that dictate how many and when payments are made.',
     example: [],
-    required: false,
   })
   @IsArray()
   @ArrayNotEmpty()
