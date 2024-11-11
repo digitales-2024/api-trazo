@@ -285,7 +285,7 @@ model DesignProject {
     clientId String
 
     quotation   Quotation @relation("QuotationDesignProjects", fields: [quotationId], references: [id])
-    quotationId String
+    quotationId String    @unique
 
     designer   User   @relation("DesignerDesignProjects", fields: [designerId], references: [id])
     designerId String
