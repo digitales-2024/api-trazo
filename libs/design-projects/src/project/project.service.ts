@@ -20,6 +20,8 @@ import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 import { DesignProjectData } from '../interfaces';
 import { DesignProjectDataNested } from '../interfaces/project.interface';
 import { ExportProjectPdfDto } from './dto/export-project-pdf.dto';
+import * as Fs from 'fs';
+import * as Path from 'path';
 
 @Injectable()
 export class ProjectService {
@@ -385,6 +387,35 @@ export class ProjectService {
       new Date(dto.signingDate),
     );
 
+    // Cargar imágenes para la cabecera y pie de página
+    let header_base64 = '';
+    try {
+      header_base64 = Fs.readFileSync(
+        Path.join(process.cwd(), 'static', 'trazo_header_base64.txt'),
+      ).toString();
+    } catch (e) {
+      console.error('Error loading header base 64 while rendering contract:');
+      console.error(e);
+    }
+    let footer_base64 = '';
+    try {
+      footer_base64 = Fs.readFileSync(
+        Path.join(process.cwd(), 'static', 'trazo_footer_base64.txt'),
+      ).toString();
+    } catch (e) {
+      console.error('Error loading footer base 64 while rendering contract:');
+      console.error(e);
+    }
+    let footer_der_base64 = '';
+    try {
+      footer_der_base64 = Fs.readFileSync(
+        Path.join(process.cwd(), 'static', 'trazo_footer_der_base64.txt'),
+      ).toString();
+    } catch (e) {
+      console.error('Error loading footer base 64 while rendering contract:');
+      console.error(e);
+    }
+
     // Generar el PDF usando Puppeteer
     const browser = await Puppeteer.launch();
     const page = await browser.newPage();
@@ -393,12 +424,23 @@ export class ProjectService {
     const pdfBufferUint8Array = await page.pdf({
       format: 'A4',
       preferCSSPageSize: true,
+      displayHeaderFooter: true,
+      headerTemplate: `
+      <div><img style="display: inline-block; position: fixed; height: 100px; top: 40px; right: 20px;" src="data:image/png;base64,${header_base64}" /></div>
+      `,
+      footerTemplate: `
+      <div>
+<img style="display: inline-block; position: fixed; height: 325px; bottom: 40px; left: 40px;" src="data:image/png;base64,${footer_base64}" />
+<img style="display: inline-block; position: fixed; height: 325px; width: 300px; bottom: 40px; right: 40px; opacity: 0.5" src="data:image/png;base64,${footer_der_base64}" />
+</div>
+      `,
+      margin: { top: '150px', bottom: '150px' },
     });
     await browser.close();
 
     return new StreamableFile(pdfBufferUint8Array, {
       type: 'application/pdf',
-      disposition: 'attachment; filename="cotizacion_demo_2.pdf"',
+      disposition: 'attachment; filename="generated.pdf"',
     });
   }
 }
