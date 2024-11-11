@@ -262,6 +262,7 @@ export class QuotationsService {
         select: {
           id: true,
           name: true,
+          publicCode: true,
           status: true,
           totalAmount: true,
           metering: true,
@@ -281,6 +282,7 @@ export class QuotationsService {
       const quotationsWithLevels = await Promise.all(
         quotations.map(async (quotation) => ({
           id: quotation.id,
+          publicCode: quotation.publicCode,
           name: quotation.name,
           status: quotation.status,
           totalAmount: quotation.totalAmount,
