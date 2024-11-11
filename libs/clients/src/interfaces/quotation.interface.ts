@@ -27,7 +27,7 @@ export type QuotationData = Pick<
 
 export type QuotationSummaryData = Pick<
   Quotation,
-  'id' | 'name' | 'status' | 'totalAmount' | 'metering'
+  'id' | 'name' | 'status' | 'totalAmount' | 'metering' | 'publicCode'
 > & {
   client: { id: string; name: string };
 };
