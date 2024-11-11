@@ -14,13 +14,14 @@ export class MeetingsTemplate {
             quotationCreatedAt={new Date()}
             label="Acta de Proyecto"
           />
-          <this.meetingDetails />
+          <MeetingsTemplate.meetingDetails />
+          <MeetingsTemplate.meetingNotes />
         </div>
       </DesignProjectsTemplate.skeleton>
     );
   }
 
-  private meetingDetails() {
+  private static meetingDetails() {
     return (
       <div class="text-sm mb-4">
         <div class="text-center font-bold bg-zinc-100 py-1 border border-black mt-1">
@@ -51,6 +52,46 @@ export class MeetingsTemplate {
           <div class="border-b border-r border-black p-2">---</div>
         </div>
       </div>
+    );
+  }
+
+  private static meetingNotes() {
+    return (
+      <div class="grid grid-cols-[1fr_20fr_4fr_6fr] text-sm">
+        <div class="uppercase bg-zinc-100 font-bold text-center py-1 border border-black flex items-center justify-center">
+          Nº
+        </div>
+        <div class="uppercase bg-zinc-100 font-bold text-center py-1 border-y border-r border-black flex items-center justify-center">
+          Observaciones
+        </div>
+        <div class="uppercase bg-zinc-100 font-bold text-center py-1 border-y border-r border-black flex items-center justify-center">
+          Fecha de reunion
+        </div>
+        <div class="uppercase bg-zinc-100 font-bold text-center py-1 border-y border-r border-black flex items-center justify-center">
+          Firma
+        </div>
+
+        {[1, 2, 3, 4, 5].map((n) => (
+          <MeetingsTemplate.meetingNoteEntry n={n} />
+        ))}
+      </div>
+    );
+  }
+
+  private static meetingNoteEntry(props: { n: number }) {
+    return (
+      <>
+        <div class="text-center py-1 border-x border-b border-black flex items-center justify-center">
+          {props.n}
+        </div>
+        <div class="text-center py-1 border-b border-r border-black flex items-center justify-center">
+          1er nivel...
+        </div>
+        <div class="text-center py-1 border-b border-r border-black flex items-center justify-center">
+          21/10/2023
+        </div>
+        <div class="text-center py-1 border-b border-r border-black flex items-center justify-center h-16"></div>
+      </>
     );
   }
 }
