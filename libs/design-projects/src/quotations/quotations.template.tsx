@@ -45,6 +45,7 @@ export class QuotationTemplate {
             quotationPublicCode={quotation.publicCode}
             quotationVersion={quotationVersion}
             quotationCreatedAt={quotation.createdAt}
+            label="Cotización"
           />
           <QuotationTemplate.datosProyecto quotation={quotation} />
           <QuotationTemplate.levelsContainer
@@ -77,18 +78,25 @@ export class QuotationTemplate {
     );
   }
 
-  private static header({
+  /**
+   * Renderiza una cabecera para documentos de trazo.
+   * `quotationPublicCode` es un identificador del número
+   * de documento. Si no está presente no se renderiza
+   */
+  static header({
     quotationCode,
     quotationPublicCode,
     quotationVersion,
     quotationCreatedAt,
+    label,
   }: {
     quotationCode: string;
-    quotationPublicCode: number;
+    quotationPublicCode?: number | undefined;
     quotationVersion: number;
     quotationCreatedAt: Date;
+    label: string;
   }) {
-    const paddedQuotationCodeNumber = quotationPublicCode
+    const paddedQuotationCodeNumber = (quotationPublicCode ?? '')
       .toString()
       .padStart(3, '0');
     const formattedQuotationCode = `COT-DIS-${paddedQuotationCodeNumber}`;
@@ -96,18 +104,25 @@ export class QuotationTemplate {
     return (
       <header class="border-2 border-black grid grid-cols-[4fr_6fr_4fr]">
         <div>Logo</div>
-        <div class="text-center border-l-2 border-r-2 border-black uppercase flex items-center justify-center font-bold text-xl">
-          Cotización
+        <div
+          class="text-center border-l-2 border-r-2 border-black uppercase flex items-center justify-center font-bold text-xl"
+          safe
+        >
+          {label}
         </div>
         <div class="grid grid-cols-2 text-center text-sm font-bold">
           <div class="border-b border-r border-black">Código de doc.</div>
           <div class="border-b border-black" safe>
             {quotationCode}
           </div>
-          <div class="border-b border-r border-black">Código de cot.</div>
-          <div class="border-b border-black" safe>
-            {formattedQuotationCode}
-          </div>
+          {quotationPublicCode && (
+            <>
+              <div class="border-b border-r border-black">Código de cot.</div>
+              <div class="border-b border-black" safe>
+                {formattedQuotationCode}
+              </div>
+            </>
+          )}
           <div class="border-b border-r border-black">Versión</div>
           <div class="border-b border-black">{quotationVersion}</div>
           <div class="border-b border-r border-black">Fecha</div>
