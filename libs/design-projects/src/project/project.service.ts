@@ -24,6 +24,9 @@ import { QuotationsService } from '../quotations/quotations.service';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateChecklistDto } from './dto/update-checklist.dto';
 
+/**
+ * Servicio para gestionar proyectos de diseño
+ */
 @Injectable()
 export class ProjectService {
   private readonly logger = new Logger(ProjectService.name);
@@ -38,6 +41,10 @@ export class ProjectService {
     private readonly quotation: QuotationsService,
   ) {}
 
+  /**
+   * Genera un código único para un nuevo proyecto de diseño con el formato PRY-DIS-XXX
+   * @returns Código generado para el proyecto
+   */
   private async generateCodeProjectDesing(): Promise<string> {
     // Generar el siguiente código incremental
     const lastProject = await this.prisma.designProject.findFirst({
@@ -51,68 +58,81 @@ export class ProjectService {
     const projectCode = `PRY-DIS-${String(lastIncrement + 1).padStart(3, '0')}`;
     return projectCode;
   }
-
-  private async validateClientExists(clientId: string): Promise<void> {
-    try {
-      await this.client.findById(clientId);
-    } catch (error) {
-      if (
-        error instanceof NotFoundException ||
-        error instanceof BadRequestException
-      ) {
-        throw new NotFoundException(`Client does not exist or is inactive`);
-      }
-      this.logger.error(
-        `Error validating client with ID: ${clientId}`,
-        error.stack,
+  /**
+   * Valida si un proyecto puede pasar al estado ENGINEERING
+   * @param project - Proyecto a validar
+   * @throws {BadRequestException} Si no cumple los requisitos
+   */
+  private async canMoveToEngineering(
+    project: DesignProjectData,
+  ): Promise<void> {
+    if (project.status !== 'APPROVED') {
+      throw new BadRequestException(
+        'Project must be in APPROVED status to move to ENGINEERING',
       );
-      handleException(error, 'Error validating client');
     }
+    // Aquí podrías agregar más validaciones específicas para ENGINEERING
   }
 
-  private async validateDesignerExists(designerId: string): Promise<void> {
-    try {
-      await this.user.findById(designerId);
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw new NotFoundException(`Designer does not exist or is inactive`);
-      }
-      this.logger.error(
-        `Error validating designer with ID: ${designerId}`,
-        error.stack,
+  /**
+   * Valida si un proyecto puede pasar al estado CONFIRMATION
+   * @param project - Proyecto a validar
+   * @throws {BadRequestException} Si no cumple los requisitos
+   */
+  private async canMoveToConfirmation(
+    project: DesignProjectData,
+  ): Promise<void> {
+    // Validar estado correcto
+    if (project.status !== 'ENGINEERING') {
+      throw new BadRequestException(
+        'Project must be in ENGINEERING status to move to CONFIRMATION',
       );
-      handleException(error, 'Error validating designer');
     }
+
+    // Validar fechas requeridas
+    await this.validateDatesForConfirmation(project);
+
+    // Aquí podrías agregar más validaciones en el futuro
   }
 
-  private async validateEngineeringStatus(id: string): Promise<void> {
-    const designProject = await this.findOne(id);
-
-    if (!designProject) {
-      throw new NotFoundException(`Design Project not found`);
+  /**
+   * Valida si un proyecto puede pasar al estado PRESENTATION
+   * @param project - Proyecto a validar
+   * @throws {BadRequestException} Si no cumple los requisitos
+   */
+  private async canMoveToPresentation(
+    project: DesignProjectData,
+  ): Promise<void> {
+    if (project.status !== 'CONFIRMATION') {
+      throw new BadRequestException(
+        'Project must be in CONFIRMATION status to move to PRESENTATION',
+      );
     }
-
-    if (designProject.status !== 'ENGINEERING') {
-      throw new BadRequestException(`Design Project is not engineering`);
-    }
+    // Futuras validaciones para PRESENTATION
   }
 
-  private async validateDatesForConfirmation(id: string): Promise<void> {
-    const project = await this.prisma.designProject.findUnique({
-      where: { id },
-      select: {
-        dateArchitectural: true,
-        dateStructural: true,
-        dateElectrical: true,
-        dateSanitary: true,
-      },
-    });
-
-    if (!project) {
-      throw new NotFoundException(`Design project not found`);
+  /**
+   * Valida si un proyecto puede pasar al estado COMPLETED
+   * @param project - Proyecto a validar
+   * @throws {BadRequestException} Si no cumple los requisitos
+   */
+  private async canMoveToCompleted(project: DesignProjectData): Promise<void> {
+    if (project.status !== 'PRESENTATION') {
+      throw new BadRequestException(
+        'Project must be in PRESENTATION status to move to COMPLETED',
+      );
     }
+    // Futuras validaciones para COMPLETED
+  }
 
+  /**
+   * Valida que todas las fechas requeridas estén definidas para el proyecto
+   * @param project - Proyecto a validar
+   * @throws {BadRequestException} Si faltan fechas requeridas
+   */
+  private validateDatesForConfirmation(project: DesignProjectData): void {
     const missingDates = [];
+
     if (!project.dateArchitectural) missingDates.push('dateArchitectural');
     if (!project.dateStructural) missingDates.push('dateStructural');
     if (!project.dateElectrical) missingDates.push('dateElectrical');
@@ -120,7 +140,39 @@ export class ProjectService {
 
     if (missingDates.length > 0) {
       throw new BadRequestException(
-        `Cannot move to ENGINEERING. Missing checks`,
+        `Cannot move to CONFIRMATION. Missing dates: ${missingDates.join(', ')}`,
+      );
+    }
+  }
+
+  /**
+   * Valida que no exista otro proyecto de diseño con la cotización especificada
+   * @param quotationId ID de la cotización a validar
+   * @param projectId ID del proyecto actual (opcional, para validación en updates)
+   * @throws BadRequestException si ya existe un proyecto con esa cotización
+   */
+  private async validateUniqueQuotation(
+    quotationId: string,
+    projectId?: string,
+  ): Promise<void> {
+    const existingProject = await this.prisma.designProject.findFirst({
+      where: {
+        quotationId,
+        ...(projectId && {
+          NOT: {
+            id: projectId, // Excluir el proyecto actual en caso de update
+          },
+        }),
+      },
+      select: {
+        id: true,
+        code: true,
+      },
+    });
+
+    if (existingProject) {
+      throw new BadRequestException(
+        `A design project already exists for this quotation`,
       );
     }
   }
@@ -152,15 +204,18 @@ export class ProjectService {
   }
 
   /**
-   * Crea un nuevo proyecto de diseño.
-   * @param createDesignProjectDto DTO con los datos del proyecto.
-   * @param user Usuario que realiza la acción.
+   * Crea un nuevo proyecto de diseño
+   * @param createDesignProjectDto - Datos del nuevo proyecto
+   * @param user - Usuario que realiza la acción
+   * @throws {NotFoundException} Si el cliente, cotización o diseñador no existen
+   * @throws {BadRequestException} Si la cotización no está aprobada
    */
   async create(
     createDesignProjectDto: CreateProjectDto,
     user: UserData,
   ): Promise<{ statusCode: number; message: string }> {
     const {
+      name,
       meetings,
       ubicationProject,
       clientId,
@@ -172,22 +227,13 @@ export class ProjectService {
 
     try {
       await this.prisma.$transaction(async (prisma) => {
-        // this.validateChanges(createDesignProjectDto);
-
         // Validar que el cliente existe
-
         await this.client.findById(clientId);
 
-        // Validar que la cotización existe
-        const quotation = await prisma.quotation.findUnique({
-          where: { id: quotationId },
-        });
-        if (!quotation) {
-          throw new NotFoundException(`Quotation not found`);
-        }
-        if (quotation.status === 'PENDING' || quotation.status === 'REJECTED') {
-          throw new NotFoundException(`Verify quotation status`);
-        }
+        // Validar que la cotización existe y está aprobada
+        await this.quotation.validateApprovedQuotation(quotationId, user);
+
+        await this.validateUniqueQuotation(quotationId);
 
         // Validar que el diseñador existe
         const designer = await this.user.findById(designerId);
@@ -198,13 +244,13 @@ export class ProjectService {
         const newProject = await prisma.designProject.create({
           data: {
             code: projectCode,
-            name: quotation.name,
-            meetings: meetings, // Parsear JSON de reuniones
+            name: name,
+            meetings,
             ubicationProject,
             department,
             province,
             client: { connect: { id: clientId } },
-            quotation: { connect: { id: quotation.id } },
+            quotation: { connect: { id: quotationId } },
             designer: { connect: { id: designer.id } },
           },
         });
@@ -218,6 +264,11 @@ export class ProjectService {
           createdAt: new Date(),
         });
       });
+
+      return {
+        statusCode: HttpStatus.CREATED,
+        message: 'Design Project created successfully',
+      };
     } catch (error) {
       this.logger.error(
         `Error creating design project: ${error.message}`,
@@ -231,15 +282,16 @@ export class ProjectService {
         throw error;
       }
 
-      handleException(error, 'Error creating a client');
+      handleException(error, 'Error creating design project');
     }
-
-    return {
-      statusCode: HttpStatus.CREATED,
-      message: 'Design Project created successfully',
-    };
   }
-
+  /**
+   * Actualiza los datos de un proyecto
+   * @param id - ID del proyecto a actualizar
+   * @param updateProjectDto - Datos a actualizar
+   * @param user - Usuario que realiza la acción
+   * @throws {NotFoundException} Si el proyecto no existe
+   */
   async update(
     id: string,
     updateProjectDto: UpdateProjectDto,
@@ -262,15 +314,23 @@ export class ProjectService {
         const project = await this.findById(id);
 
         if (clientId && clientId !== project.client.id) {
-          await this.validateClientExists(clientId);
+          await this.client.findById(clientId);
         }
 
         if (designerId && designerId !== project.designer.id) {
-          await this.validateDesignerExists(designerId);
+          await this.user.findById(designerId);
         }
 
-        if (quotationId && quotationId !== project.quotation.id) {
-          await this.quotation.validateApprovedQuotation(quotationId, user);
+        // Si se está actualizando el quotationId
+        if (updateProjectDto.quotationId) {
+          // Validar que la cotización existe y está aprobada
+          await this.quotation.validateApprovedQuotation(
+            updateProjectDto.quotationId,
+            user,
+          );
+
+          // Validar que no existe otro proyecto con esta cotización
+          await this.validateUniqueQuotation(updateProjectDto.quotationId, id);
         }
 
         await prisma.designProject.update({
@@ -315,7 +375,14 @@ export class ProjectService {
       handleException(error, 'Error updating project');
     }
   }
-
+  /**
+   * Actualiza el estado del proyecto según las transiciones permitidas
+   * @param id - ID del proyecto
+   * @param updateProjectStatusDto - Nuevo estado a actualizar
+   * @param user - Usuario que realiza la acción
+   * @throws {BadRequestException} Si la transición no es válida
+   * @throws {NotFoundException} Si el proyecto no existe
+   */
   async updateStatus(
     id: string,
     updateProjectStatusDto: UpdateProjectStatusDto,
@@ -333,12 +400,46 @@ export class ProjectService {
           return; // No es necesario actualizar
         }
 
-        if (newStatus === 'CONFIRMATION') {
-          // Validar que las fechas estén definidas
-          await this.validateEngineeringStatus(id);
+        // Validar transiciones permitidas
+        const validTransitions = {
+          APPROVED: ['ENGINEERING'],
+          ENGINEERING: ['CONFIRMATION'],
+          CONFIRMATION: ['PRESENTATION'],
+          PRESENTATION: ['COMPLETED'],
+          COMPLETED: [],
+        };
 
-          // Validar que la cotización esté aprobada
-          await this.validateEngineeringStatus(project.quotation.id);
+        // Obtener las transiciones permitidas para el estado actual
+        const allowedNextStates = validTransitions[project.status];
+
+        // Verificar si la transición es válida
+        if (!allowedNextStates.includes(newStatus)) {
+          throw new BadRequestException(
+            `Invalid status transition. Cannot move from ${project.status} to ${newStatus}. Allowed transitions: ${allowedNextStates.join(
+              ', ',
+            )}`,
+          );
+        }
+        // Validar la transición según el nuevo estado
+        switch (newStatus) {
+          case 'ENGINEERING':
+            await this.canMoveToEngineering(project);
+            break;
+
+          case 'CONFIRMATION':
+            await this.canMoveToConfirmation(project);
+            break;
+
+          case 'PRESENTATION':
+            await this.canMoveToPresentation(project);
+            break;
+
+          case 'COMPLETED':
+            await this.canMoveToCompleted(project);
+            break;
+
+          default:
+            throw new BadRequestException(`Invalid status: ${newStatus}`);
         }
 
         // Actualizar estado
@@ -356,6 +457,11 @@ export class ProjectService {
           createdAt: new Date(),
         });
       });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Design project status updated successfully',
+      };
     } catch (error) {
       this.logger.error(
         `Error updating project status: ${error.message}`,
@@ -371,13 +477,14 @@ export class ProjectService {
 
       handleException(error, 'Error updating project status');
     }
-
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'Design project status updated successfully',
-    };
   }
-
+  /**
+   * Actualiza las fechas del checklist de un proyecto
+   * @param id - ID del proyecto
+   * @param updateChecklistDto - Fechas a actualizar
+   * @param user - Usuario que realiza la acción
+   * @throws {NotFoundException} Si el proyecto no existe
+   */
   async updateChecklist(
     id: string,
     updateChecklistDto: UpdateChecklistDto,
@@ -429,7 +536,12 @@ export class ProjectService {
       handleException(error, 'Error updating project checklist');
     }
   }
-
+  /**
+   * Busca un proyecto de diseño por ID
+   * @param id - ID del proyecto
+   * @returns Promise con los datos del proyecto
+   * @throws {NotFoundException} Si el proyecto no existe
+   */
   async findOne(id: string): Promise<DesignProjectData> {
     try {
       return await this.findById(id);
@@ -449,7 +561,12 @@ export class ProjectService {
       handleException(error, 'Error retrieving project ');
     }
   }
-
+  /**
+   * Obtiene información básica de un proyecto por ID
+   * @param id - ID del proyecto
+   * @returns Promise con los datos básicos del proyecto
+   * @throws {NotFoundException} Si el proyecto no existe
+   */
   async findById(id: string): Promise<DesignProjectData> {
     const project = await this.prisma.designProject.findUnique({
       where: { id },
