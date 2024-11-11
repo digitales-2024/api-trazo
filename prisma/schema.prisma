@@ -268,8 +268,7 @@ model DesignProject {
     code String @unique
     name String
 
-    status   DesignProjectStatus @default(APPROVED)
-    meetings Json
+    status DesignProjectStatus @default(APPROVED)
 
     ubicationProject String
     province         String
