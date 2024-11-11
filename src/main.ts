@@ -49,10 +49,6 @@ async function bootstrap() {
       { name: 'Business', description: 'Operations about the business' },
       { name: 'Quotation', description: 'Operations about quotations' },
       { name: 'Levels', description: 'Operations about levels' },
-      {
-        name: 'Contracts',
-        description: 'Stub module for generating contracts',
-      },
     ];
 
     SwaggerModule.setup('api', app, document);
