@@ -10,6 +10,15 @@ import {
 
 export class CreateProjectDto {
   @ApiProperty({
+    description: 'Name of the project',
+    example: 'Proyecto Residencial San Luis',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Transform(({ value }) => value.trim())
+  name: string;
+
+  @ApiProperty({
     description: 'Array containing meetings details',
     example: '[]',
   })
