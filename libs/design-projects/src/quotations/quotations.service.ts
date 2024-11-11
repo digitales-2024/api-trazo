@@ -922,6 +922,7 @@ export class QuotationsService {
     const pdfBufferUint8Array = await page.pdf({
       format: 'A4',
       preferCSSPageSize: true,
+      margin: { top: '50px', bottom: '50px' },
     });
     await browser.close();
 
