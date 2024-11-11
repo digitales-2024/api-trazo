@@ -23,6 +23,7 @@ import { ExportProjectPdfDto } from './dto/export-project-pdf.dto';
 import { QuotationsService } from '../quotations/quotations.service';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateChecklistDto } from './dto/update-checklist.dto';
+import { DeleteChecklistDto } from './dto/delete-checklist.dto';
 
 /**
  * Servicio para gestionar proyectos de diseño
@@ -552,6 +553,97 @@ export class ProjectService {
       }
 
       handleException(error, 'Error updating project checklist');
+    }
+  }
+  /**
+   * Borra una o más fechas del checklist de un proyecto de diseño.
+   * Si alguna de las fechas a borrar ya está vacía o es nula, no se registra en la auditoría.
+   *
+   * @param id - ID del proyecto de diseño
+   * @param deleteChecklistDto - DTO con las fechas a borrar
+   * @param user - Usuario que realiza la acción
+   * @returns Objeto con el resultado de la operación
+   * @throws {NotFoundException} Si el proyecto de diseño no existe
+   * @throws {BadRequestException} Si no se proporcionan fechas a borrar
+   */
+  async deleteChecklist(
+    id: string,
+    deleteChecklistDto: DeleteChecklistDto,
+    user: UserData,
+  ): Promise<{ statusCode: number; message: string }> {
+    try {
+      // Validar que hay datos para actualizar
+      this.validateChanges(deleteChecklistDto);
+
+      if (deleteChecklistDto.datesToDelete.length === 0) {
+        throw new BadRequestException('No dates provided to delete');
+      }
+
+      const result = await this.prisma.$transaction(async (prisma) => {
+        // Verificar que existe el proyecto
+        const project = await this.findById(id);
+        if (!project) {
+          throw new NotFoundException('Design project not found');
+        }
+
+        // Verificar si hay cambios reales que hacer
+        const hasChanges = deleteChecklistDto.datesToDelete.some(
+          (dateToDelete) =>
+            project[dateToDelete] !== '' && project[dateToDelete] !== null,
+        );
+
+        if (!hasChanges) {
+          return {
+            statusCode: HttpStatus.OK,
+            message: 'No changes needed, dates were already empty',
+          };
+        }
+
+        // Construir el objeto con los campos a actualizar
+        const updateData = deleteChecklistDto.datesToDelete.reduce(
+          (acc, dateField) => ({
+            ...acc,
+            [dateField]: '',
+          }),
+          {},
+        );
+
+        // Actualizar el proyecto
+        await prisma.designProject.update({
+          where: { id },
+          data: updateData,
+        });
+
+        // Registrar en auditoría
+        await this.audit.create({
+          entityId: id,
+          entityType: 'designProject',
+          action: 'DELETE',
+          performedById: user.id,
+          createdAt: new Date(),
+        });
+
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Checklist dates deleted successfully',
+        };
+      });
+
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error deleting checklist dates for project: ${error.message}`,
+        error.stack,
+      );
+
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      handleException(error, 'Error deleting project checklist dates');
     }
   }
   /**

@@ -7,6 +7,7 @@ import {
   HttpStatus,
   HttpCode,
   Get,
+  Delete,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -23,6 +24,7 @@ import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 import { ExportProjectPdfDto } from './dto/export-project-pdf.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateChecklistDto } from './dto/update-checklist.dto';
+import { DeleteChecklistDto } from './dto/delete-checklist.dto';
 
 @ApiTags('Design Projects')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -89,6 +91,14 @@ export class ProjectController {
     return this.projectService.updateChecklist(id, updateChecklistDto, user);
   }
 
+  @Delete(':id/checklist')
+  deleteChecklist(
+    @Param('id') id: string,
+    @Body() deleteChecklistDto: DeleteChecklistDto,
+    @GetUser() user: UserData,
+  ) {
+    return this.projectService.deleteChecklist(id, deleteChecklistDto, user);
+  }
   // @Get()
   // findAll() {
   //   return this.projectService.findAll();
