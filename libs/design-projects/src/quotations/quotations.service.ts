@@ -443,8 +443,6 @@ export class QuotationsService {
       totalAmount,
     } = updateQuotationDto;
 
-    console.log('lo que me llega:', updateQuotationDto);
-
     if (Object.keys(updateQuotationDto).length === 0) {
       return {
         statusCode: HttpStatus.OK,
@@ -496,7 +494,7 @@ export class QuotationsService {
         };
       }
 
-      const dataactualizada = await prisma.quotation.update({
+      await prisma.quotation.update({
         where: {
           id,
         },
@@ -523,8 +521,6 @@ export class QuotationsService {
         },
       });
 
-      console.log('data actualizada:', dataactualizada);
-
       const existingLevels = await prisma.level.findMany({
         where: { quotationId: id },
         select: {
@@ -546,8 +542,6 @@ export class QuotationsService {
       const levelsToDelete = existingLevels.filter(
         (level) => !newLevelNames.includes(level.name),
       );
-
-      console.log(levelsToDelete);
 
       for (const level of levelsToDelete) {
         // Primero eliminamos los registros asociados en LevelsOnSpaces
@@ -922,6 +916,7 @@ export class QuotationsService {
     const pdfBufferUint8Array = await page.pdf({
       format: 'A4',
       preferCSSPageSize: true,
+      margin: { top: '50px', bottom: '50px' },
     });
     await browser.close();
 
