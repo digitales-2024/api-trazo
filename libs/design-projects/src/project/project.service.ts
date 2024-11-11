@@ -216,7 +216,6 @@ export class ProjectService {
   ): Promise<{ statusCode: number; message: string }> {
     const {
       name,
-      meetings,
       ubicationProject,
       clientId,
       quotationId,
@@ -245,7 +244,6 @@ export class ProjectService {
           data: {
             code: projectCode,
             name: name,
-            meetings,
             ubicationProject,
             department,
             province,
