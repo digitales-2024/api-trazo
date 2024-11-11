@@ -140,7 +140,7 @@ export class ProjectService {
 
     if (missingDates.length > 0) {
       throw new BadRequestException(
-        `Cannot move to CONFIRMATION. Missing dates: ${missingDates.join(', ')}`,
+        `Cannot move to CONFIRMATION. Missing checklist`,
       );
     }
   }
@@ -413,8 +413,7 @@ export class ProjectService {
         // Verificar si la transición es válida
         if (!allowedNextStates.includes(newStatus)) {
           throw new BadRequestException(
-            `Invalid status transition. Cannot move from ${project.status} to ${newStatus}. Allowed transitions: ${allowedNextStates.join(
-              ', ',
+            `Invalid status transition. Cannot move from ${project.status} to ${newStatus}',
             )}`,
           );
         }
@@ -490,28 +489,49 @@ export class ProjectService {
   ): Promise<{ statusCode: number; message: string }> {
     try {
       await this.prisma.$transaction(async (prisma) => {
-        this.validateChanges(updateChecklistDto);
-
         const project = await this.findById(id);
 
         if (!project) {
           throw new NotFoundException(`Design project not found`);
         }
 
-        // Validar cambios usando la nueva función
+        this.validateChanges(updateChecklistDto);
 
+        // Verificar si hay cambios en al menos uno de los campos
+        const hasChanges =
+          (updateChecklistDto.dateArchitectural &&
+            updateChecklistDto.dateArchitectural !==
+              project.dateArchitectural) ||
+          (updateChecklistDto.dateStructural &&
+            updateChecklistDto.dateStructural !== project.dateStructural) ||
+          (updateChecklistDto.dateElectrical &&
+            updateChecklistDto.dateElectrical !== project.dateElectrical) ||
+          (updateChecklistDto.dateSanitary &&
+            updateChecklistDto.dateSanitary !== project.dateSanitary);
+
+        if (!hasChanges) {
+          return {
+            statusCode: HttpStatus.OK,
+            message: 'Checklist updated successfully',
+          };
+        }
+
+        // Actualizar el proyecto con los nuevos valores
         await prisma.designProject.update({
           where: { id },
           data: updateChecklistDto,
         });
 
-        await this.audit.create({
-          entityId: id,
-          entityType: 'designProject',
-          action: 'UPDATE',
-          performedById: user.id,
-          createdAt: new Date(),
-        });
+        // Registrar en auditoría solo si hubo cambios
+        if (hasChanges) {
+          await this.audit.create({
+            entityId: id,
+            entityType: 'designProject',
+            action: 'UPDATE',
+            performedById: user.id,
+            createdAt: new Date(),
+          });
+        }
       });
 
       return {
