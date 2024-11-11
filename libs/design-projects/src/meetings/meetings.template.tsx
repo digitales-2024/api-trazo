@@ -16,6 +16,7 @@ export class MeetingsTemplate {
           />
           <MeetingsTemplate.meetingDetails />
           <MeetingsTemplate.meetingNotes />
+          <MeetingsTemplate.meetingsFooter />
         </div>
       </DesignProjectsTemplate.skeleton>
     );
@@ -92,6 +93,27 @@ export class MeetingsTemplate {
         </div>
         <div class="text-center py-1 border-b border-r border-black flex items-center justify-center h-16"></div>
       </>
+    );
+  }
+
+  private static meetingsFooter() {
+    return (
+      <footer class="text-sm">
+        <div class="text-center font-bold bg-zinc-100 py-1 border border-black mt-1">
+          3.- Aprobación proyecto integral
+        </div>
+        <div class="grid grid-cols-[1fr_5fr_7fr]">
+          <div class="bg-zinc-100 text-center py-1 border-x border-b border-black flex items-center justify-center"></div>
+          <div class="border-b border-r border-black">
+            <p class="font-bold text-center">Fecha:</p>
+            <div class="text-center py-1 flex items-center justify-center h-12"></div>
+          </div>
+          <div class="border-b border-r border-black">
+            <p class="font-bold text-center">Firma propietarios</p>
+            <div class="text-center py-1 flex items-center justify-center h-12"></div>
+          </div>
+        </div>
+      </footer>
     );
   }
 }
