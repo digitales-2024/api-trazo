@@ -14,11 +14,12 @@ import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ZoningData } from '../interfaces';
-import { HttpResponse, UserData } from '@login/login/interfaces';
+import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 
 @ApiTags('Zoning')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -39,16 +40,19 @@ export class ZoningController {
     return this.zoningService.create(createZoningDto, user);
   }
 
+  @ApiOkResponse({ description: 'Get all zoning' })
   @Get()
-  findAll() {
-    return this.zoningService.findAll();
+  findAll(@GetUser() user: UserPayload): Promise<ZoningData[]> {
+    return this.zoningService.findAll(user);
   }
 
+  @ApiOkResponse({ description: 'Get zoning by id' })
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string): Promise<ZoningData> {
     return this.zoningService.findOne(id);
   }
 
+  @ApiOkResponse({ description: 'Zoning successfully updated' })
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateZoningDto: UpdateZoningDto) {
     return this.zoningService.update(id, updateZoningDto);

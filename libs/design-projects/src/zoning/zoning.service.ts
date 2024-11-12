@@ -8,7 +8,7 @@ import {
 import { CreateZoningDto } from './dto/create-zoning.dto';
 import { UpdateZoningDto } from './dto/update-zoning.dto';
 import { PrismaService } from '@prisma/prisma';
-import { HttpResponse, UserData } from '@login/login/interfaces';
+import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { ZoningData } from '../interfaces';
 import { handleException } from '@login/login/utils';
 import { AuditActionType } from '@prisma/client';
@@ -130,12 +130,88 @@ export class ZoningService {
     }
   }
 
-  findAll() {
-    return `This action returns all zoning`;
+  /**
+   * Obtener todas las zonificaciones
+   * @param user Data del usuario que realiza la acción
+   * @returns Data de todas las zonificaciones
+   */
+  async findAll(user: UserPayload): Promise<ZoningData[]> {
+    try {
+      const zoning = await this.prisma.zoning.findMany({
+        where: {
+          ...(user.isSuperAdmin ? {} : { isActive: true }), // Filtrar por isActive solo si no es super admin
+        },
+        select: {
+          id: true,
+          zoneCode: true,
+          description: true,
+          buildableArea: true,
+          openArea: true,
+          isActive: true,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+
+      // Mapea los resultados al tipo ZoningData
+      return zoning.map((zoningType) => ({
+        id: zoningType.id,
+        zoneCode: zoningType.zoneCode,
+        description: zoningType.description,
+        buildableArea: zoningType.buildableArea,
+        openArea: zoningType.openArea,
+        isActive: zoningType.isActive,
+      })) as ZoningData[];
+    } catch (error) {
+      this.logger.error('Error getting all zoning');
+      handleException(error, 'Error getting all zoning');
+    }
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} zoning`;
+  /**
+   * Obtener una zonificación por su id
+   * @param id Id de la zonificación
+   * @returns Data de la zonificación
+   */
+  async findOne(id: string): Promise<ZoningData> {
+    try {
+      return await this.findById(id);
+    } catch (error) {
+      this.logger.error('Error get zoning');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      handleException(error, 'Error get zoning');
+    }
+  }
+
+  /**
+   * Obtener una zonificación por su id
+   * @param id Id de la zonificación
+   * @returns Data de la zonificación
+   */
+  async findById(id: string): Promise<ZoningData> {
+    const zoningDb = await this.prisma.zoning.findFirst({
+      where: { id },
+      select: {
+        id: true,
+        zoneCode: true,
+        description: true,
+        buildableArea: true,
+        openArea: true,
+        isActive: true,
+      },
+    });
+    if (!zoningDb) {
+      throw new BadRequestException('This zoning doesnt exist');
+    }
+
+    if (!!zoningDb && !zoningDb.isActive) {
+      throw new BadRequestException('This zoning exist, but is inactive');
+    }
+
+    return zoningDb;
   }
 
   update(id: string, updateZoningDto: UpdateZoningDto) {
