@@ -289,8 +289,7 @@ model DesignProject {
   designer   User   @relation("DesignerDesignProjects", fields: [designerId], references: [id])
   designerId String
 
-  projectCharters ProjectCharter[]            @relation("DesignProjectCharters")
-  observations    ProjectCharterObservation[] @relation("ProjectObservations")
+  projectCharters ProjectCharter[] @relation("DesignProjectCharters")
 
   startProjectDate String
   createdAt        DateTime @default(now()) @db.Timestamptz(6)
@@ -329,10 +328,6 @@ model ProjectCharterObservation {
   // Relación con ProjectCharter
   projectCharter   ProjectCharter @relation("ChartObservations", fields: [projectCharterId], references: [id])
   projectCharterId String
-
-  // Relación con DesignProject (para facilitar consultas)
-  designProject   DesignProject @relation("ProjectObservations", fields: [designProjectId], references: [id])
-  designProjectId String
 
   // Timestamps
   createdAt DateTime @default(now()) @db.Timestamptz(6)
