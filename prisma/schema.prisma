@@ -312,7 +312,7 @@ model ProjectCharter {
   designProjectId String
 
   // Relación con Observations
-  observations ProjectCharterObservation[] @relation("ChartObservations")
+  observations Observation[] @relation("ChartObservations")
 
   // Timestamps
   createdAt DateTime @default(now()) @db.Timestamptz(6)
@@ -320,7 +320,7 @@ model ProjectCharter {
 }
 
 // New model for observations
-model ProjectCharterObservation {
+model Observation {
   id String @id @unique @default(uuid())
 
   observation String
