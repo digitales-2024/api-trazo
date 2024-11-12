@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { DesignProjectsTemplate } from '../design-projects.template';
-import { LevelData } from '@clients/clients/interfaces/quotation.interface';
 import { spellPricing, twoDecimals } from '../utils';
 import { BusinessGet } from '@business/business/business.service';
 import {
@@ -9,6 +8,7 @@ import {
   QuotationTemplate,
 } from '../quotations/quotations.template';
 import { DesignProjectDataNested } from '../interfaces/project.interfaces';
+import { LevelData } from '../interfaces';
 
 @Injectable()
 export class ProjectTemplate {
