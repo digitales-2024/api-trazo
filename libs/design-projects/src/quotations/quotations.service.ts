@@ -17,12 +17,10 @@ import { AuditService } from '@login/login/admin/audit/audit.service';
 import { ClientsService } from '@clients/clients';
 import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
 import { handleException } from '@login/login/utils';
-import {
-  QuotationDataNested,
-  QuotationSummaryData,
-} from '@clients/clients/interfaces/quotation.interface';
 import * as Puppeteer from 'puppeteer';
 import { QuotationTemplate } from './quotations.template';
+import { QuotationSummaryData } from '../interfaces';
+import { QuotationDataNested } from '../interfaces/quotations.interfaces';
 
 @Injectable()
 export class QuotationsService {
