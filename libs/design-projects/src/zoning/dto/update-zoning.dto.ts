@@ -1,6 +1,6 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { CreateZoningDto } from './create-zoning.dto';
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString, Max, Min } from 'class-validator';
 
 export class UpdateZoningDto extends PartialType(CreateZoningDto) {
   @ApiProperty({
@@ -24,6 +24,8 @@ export class UpdateZoningDto extends PartialType(CreateZoningDto) {
   })
   @IsNotEmpty()
   @IsNumber()
+  @Min(0)
+  @Max(100)
   buildableArea?: number;
 
   @ApiProperty({
@@ -32,5 +34,7 @@ export class UpdateZoningDto extends PartialType(CreateZoningDto) {
   })
   @IsNotEmpty()
   @IsNumber()
+  @Min(0)
+  @Max(100)
   openArea?: number;
 }
