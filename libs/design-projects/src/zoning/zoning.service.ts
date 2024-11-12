@@ -12,6 +12,7 @@ import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { ZoningData } from '../interfaces';
 import { handleException } from '@login/login/utils';
 import { AuditActionType } from '@prisma/client';
+import { DeleteZoningDto } from './dto/delete-zoning.dto';
 
 @Injectable()
 export class ZoningService {
@@ -214,11 +215,263 @@ export class ZoningService {
     return zoningDb;
   }
 
-  update(id: string, updateZoningDto: UpdateZoningDto) {
-    return `This action updates a #${id} ${updateZoningDto} zoning`;
+  /**
+   * Actualizar una zonificación
+   * @param id Id de la zonificación
+   * @param updateZoningDto Data de la zonificación a actualizar
+   * @param user Data del usuario que realiza la acción
+   * @returns Data de la zonificación actualizada
+   */
+  async update(
+    id: string,
+    updateZoningDto: UpdateZoningDto,
+    user: UserData,
+  ): Promise<HttpResponse<ZoningData>> {
+    const { zoneCode, description, buildableArea, openArea } = updateZoningDto;
+
+    try {
+      const zoningDB = await this.findById(id);
+
+      if (zoneCode) {
+        await this.findByZoneCode(zoneCode, id);
+      }
+
+      // Validar si hay cambios
+      const noChanges =
+        (zoneCode === undefined || zoneCode === zoningDB.zoneCode) &&
+        (description === undefined || description === zoningDB.description) &&
+        (buildableArea === undefined ||
+          buildableArea === zoningDB.buildableArea) &&
+        (openArea === undefined || openArea === zoningDB.openArea);
+
+      if (noChanges) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Zoning updated successfully',
+          data: {
+            id: zoningDB.id,
+            zoneCode: zoningDB.zoneCode,
+            description: zoningDB.description,
+            buildableArea: zoningDB.buildableArea,
+            openArea: zoningDB.openArea,
+            isActive: zoningDB.isActive,
+          },
+        };
+      }
+
+      // Construir el objeto de actualización dinámicamente solo con los campos presentes
+      const updateData: any = {};
+      if (zoneCode !== undefined && zoneCode !== zoningDB.zoneCode)
+        updateData.zoneCode = zoneCode;
+      if (description !== undefined && description !== zoningDB.description)
+        updateData.description = description;
+      if (
+        buildableArea !== undefined &&
+        buildableArea !== zoningDB.buildableArea
+      )
+        updateData.buildableArea = buildableArea;
+      if (openArea !== undefined && openArea !== zoningDB.openArea)
+        updateData.openArea = openArea;
+
+      // Transacción para realizar la actualización
+      const updatedZoning = await this.prisma.$transaction(async (prisma) => {
+        const zoning = await prisma.zoning.update({
+          where: { id },
+          data: updateData,
+          select: {
+            id: true,
+            zoneCode: true,
+            description: true,
+            buildableArea: true,
+            openArea: true,
+            isActive: true,
+          },
+        });
+        // Crear un registro de auditoría
+        await prisma.audit.create({
+          data: {
+            entityId: zoning.id,
+            action: AuditActionType.UPDATE,
+            performedById: user.id,
+            entityType: 'zoning',
+          },
+        });
+
+        return zoning;
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Zoning updated successfully',
+        data: updatedZoning,
+      };
+    } catch (error) {
+      this.logger.error(`Error updating zoning: ${error.message}`, error.stack);
+
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      handleException(error, 'Error updating a zoning');
+    }
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} zoning`;
+  /**
+   * Activar varias zonificaciones
+   * @param user Data del usuario que realiza la acción
+   * @param zoning Data de las zonificaciones a reactivar
+   * @returns Data de las zonificaciones reactivadas
+   */
+  async reactivateAll(
+    user: UserData,
+    zoning: DeleteZoningDto,
+  ): Promise<Omit<HttpResponse, 'data'>> {
+    try {
+      await this.prisma.$transaction(async (prisma) => {
+        // Buscar los zonificaciones en la base de datos
+        const zoningDB = await prisma.zoning.findMany({
+          where: {
+            id: { in: zoning.ids },
+          },
+          select: {
+            id: true,
+            zoneCode: true,
+            description: true,
+            buildableArea: true,
+            openArea: true,
+            isActive: true,
+          },
+        });
+
+        // Validar que se encontraron las zonificaciones
+        if (zoningDB.length === 0) {
+          throw new NotFoundException('Zoning not found or inactive');
+        }
+
+        // Reactivar zonificaciones
+        const reactivatePromises = zoningDB.map(async (zoningType) => {
+          // Activar la zonificación
+          await prisma.zoning.update({
+            where: { id: zoningType.id },
+            data: { isActive: true },
+          });
+
+          await this.prisma.audit.create({
+            data: {
+              action: AuditActionType.UPDATE,
+              entityId: zoningType.id,
+              entityType: 'zoning',
+              performedById: user.id,
+              createdAt: new Date(),
+            },
+          });
+
+          return {
+            id: zoningType.id,
+            zoneCode: zoningType.zoneCode,
+            description: zoningType.description,
+            buildableArea: zoningType.buildableArea,
+            openArea: zoningType.openArea,
+            isActive: zoningType.isActive,
+          };
+        });
+
+        return Promise.all(reactivatePromises);
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Zoning reactivate successfully',
+      };
+    } catch (error) {
+      this.logger.error('Error reactivating zoning', error.stack);
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      handleException(error, 'Error reactivating zoning');
+    }
+  }
+
+  /**
+   * Eliminar varias zonificaciones
+   * @param zoning Data de las zonificaciones a eliminar
+   * @param user Data del usuario que realiza la acción
+   */
+  async removeAll(
+    zoning: DeleteZoningDto,
+    user: UserData,
+  ): Promise<Omit<HttpResponse, 'data'>> {
+    try {
+      await this.prisma.$transaction(async (prisma) => {
+        // Buscar las zonificaciones en la base de datos
+        const zoningDB = await prisma.zoning.findMany({
+          where: {
+            id: { in: zoning.ids },
+          },
+          select: {
+            id: true,
+            zoneCode: true,
+            description: true,
+            buildableArea: true,
+            openArea: true,
+            isActive: true,
+          },
+        });
+
+        // Validar que se encontraron las zonificaciones
+        if (zoningDB.length === 0) {
+          throw new NotFoundException('Zoning not found or inactive');
+        }
+
+        const deactivatePromises = zoningDB.map(async (zoningDelete) => {
+          // Desactivar zonificación
+          await prisma.zoning.update({
+            where: { id: zoningDelete.id },
+            data: { isActive: false },
+          });
+
+          await this.prisma.audit.create({
+            data: {
+              action: AuditActionType.DELETE,
+              entityId: zoningDelete.id,
+              entityType: 'zoning',
+              performedById: user.id,
+              createdAt: new Date(),
+            },
+          });
+
+          return {
+            id: zoningDelete.id,
+            zoneCode: zoningDelete.zoneCode,
+            description: zoningDelete.description,
+            buildableArea: zoningDelete.buildableArea,
+            openArea: zoningDelete.openArea,
+            isActive: zoningDelete.isActive,
+          };
+        });
+
+        return Promise.all(deactivatePromises);
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Zoning deactivate successfully',
+      };
+    } catch (error) {
+      this.logger.error('Error deactivating zoning', error.stack);
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      handleException(error, 'Error deactivating zoning');
+    }
   }
 }
