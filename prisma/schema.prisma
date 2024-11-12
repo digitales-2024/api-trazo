@@ -301,10 +301,10 @@ enum DesignProjectStatus {
 
 model Zoning {
     id             String  @id @unique @default(uuid())
-    zone_code      String  @unique
+    zoneCode      String  @unique
     description    String?
-    buildable_area Float
-    open_area      Float
+    buildableArea Float
+    openArea      Float
     isActive       Boolean @default(true)
 
     createdAt DateTime    @default(now()) @db.Timestamptz(6)
