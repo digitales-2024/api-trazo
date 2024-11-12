@@ -1,8 +1,8 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUUID } from 'class-validator';
-import { UpdatePartialProjectDto } from './create-project.dto';
+import { IsDateString, IsOptional, IsString, IsUUID } from 'class-validator';
+import { CreateProjectDto } from './create-project.dto';
 
-export class UpdateProjectDto extends PartialType(UpdatePartialProjectDto) {
+export class UpdateProjectDto extends PartialType(CreateProjectDto) {
   @ApiProperty({ description: 'Project name', required: false })
   @IsString()
   @IsOptional()
@@ -37,4 +37,11 @@ export class UpdateProjectDto extends PartialType(UpdatePartialProjectDto) {
   @IsUUID()
   @IsOptional()
   designerId?: string;
+  @ApiProperty({
+    description: 'Fecha para el plano arquitectónico',
+    example: '2024-01-15',
+  })
+  @IsOptional()
+  @IsDateString()
+  startProjectDate?: string;
 }

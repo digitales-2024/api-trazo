@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsUUID, IsString, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsUUID, IsString, IsDateString } from 'class-validator';
 
 export class CreateProjectDto {
   @ApiProperty({
@@ -39,7 +39,6 @@ export class CreateProjectDto {
 
   @ApiProperty({
     description: 'Client ID associated with the project',
-    example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @IsUUID()
   @IsNotEmpty()
@@ -47,7 +46,6 @@ export class CreateProjectDto {
 
   @ApiProperty({
     description: 'Quotation ID associated with the project',
-    example: '987e4567-e89b-12d3-a456-426614174321',
   })
   @IsUUID()
   @IsNotEmpty()
@@ -55,51 +53,15 @@ export class CreateProjectDto {
 
   @ApiProperty({
     description: 'Designer ID assigned to the project',
-    example: '456e4567-e89b-12d3-a456-426614174999',
   })
   @IsUUID()
   @IsNotEmpty()
   designerId: string;
-}
 
-// update-project.dto.ts
-export class UpdatePartialProjectDto {
-  @ApiProperty({ description: 'Project name', required: false })
-  @IsString()
-  @IsOptional()
-  @Transform(({ value }) => value?.trim())
-  name?: string;
-
-  @ApiProperty({ description: 'Project location', required: false })
-  @IsString()
-  @IsOptional()
-  @Transform(({ value }) => value?.trim())
-  ubicationProject?: string;
-
-  @ApiProperty({ description: 'Province', required: false })
-  @IsString()
-  @IsOptional()
-  @Transform(({ value }) => value?.trim())
-  province?: string;
-
-  @ApiProperty({ description: 'Department', required: false })
-  @IsString()
-  @IsOptional()
-  @Transform(({ value }) => value?.trim())
-  department?: string;
-
-  @ApiProperty({ description: 'Client ID', required: false })
-  @IsUUID()
-  @IsOptional()
-  clientId?: string;
-
-  @ApiProperty({ description: 'Quotation ID', required: false })
-  @IsUUID()
-  @IsOptional()
-  quotationId?: string;
-
-  @ApiProperty({ description: 'Designer ID', required: false })
-  @IsUUID()
-  @IsOptional()
-  designerId?: string;
+  @ApiProperty({
+    description: 'Fecha para el plano arquitectónico',
+    example: '2024-01-15',
+  })
+  @IsDateString()
+  startProjectDate: string;
 }
