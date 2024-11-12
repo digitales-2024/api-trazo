@@ -1,6 +1,6 @@
 import { Zoning } from '@prisma/client';
 
-export type ZoninData = Pick<
+export type ZoningData = Pick<
   Zoning,
   | 'id'
   | 'zone_code'

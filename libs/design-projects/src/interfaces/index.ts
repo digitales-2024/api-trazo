@@ -7,4 +7,4 @@ export {
   QuotationSummaryData,
 } from './quotations.interfaces';
 export { DesignProjectData } from './project.interfaces';
-export {} from './quotation.interface';
+export { ZoningData } from './zoning.interfaces';
