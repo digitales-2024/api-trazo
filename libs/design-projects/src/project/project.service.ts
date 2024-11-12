@@ -242,7 +242,7 @@ export class ProjectService {
    * Gets the project, quotation, levels and spaces by id.
    * Used by the PDF renderer only
    */
-  private async findByIdNested(id: string): Promise<DesignProjectDataNested> {
+  async findByIdNested(id: string): Promise<DesignProjectDataNested> {
     const project = await this.prisma.designProject.findUnique({
       where: { id },
       select: {

@@ -20,5 +20,6 @@ import { BusinessModule } from '@business/business';
     QuotationsModule,
     BusinessModule,
   ],
+  exports: [ProjectService],
 })
 export class ProjectModule {}

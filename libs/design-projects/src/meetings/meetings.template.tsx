@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { DesignProjectsTemplate } from '../design-projects.template';
 import { QuotationTemplate } from '../quotations/quotations.template';
+import { DesignProjectDataNested } from '../interfaces/project.interface';
 
 @Injectable()
 export class MeetingsTemplate {
-  render() {
+  render(project: DesignProjectDataNested) {
     return (
       <DesignProjectsTemplate.skeleton>
         <div class="px-16">
@@ -14,7 +15,7 @@ export class MeetingsTemplate {
             quotationCreatedAt={new Date()}
             label="Acta de Proyecto"
           />
-          <MeetingsTemplate.meetingDetails />
+          <MeetingsTemplate.meetingDetails project={project} />
           <MeetingsTemplate.meetingNotes />
           <MeetingsTemplate.meetingsFooter />
         </div>
@@ -22,7 +23,7 @@ export class MeetingsTemplate {
     );
   }
 
-  private static meetingDetails() {
+  private static meetingDetails(props: { project: DesignProjectDataNested }) {
     return (
       <div class="text-sm mb-4">
         <div class="text-center font-bold bg-zinc-100 py-1 border border-black mt-1">
@@ -35,22 +36,26 @@ export class MeetingsTemplate {
           <div class="text-center border-b border-r border-black bg-zinc-100 font-bold">
             Propietario(a)
           </div>
-          <div class="py-2 px-2 border-x border-b border-black ">
-            Nombre del poryecto
+          <div class="py-2 px-2 border-x border-b border-black" safe>
+            {props.project.name}
           </div>
-          <div class="py-2 px-2 border-b border-r border-black ">
-            Propietario del proyecto
+          <div class="py-2 px-2 border-b border-r border-black" safe>
+            {props.project.client.name}
           </div>
         </div>
         <div class="grid grid-cols-[2fr_5fr_2fr_5fr]">
           <div class="font-bold border-x border-b bg-zinc-100 border-black flex items-center justify-center">
             Lider de Reunión:
           </div>
-          <div class="border-b border-r border-black p-2">---</div>
+          <div class="border-b border-r border-black p-2" safe>
+            {props.project.designer.name}
+          </div>
           <div class="font-bold text-center bg-zinc-100 border-b border-r border-black flex items-center justify-center">
             Fecha de inicio de proyecto
           </div>
-          <div class="border-b border-r border-black p-2">---</div>
+          <div class="border-b border-r border-black p-2">
+            --fecha from db--
+          </div>
         </div>
       </div>
     );
