@@ -289,10 +289,12 @@ model DesignProject {
   designer   User   @relation("DesignerDesignProjects", fields: [designerId], references: [id])
   designerId String
 
-  projectCharters ProjectCharter[] @relation("DesignProjectCharters")
+  projectCharters ProjectCharter[]            @relation("DesignProjectCharters")
+  observations    ProjectCharterObservation[] @relation("ProjectObservations")
 
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt
+  startProjectDate String
+  createdAt        DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt
 }
 
 enum DesignProjectStatus {
@@ -303,16 +305,33 @@ enum DesignProjectStatus {
   COMPLETED
 }
 
-// Nuevo modelo ProjectCharter
 model ProjectCharter {
   id String @id @unique @default(uuid())
 
-  // Campos para las observaciones y fecha
-  observations String
-  date         DateTime @default(now()) @db.Timestamptz(6)
-
   // Relación con DesignProject
   designProject   DesignProject @relation("DesignProjectCharters", fields: [designProjectId], references: [id])
+  designProjectId String
+
+  // Relación con Observations
+  observations ProjectCharterObservation[] @relation("ChartObservations")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+// New model for observations
+model ProjectCharterObservation {
+  id String @id @unique @default(uuid())
+
+  observation String
+
+  // Relación con ProjectCharter
+  projectCharter   ProjectCharter @relation("ChartObservations", fields: [projectCharterId], references: [id])
+  projectCharterId String
+
+  // Relación con DesignProject (para facilitar consultas)
+  designProject   DesignProject @relation("ProjectObservations", fields: [designProjectId], references: [id])
   designProjectId String
 
   // Timestamps
