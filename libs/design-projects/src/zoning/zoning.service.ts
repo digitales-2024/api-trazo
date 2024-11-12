@@ -52,6 +52,14 @@ export class ZoningService {
     return zoningDB;
   }
 
+  private validatePercentage(buildableArea: number, openArea: number) {
+    if (buildableArea + openArea !== 100) {
+      throw new BadRequestException(
+        'The sum of buildable area and open area must be 100',
+      );
+    }
+  }
+
   /**
    * Crear una nueva zonificación
    * @param createZoningDto Data de la zonificación a crear
@@ -68,6 +76,7 @@ export class ZoningService {
     try {
       // Crear la zonificación y registrar la auditoría
       await this.findByZoneCode(zoneCode);
+      await this.validatePercentage(buildableArea, openArea);
       newZoning = await this.prisma.$transaction(async () => {
         // Crear el nueva zonificación
         const zoning = await this.prisma.zoning.create({
@@ -234,6 +243,13 @@ export class ZoningService {
 
       if (zoneCode) {
         await this.findByZoneCode(zoneCode, id);
+      }
+      // Validar que la suma de las áreas sea 100
+      if (buildableArea || openArea) {
+        this.validatePercentage(
+          buildableArea || zoningDB.buildableArea,
+          openArea || zoningDB.openArea,
+        );
       }
 
       // Validar si hay cambios
