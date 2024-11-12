@@ -65,6 +65,16 @@ export class CreateQuotationDto {
   @IsNotEmpty()
   clientId: string;
 
+  // Relacion con Zoning
+  @ApiProperty({
+    name: 'zoningId',
+    description: 'Id of the zoning this quotation belongs to',
+    example: 'aaaaa-0000-ffff',
+  })
+  @IsString()
+  @IsNotEmpty()
+  zoningId: string;
+
   @ApiProperty({
     name: 'discount',
     description: 'Discount to be applied to the square meter price.',
