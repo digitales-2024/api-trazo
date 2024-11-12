@@ -8,7 +8,7 @@ import {
   IntegralProjectItem,
   QuotationTemplate,
 } from '../quotations/quotations.template';
-import { DesignProjectDataNested } from '../interfaces/project.interface';
+import { DesignProjectDataNested } from '../interfaces/project.interfaces';
 
 @Injectable()
 export class ProjectTemplate {

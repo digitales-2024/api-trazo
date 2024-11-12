@@ -18,7 +18,7 @@ import Puppeteer from 'puppeteer';
 import { BusinessService } from '@business/business';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 import { DesignProjectData } from '../interfaces';
-import { DesignProjectDataNested } from '../interfaces/project.interface';
+import { DesignProjectDataNested } from '../interfaces/project.interfaces';
 import { ExportProjectPdfDto } from './dto/export-project-pdf.dto';
 import * as Fs from 'fs';
 import * as Path from 'path';
