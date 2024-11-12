@@ -9,7 +9,7 @@ import {
 import { CreateProjectDto } from './dto/create-project.dto';
 import { PrismaService } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
-import { UserData } from '@login/login/interfaces';
+import { UserData, UserPayload } from '@login/login/interfaces';
 import { ClientsService } from '@clients/clients';
 import { UsersService } from '@login/login/admin/users/users.service';
 import { handleException } from '@login/login/utils';
@@ -18,12 +18,17 @@ import Puppeteer from 'puppeteer';
 import { BusinessService } from '@business/business';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 import { DesignProjectData } from '../interfaces';
-import { DesignProjectDataNested } from '../interfaces/project.interface';
+import {
+  DesignProjectDataNested,
+  DesignProjectSummaryData,
+} from '../interfaces/project.interface';
 import { ExportProjectPdfDto } from './dto/export-project-pdf.dto';
 import { QuotationsService } from '../quotations/quotations.service';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateChecklistDto } from './dto/update-checklist.dto';
 import { DeleteChecklistDto } from './dto/delete-checklist.dto';
+import { ProjectCharterService } from '../project-charter/project-charter.service';
+import { DesignProjectStatus } from '@prisma/client';
 
 /**
  * Servicio para gestionar proyectos de diseño
@@ -40,6 +45,7 @@ export class ProjectService {
     private readonly businessService: BusinessService,
     private readonly template: ProjectTemplate,
     private readonly quotation: QuotationsService,
+    private readonly projectCharter: ProjectCharterService,
   ) {}
 
   /**
@@ -223,6 +229,7 @@ export class ProjectService {
       designerId,
       department,
       province,
+      startProjectDate,
     } = createDesignProjectDto;
 
     try {
@@ -244,16 +251,19 @@ export class ProjectService {
         const newProject = await prisma.designProject.create({
           data: {
             code: projectCode,
-            name: name,
+            name,
             ubicationProject,
             department,
             province,
             client: { connect: { id: clientId } },
             quotation: { connect: { id: quotationId } },
             designer: { connect: { id: designer.id } },
+            startProjectDate,
           },
         });
 
+        // Crear el project charter
+        await this.projectCharter.create(newProject.id, prisma);
         // Registrar la acción en la auditoría
         await this.audit.create({
           entityId: newProject.id,
@@ -304,6 +314,7 @@ export class ProjectService {
       department,
       province,
       name,
+      startProjectDate,
     } = updateProjectDto;
 
     try {
@@ -342,6 +353,7 @@ export class ProjectService {
             department,
             province,
             name,
+            startProjectDate,
           },
         });
 
@@ -692,7 +704,7 @@ export class ProjectService {
           select: { id: true, name: true },
         },
         quotation: {
-          select: { id: true, code: true },
+          select: { id: true, publicCode: true },
         },
         designer: {
           select: { id: true, name: true },
@@ -701,6 +713,7 @@ export class ProjectService {
         dateStructural: true,
         dateElectrical: true,
         dateSanitary: true,
+        startProjectDate: true,
       },
     });
 
@@ -708,6 +721,68 @@ export class ProjectService {
       throw new NotFoundException(`Design project not found`);
     }
     return project as DesignProjectData;
+  }
+
+  /**
+   * Obtiene un listado resumido de todos los proyectos de diseño.
+   * Los superadmins ven todos los proyectos, los usuarios normales solo ven
+   * proyectos en estados activos.
+   *
+   * @param user Usuario que realiza la petición
+   * @returns Lista resumida de proyectos de diseño
+   */
+  async findAll(user: UserPayload): Promise<DesignProjectSummaryData[]> {
+    try {
+      // Definir estados activos
+      const activeStates: DesignProjectStatus[] = [
+        'APPROVED',
+        'ENGINEERING',
+        'CONFIRMATION',
+        'PRESENTATION',
+      ];
+
+      const projects = await this.prisma.designProject.findMany({
+        where: {
+          ...(user.isSuperAdmin ? {} : { status: { in: activeStates } }),
+        },
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          status: true,
+          startProjectDate: true,
+          ubicationProject: true,
+          department: true,
+          province: true,
+          client: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          quotation: {
+            select: {
+              id: true,
+              publicCode: true,
+            },
+          },
+          designer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      return projects as DesignProjectSummaryData[];
+    } catch (error) {
+      this.logger.error('Error getting all design projects', error.stack);
+      handleException(error, 'Error getting all design projects');
+    }
   }
 
   /**
@@ -724,6 +799,7 @@ export class ProjectService {
         ubicationProject: true,
         department: true,
         province: true,
+        startProjectDate: true,
         status: true,
         client: {
           select: {
@@ -796,6 +872,7 @@ export class ProjectService {
       department: project.department,
       province: project.province,
       status: project.status,
+      startProjectDate: project.startProjectDate,
       quotation: {
         id: quotation.id,
         name: quotation.name,

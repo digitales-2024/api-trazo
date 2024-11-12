@@ -19,12 +19,13 @@ import {
   ApiOkResponse,
 } from '@nestjs/swagger';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
-import { UserData } from '@login/login/interfaces';
+import { UserData, UserPayload } from '@login/login/interfaces';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 import { ExportProjectPdfDto } from './dto/export-project-pdf.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateChecklistDto } from './dto/update-checklist.dto';
 import { DeleteChecklistDto } from './dto/delete-checklist.dto';
+import { DesignProjectSummaryData } from '../interfaces/project.interface';
 
 @ApiTags('Design Projects')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -98,6 +99,14 @@ export class ProjectController {
     @GetUser() user: UserData,
   ) {
     return this.projectService.deleteChecklist(id, deleteChecklistDto, user);
+  }
+
+  @Get()
+  @ApiOkResponse({
+    description: 'Get all design projects',
+  })
+  findAll(@GetUser() user: UserPayload): Promise<DesignProjectSummaryData[]> {
+    return this.projectService.findAll(user);
   }
   // @Get()
   // findAll() {
