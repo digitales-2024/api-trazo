@@ -17,12 +17,10 @@ import { AuditService } from '@login/login/admin/audit/audit.service';
 import { ClientsService } from '@clients/clients';
 import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
 import { handleException } from '@login/login/utils';
-import {
-  QuotationDataNested,
-  QuotationSummaryData,
-} from '@clients/clients/interfaces/quotation.interface';
 import * as Puppeteer from 'puppeteer';
 import { QuotationTemplate } from './quotations.template';
+import { QuotationSummaryData } from '../interfaces';
+import { QuotationDataNested } from '../interfaces/quotations.interfaces';
 
 @Injectable()
 export class QuotationsService {
@@ -64,6 +62,7 @@ export class QuotationsService {
       metering,
       levels,
       totalAmount,
+      zoningId,
     } = createQuotationDto;
 
     await this.prisma.$transaction(async (prisma) => {
@@ -104,6 +103,11 @@ export class QuotationsService {
           client: {
             connect: {
               id: client.id,
+            },
+          },
+          zoning: {
+            connect: {
+              id: zoningId,
             },
           },
           totalAmount,
@@ -939,5 +943,20 @@ export class QuotationsService {
     });
 
     return this.template.renderPdf(quotation, editCount);
+  }
+
+  async validateApprovedQuotation(
+    quotationId: string,
+    user: UserData,
+  ): Promise<void> {
+    const quotation = await this.findOne(quotationId, user);
+
+    if (!quotation) {
+      throw new NotFoundException(`Quotation not found`);
+    }
+
+    if (quotation.status !== 'APPROVED') {
+      throw new BadRequestException(`Quotation is not approved`);
+    }
   }
 }

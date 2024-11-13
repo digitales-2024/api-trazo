@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "DesignProject" ALTER COLUMN "dateArchitectural" SET DATA TYPE TEXT,
+ALTER COLUMN "dateElectrical" SET DATA TYPE TEXT,
+ALTER COLUMN "dateSanitary" SET DATA TYPE TEXT,
+ALTER COLUMN "dateStructural" SET DATA TYPE TEXT;

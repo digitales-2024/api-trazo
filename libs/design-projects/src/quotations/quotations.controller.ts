@@ -11,7 +11,7 @@ import {
 import { QuotationsService } from './quotations.service';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
-import { UserData, UserPayload } from '@login/login/interfaces';
+import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { UpdateQuotationStatusDto } from './dto/update-status.dto';
 import {
   ApiBadRequestResponse,
@@ -21,8 +21,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
-import { QuotationSummaryData } from '@clients/clients/interfaces';
+
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
+import { QuotationSummaryData } from '../interfaces';
+import { QuotationDataNested } from '../interfaces/quotations.interfaces';
 
 @ApiTags('Quotation')
 @Controller({ path: 'quotation', version: '1' })
@@ -38,7 +40,7 @@ export class QuotationsController {
   create(
     @Body() createQuotationDto: CreateQuotationDto,
     @GetUser() user: UserData,
-  ) {
+  ): Promise<HttpResponse<undefined>> {
     return this.quotationsService.create(createQuotationDto, user);
   }
 
@@ -51,7 +53,10 @@ export class QuotationsController {
   @ApiOkResponse({ description: 'Get quotation by id' })
   @ApiNotFoundResponse({ description: 'Quotation not found' })
   @Get(':id')
-  findOne(@Param('id') id: string, @GetUser() user: UserData) {
+  findOne(
+    @Param('id') id: string,
+    @GetUser() user: UserData,
+  ): Promise<QuotationDataNested> {
     return this.quotationsService.findOne(id, user);
   }
 
@@ -68,7 +73,7 @@ export class QuotationsController {
     @Param('id') id: string,
     @Body() updateQuotationDto: UpdateQuotationDto,
     @GetUser() user: UserPayload,
-  ) {
+  ): Promise<HttpResponse<undefined>> {
     return await this.quotationsService.update(id, updateQuotationDto, user);
   }
 
@@ -80,7 +85,7 @@ export class QuotationsController {
     @Param('id') id: string,
     @Body() newStatus: UpdateQuotationStatusDto,
     @GetUser() user: UserData,
-  ) {
+  ): Promise<HttpResponse<undefined>> {
     return await this.quotationsService.updateStatus(id, newStatus, user);
   }
 
@@ -94,7 +99,7 @@ export class QuotationsController {
   deactivate(
     @Body() deleteDto: DeleteQuotationsDto,
     @GetUser() user: UserData,
-  ) {
+  ): Promise<HttpResponse<undefined>> {
     return this.quotationsService.removeAll(deleteDto, user);
   }
 

@@ -17,6 +17,11 @@ export const modulesSeed: Module[] = [
     description: 'This is the client module',
   },
   {
+    cod: 'ZON',
+    name: 'Zoning',
+    description: 'This is the zoning module',
+  },
+  {
     cod: 'USR',
     name: 'Users',
     description: 'This is the users module',

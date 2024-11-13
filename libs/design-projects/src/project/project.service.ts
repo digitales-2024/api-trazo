@@ -9,7 +9,7 @@ import {
 import { CreateProjectDto } from './dto/create-project.dto';
 import { PrismaService } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
-import { UserData } from '@login/login/interfaces';
+import { UserData, UserPayload } from '@login/login/interfaces';
 import { ClientsService } from '@clients/clients';
 import { UsersService } from '@login/login/admin/users/users.service';
 import { handleException } from '@login/login/utils';
@@ -18,11 +18,23 @@ import Puppeteer from 'puppeteer';
 import { BusinessService } from '@business/business';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 import { DesignProjectData } from '../interfaces';
-import { DesignProjectDataNested } from '../interfaces/project.interface';
+import {
+  DesignProjectDataNested,
+  DesignProjectSummaryData,
+} from '../interfaces/project.interfaces';
 import { ExportProjectPdfDto } from './dto/export-project-pdf.dto';
 import * as Fs from 'fs';
 import * as Path from 'path';
+import { QuotationsService } from '../quotations/quotations.service';
+import { UpdateProjectDto } from './dto/update-project.dto';
+import { UpdateChecklistDto } from './dto/update-checklist.dto';
+import { DeleteChecklistDto } from './dto/delete-checklist.dto';
+import { ProjectCharterService } from '../project-charter/project-charter.service';
+import { DesignProjectStatus } from '@prisma/client';
 
+/**
+ * Servicio para gestionar proyectos de diseño
+ */
 @Injectable()
 export class ProjectService {
   private readonly logger = new Logger(ProjectService.name);
@@ -34,8 +46,14 @@ export class ProjectService {
     private readonly user: UsersService,
     private readonly businessService: BusinessService,
     private readonly template: ProjectTemplate,
+    private readonly quotation: QuotationsService,
+    private readonly projectCharter: ProjectCharterService,
   ) {}
 
+  /**
+   * Genera un código único para un nuevo proyecto de diseño con el formato PRY-DIS-XXX
+   * @returns Código generado para el proyecto
+   */
   private async generateCodeProjectDesing(): Promise<string> {
     // Generar el siguiente código incremental
     const lastProject = await this.prisma.designProject.findFirst({
@@ -49,42 +67,182 @@ export class ProjectService {
     const projectCode = `PRY-DIS-${String(lastIncrement + 1).padStart(3, '0')}`;
     return projectCode;
   }
+  /**
+   * Valida si un proyecto puede pasar al estado ENGINEERING
+   * @param project - Proyecto a validar
+   * @throws {BadRequestException} Si no cumple los requisitos
+   */
+  private async canMoveToEngineering(
+    project: DesignProjectData,
+  ): Promise<void> {
+    if (project.status !== 'APPROVED') {
+      throw new BadRequestException(
+        'Project must be in APPROVED status to move to ENGINEERING',
+      );
+    }
+    // Aquí podrías agregar más validaciones específicas para ENGINEERING
+  }
 
   /**
-   * Crea un nuevo proyecto de diseño.
-   * @param createDesignProjectDto DTO con los datos del proyecto.
-   * @param user Usuario que realiza la acción.
+   * Valida si un proyecto puede pasar al estado CONFIRMATION
+   * @param project - Proyecto a validar
+   * @throws {BadRequestException} Si no cumple los requisitos
+   */
+  private async canMoveToConfirmation(
+    project: DesignProjectData,
+  ): Promise<void> {
+    // Validar estado correcto
+    if (project.status !== 'ENGINEERING') {
+      throw new BadRequestException(
+        'Project must be in ENGINEERING status to move to CONFIRMATION',
+      );
+    }
+
+    // Validar fechas requeridas
+    await this.validateDatesForConfirmation(project);
+
+    // Aquí podrías agregar más validaciones en el futuro
+  }
+
+  /**
+   * Valida si un proyecto puede pasar al estado PRESENTATION
+   * @param project - Proyecto a validar
+   * @throws {BadRequestException} Si no cumple los requisitos
+   */
+  private async canMoveToPresentation(
+    project: DesignProjectData,
+  ): Promise<void> {
+    if (project.status !== 'CONFIRMATION') {
+      throw new BadRequestException(
+        'Project must be in CONFIRMATION status to move to PRESENTATION',
+      );
+    }
+    // Futuras validaciones para PRESENTATION
+  }
+
+  /**
+   * Valida si un proyecto puede pasar al estado COMPLETED
+   * @param project - Proyecto a validar
+   * @throws {BadRequestException} Si no cumple los requisitos
+   */
+  private async canMoveToCompleted(project: DesignProjectData): Promise<void> {
+    if (project.status !== 'PRESENTATION') {
+      throw new BadRequestException(
+        'Project must be in PRESENTATION status to move to COMPLETED',
+      );
+    }
+    // Futuras validaciones para COMPLETED
+  }
+
+  /**
+   * Valida que todas las fechas requeridas estén definidas para el proyecto
+   * @param project - Proyecto a validar
+   * @throws {BadRequestException} Si faltan fechas requeridas
+   */
+  private validateDatesForConfirmation(project: DesignProjectData): void {
+    const missingDates = [];
+
+    if (!project.dateArchitectural) missingDates.push('dateArchitectural');
+    if (!project.dateStructural) missingDates.push('dateStructural');
+    if (!project.dateElectrical) missingDates.push('dateElectrical');
+    if (!project.dateSanitary) missingDates.push('dateSanitary');
+
+    if (missingDates.length > 0) {
+      throw new BadRequestException(
+        `Cannot move to CONFIRMATION. Missing checklist`,
+      );
+    }
+  }
+
+  /**
+   * Valida que no exista otro proyecto de diseño con la cotización especificada
+   * @param quotationId ID de la cotización a validar
+   * @param projectId ID del proyecto actual (opcional, para validación en updates)
+   * @throws BadRequestException si ya existe un proyecto con esa cotización
+   */
+  private async validateUniqueQuotation(
+    quotationId: string,
+    projectId?: string,
+  ): Promise<void> {
+    const existingProject = await this.prisma.designProject.findFirst({
+      where: {
+        quotationId,
+        ...(projectId && {
+          NOT: {
+            id: projectId, // Excluir el proyecto actual en caso de update
+          },
+        }),
+      },
+      select: {
+        id: true,
+        code: true,
+      },
+    });
+
+    if (existingProject) {
+      throw new BadRequestException(
+        `A design project already exists for this quotation`,
+      );
+    }
+  }
+
+  /**
+   * Valida si un DTO tiene cambios significativos para actualizar
+   * @param dto DTO a validar
+   * @throws BadRequestException si no hay cambios o el DTO está vacío
+   */
+  private validateChanges<T extends object>(dto: T): void {
+    // Verifica si el DTO es null o undefined
+    if (!dto) {
+      throw new BadRequestException('No data provided for update');
+    }
+
+    // Verifica si el DTO es un objeto vacío
+    if (Object.keys(dto).length === 0) {
+      throw new BadRequestException('Update data is empty');
+    }
+
+    // Verifica si todos los campos son undefined o null
+    const hasValidValues = Object.values(dto).some(
+      (value) => value !== undefined && value !== null,
+    );
+
+    if (!hasValidValues) {
+      throw new BadRequestException('No valid values provided for update');
+    }
+  }
+
+  /**
+   * Crea un nuevo proyecto de diseño
+   * @param createDesignProjectDto - Datos del nuevo proyecto
+   * @param user - Usuario que realiza la acción
+   * @throws {NotFoundException} Si el cliente, cotización o diseñador no existen
+   * @throws {BadRequestException} Si la cotización no está aprobada
    */
   async create(
     createDesignProjectDto: CreateProjectDto,
     user: UserData,
   ): Promise<{ statusCode: number; message: string }> {
     const {
-      meetings,
+      name,
       ubicationProject,
       clientId,
       quotationId,
       designerId,
       department,
       province,
+      startProjectDate,
     } = createDesignProjectDto;
 
     try {
       await this.prisma.$transaction(async (prisma) => {
         // Validar que el cliente existe
-
         await this.client.findById(clientId);
 
-        // Validar que la cotización existe
-        const quotation = await prisma.quotation.findUnique({
-          where: { id: quotationId },
-        });
-        if (!quotation) {
-          throw new NotFoundException(`Quotation not found`);
-        }
-        if (quotation.status === 'PENDING' || quotation.status === 'REJECTED') {
-          throw new NotFoundException(`Verify quotation status`);
-        }
+        // Validar que la cotización existe y está aprobada
+        await this.quotation.validateApprovedQuotation(quotationId, user);
+
+        await this.validateUniqueQuotation(quotationId);
 
         // Validar que el diseñador existe
         const designer = await this.user.findById(designerId);
@@ -95,17 +253,19 @@ export class ProjectService {
         const newProject = await prisma.designProject.create({
           data: {
             code: projectCode,
-            name: quotation.name,
-            meetings: meetings, // Parsear JSON de reuniones
+            name,
             ubicationProject,
             department,
             province,
             client: { connect: { id: clientId } },
-            quotation: { connect: { id: quotation.id } },
+            quotation: { connect: { id: quotationId } },
             designer: { connect: { id: designer.id } },
+            startProjectDate,
           },
         });
 
+        // Crear el project charter
+        await this.projectCharter.create(newProject.id, prisma);
         // Registrar la acción en la auditoría
         await this.audit.create({
           entityId: newProject.id,
@@ -115,6 +275,11 @@ export class ProjectService {
           createdAt: new Date(),
         });
       });
+
+      return {
+        statusCode: HttpStatus.CREATED,
+        message: 'Design Project created successfully',
+      };
     } catch (error) {
       this.logger.error(
         `Error creating design project: ${error.message}`,
@@ -128,36 +293,70 @@ export class ProjectService {
         throw error;
       }
 
-      handleException(error, 'Error creating a client');
+      handleException(error, 'Error creating design project');
     }
-
-    return {
-      statusCode: HttpStatus.CREATED,
-      message: 'Design Project created successfully',
-    };
   }
-
-  async updateStatus(
+  /**
+   * Actualiza los datos de un proyecto
+   * @param id - ID del proyecto a actualizar
+   * @param updateProjectDto - Datos a actualizar
+   * @param user - Usuario que realiza la acción
+   * @throws {NotFoundException} Si el proyecto no existe
+   */
+  async update(
     id: string,
-    updateProjectStatusDto: UpdateProjectStatusDto,
+    updateProjectDto: UpdateProjectDto,
     user: UserData,
   ): Promise<{ statusCode: number; message: string }> {
-    const { newStatus } = updateProjectStatusDto;
+    const {
+      ubicationProject,
+      clientId,
+      designerId,
+      quotationId,
+      department,
+      province,
+      name,
+      startProjectDate,
+    } = updateProjectDto;
 
     try {
       await this.prisma.$transaction(async (prisma) => {
-        // Verificar si el proyecto existe
+        this.validateChanges(updateProjectDto);
+
         const project = await this.findById(id);
 
-        if (project.status === newStatus) {
-          return; // No es necesario actualizar
+        if (clientId && clientId !== project.client.id) {
+          await this.client.findById(clientId);
         }
 
-        // Actualiza estado
+        if (designerId && designerId !== project.designer.id) {
+          await this.user.findById(designerId);
+        }
+
+        // Si se está actualizando el quotationId
+        if (updateProjectDto.quotationId) {
+          // Validar que la cotización existe y está aprobada
+          await this.quotation.validateApprovedQuotation(
+            updateProjectDto.quotationId,
+            user,
+          );
+
+          // Validar que no existe otro proyecto con esta cotización
+          await this.validateUniqueQuotation(updateProjectDto.quotationId, id);
+        }
 
         await prisma.designProject.update({
           where: { id },
-          data: { status: newStatus },
+          data: {
+            ubicationProject,
+            clientId,
+            designerId,
+            quotationId,
+            department,
+            province,
+            name,
+            startProjectDate,
+          },
         });
 
         await this.audit.create({
@@ -168,6 +367,11 @@ export class ProjectService {
           createdAt: new Date(),
         });
       });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Design project updated successfully',
+      };
     } catch (error) {
       this.logger.error(
         `Error updating project: ${error.message}`,
@@ -181,20 +385,98 @@ export class ProjectService {
         throw error;
       }
 
-      handleException(error, 'Error updating project status');
+      handleException(error, 'Error updating project');
     }
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'Design project status update successfully',
-    };
   }
+  /**
+   * Actualiza el estado del proyecto según las transiciones permitidas
+   * @param id - ID del proyecto
+   * @param updateProjectStatusDto - Nuevo estado a actualizar
+   * @param user - Usuario que realiza la acción
+   * @throws {BadRequestException} Si la transición no es válida
+   * @throws {NotFoundException} Si el proyecto no existe
+   */
+  async updateStatus(
+    id: string,
+    updateProjectStatusDto: UpdateProjectStatusDto,
+    user: UserData,
+  ): Promise<{ statusCode: number; message: string }> {
+    const { newStatus } = updateProjectStatusDto;
 
-  async findOne(id: string): Promise<DesignProjectData> {
     try {
-      return await this.findById(id);
+      await this.prisma.$transaction(async (prisma) => {
+        const project = await this.findById(id);
+
+        this.validateChanges(updateProjectStatusDto);
+
+        if (project.status === newStatus) {
+          return; // No es necesario actualizar
+        }
+
+        // Validar transiciones permitidas
+        const validTransitions = {
+          APPROVED: ['ENGINEERING'],
+          ENGINEERING: ['CONFIRMATION'],
+          CONFIRMATION: ['PRESENTATION'],
+          PRESENTATION: ['COMPLETED'],
+          COMPLETED: [],
+        };
+
+        // Obtener las transiciones permitidas para el estado actual
+        const allowedNextStates = validTransitions[project.status];
+
+        // Verificar si la transición es válida
+        if (!allowedNextStates.includes(newStatus)) {
+          throw new BadRequestException(
+            `Invalid status transition. Cannot move from ${project.status} to ${newStatus}',
+            )}`,
+          );
+        }
+        // Validar la transición según el nuevo estado
+        switch (newStatus) {
+          case 'ENGINEERING':
+            await this.canMoveToEngineering(project);
+            break;
+
+          case 'CONFIRMATION':
+            await this.canMoveToConfirmation(project);
+            break;
+
+          case 'PRESENTATION':
+            await this.canMoveToPresentation(project);
+            break;
+
+          case 'COMPLETED':
+            await this.canMoveToCompleted(project);
+            break;
+
+          default:
+            throw new BadRequestException(`Invalid status: ${newStatus}`);
+        }
+
+        // Actualizar estado
+        await prisma.designProject.update({
+          where: { id },
+          data: { status: newStatus },
+        });
+
+        // Registrar en auditoría
+        await this.audit.create({
+          entityId: id,
+          entityType: 'designProject',
+          action: 'UPDATE',
+          performedById: user.id,
+          createdAt: new Date(),
+        });
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Design project status updated successfully',
+      };
     } catch (error) {
       this.logger.error(
-        `Error retrieving project with ID ${id}: ${error.message}`,
+        `Error updating project status: ${error.message}`,
         error.stack,
       );
 
@@ -205,10 +487,210 @@ export class ProjectService {
         throw error;
       }
 
-      handleException(error, 'Error retrieving project by ID');
+      handleException(error, 'Error updating project status');
     }
   }
+  /**
+   * Actualiza las fechas del checklist de un proyecto
+   * @param id - ID del proyecto
+   * @param updateChecklistDto - Fechas a actualizar
+   * @param user - Usuario que realiza la acción
+   * @throws {NotFoundException} Si el proyecto no existe
+   */
+  async updateChecklist(
+    id: string,
+    updateChecklistDto: UpdateChecklistDto,
+    user: UserData,
+  ): Promise<{ statusCode: number; message: string }> {
+    try {
+      await this.prisma.$transaction(async (prisma) => {
+        const project = await this.findById(id);
 
+        if (!project) {
+          throw new NotFoundException(`Design project not found`);
+        }
+
+        this.validateChanges(updateChecklistDto);
+
+        // Verificar si hay cambios en al menos uno de los campos
+        const hasChanges =
+          (updateChecklistDto.dateArchitectural &&
+            updateChecklistDto.dateArchitectural !==
+              project.dateArchitectural) ||
+          (updateChecklistDto.dateStructural &&
+            updateChecklistDto.dateStructural !== project.dateStructural) ||
+          (updateChecklistDto.dateElectrical &&
+            updateChecklistDto.dateElectrical !== project.dateElectrical) ||
+          (updateChecklistDto.dateSanitary &&
+            updateChecklistDto.dateSanitary !== project.dateSanitary);
+
+        if (!hasChanges) {
+          return {
+            statusCode: HttpStatus.OK,
+            message: 'Checklist updated successfully',
+          };
+        }
+
+        // Actualizar el proyecto con los nuevos valores
+        await prisma.designProject.update({
+          where: { id },
+          data: updateChecklistDto,
+        });
+
+        // Registrar en auditoría solo si hubo cambios
+        if (hasChanges) {
+          await this.audit.create({
+            entityId: id,
+            entityType: 'designProject',
+            action: 'UPDATE',
+            performedById: user.id,
+            createdAt: new Date(),
+          });
+        }
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Checklist updated successfully',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error updating checklist for project: ${error.message}`,
+        error.stack,
+      );
+
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      handleException(error, 'Error updating project checklist');
+    }
+  }
+  /**
+   * Borra una o más fechas del checklist de un proyecto de diseño.
+   * Si alguna de las fechas a borrar ya está vacía o es nula, no se registra en la auditoría.
+   *
+   * @param id - ID del proyecto de diseño
+   * @param deleteChecklistDto - DTO con las fechas a borrar
+   * @param user - Usuario que realiza la acción
+   * @returns Objeto con el resultado de la operación
+   * @throws {NotFoundException} Si el proyecto de diseño no existe
+   * @throws {BadRequestException} Si no se proporcionan fechas a borrar
+   */
+  async deleteChecklist(
+    id: string,
+    deleteChecklistDto: DeleteChecklistDto,
+    user: UserData,
+  ): Promise<{ statusCode: number; message: string }> {
+    try {
+      // Validar que hay datos para actualizar
+      this.validateChanges(deleteChecklistDto);
+
+      if (deleteChecklistDto.datesToDelete.length === 0) {
+        throw new BadRequestException('No dates provided to delete');
+      }
+
+      const result = await this.prisma.$transaction(async (prisma) => {
+        // Verificar que existe el proyecto
+        const project = await this.findById(id);
+        if (!project) {
+          throw new NotFoundException('Design project not found');
+        }
+
+        // Verificar si hay cambios reales que hacer
+        const hasChanges = deleteChecklistDto.datesToDelete.some(
+          (dateToDelete) =>
+            project[dateToDelete] !== '' && project[dateToDelete] !== null,
+        );
+
+        if (!hasChanges) {
+          return {
+            statusCode: HttpStatus.OK,
+            message: 'No changes needed, dates were already empty',
+          };
+        }
+
+        // Construir el objeto con los campos a actualizar
+        const updateData = deleteChecklistDto.datesToDelete.reduce(
+          (acc, dateField) => ({
+            ...acc,
+            [dateField]: '',
+          }),
+          {},
+        );
+
+        // Actualizar el proyecto
+        await prisma.designProject.update({
+          where: { id },
+          data: updateData,
+        });
+
+        // Registrar en auditoría
+        await this.audit.create({
+          entityId: id,
+          entityType: 'designProject',
+          action: 'DELETE',
+          performedById: user.id,
+          createdAt: new Date(),
+        });
+
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Checklist dates deleted successfully',
+        };
+      });
+
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error deleting checklist dates for project: ${error.message}`,
+        error.stack,
+      );
+
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      handleException(error, 'Error deleting project checklist dates');
+    }
+  }
+  /**
+   * Busca un proyecto de diseño por ID
+   * @param id - ID del proyecto
+   * @returns Promise con los datos del proyecto
+   * @throws {NotFoundException} Si el proyecto no existe
+   */
+  async findOne(id: string): Promise<DesignProjectData> {
+    try {
+      return await this.findById(id);
+    } catch (error) {
+      this.logger.error(
+        `Error retrieving project: ${error.message}`,
+        error.stack,
+      );
+
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      handleException(error, 'Error retrieving project ');
+    }
+  }
+  /**
+   * Obtiene información básica de un proyecto por ID
+   * @param id - ID del proyecto
+   * @returns Promise con los datos básicos del proyecto
+   * @throws {NotFoundException} Si el proyecto no existe
+   */
   async findById(id: string): Promise<DesignProjectData> {
     const project = await this.prisma.designProject.findUnique({
       where: { id },
@@ -224,11 +706,16 @@ export class ProjectService {
           select: { id: true, name: true },
         },
         quotation: {
-          select: { id: true, code: true },
+          select: { id: true, publicCode: true },
         },
         designer: {
           select: { id: true, name: true },
         },
+        dateArchitectural: true,
+        dateStructural: true,
+        dateElectrical: true,
+        dateSanitary: true,
+        startProjectDate: true,
       },
     });
 
@@ -236,6 +723,68 @@ export class ProjectService {
       throw new NotFoundException(`Design project not found`);
     }
     return project as DesignProjectData;
+  }
+
+  /**
+   * Obtiene un listado resumido de todos los proyectos de diseño.
+   * Los superadmins ven todos los proyectos, los usuarios normales solo ven
+   * proyectos en estados activos.
+   *
+   * @param user Usuario que realiza la petición
+   * @returns Lista resumida de proyectos de diseño
+   */
+  async findAll(user: UserPayload): Promise<DesignProjectSummaryData[]> {
+    try {
+      // Definir estados activos
+      const activeStates: DesignProjectStatus[] = [
+        'APPROVED',
+        'ENGINEERING',
+        'CONFIRMATION',
+        'PRESENTATION',
+      ];
+
+      const projects = await this.prisma.designProject.findMany({
+        where: {
+          ...(user.isSuperAdmin ? {} : { status: { in: activeStates } }),
+        },
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          status: true,
+          startProjectDate: true,
+          ubicationProject: true,
+          department: true,
+          province: true,
+          client: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          quotation: {
+            select: {
+              id: true,
+              publicCode: true,
+            },
+          },
+          designer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      return projects as DesignProjectSummaryData[];
+    } catch (error) {
+      this.logger.error('Error getting all design projects', error.stack);
+      handleException(error, 'Error getting all design projects');
+    }
   }
 
   /**
@@ -252,6 +801,7 @@ export class ProjectService {
         ubicationProject: true,
         department: true,
         province: true,
+        startProjectDate: true,
         status: true,
         client: {
           select: {
@@ -324,6 +874,7 @@ export class ProjectService {
       department: project.department,
       province: project.province,
       status: project.status,
+      startProjectDate: project.startProjectDate,
       quotation: {
         id: quotation.id,
         name: quotation.name,
