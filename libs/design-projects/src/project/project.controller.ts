@@ -25,7 +25,7 @@ import { ExportProjectPdfDto } from './dto/export-project-pdf.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateChecklistDto } from './dto/update-checklist.dto';
 import { DeleteChecklistDto } from './dto/delete-checklist.dto';
-import { DesignProjectSummaryData } from '../interfaces/project.interface';
+import { DesignProjectSummaryData } from '../interfaces/project.interfaces';
 
 @ApiTags('Design Projects')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -47,7 +47,7 @@ export class ProjectController {
   }
 
   @Get(':id')
-  @ApiCreatedResponse({
+  @ApiOkResponse({
     description: 'Design project retrieved successfully',
   })
   @ApiBadRequestResponse({
@@ -58,7 +58,7 @@ export class ProjectController {
   }
 
   @Patch(':id')
-  @ApiCreatedResponse({ description: 'Design project updated successfully' })
+  @ApiOkResponse({ description: 'Design project updated successfully' })
   @ApiBadRequestResponse({ description: 'Validation failed or bad request' })
   update(
     @Param('id') id: string,
@@ -69,7 +69,7 @@ export class ProjectController {
   }
 
   @Patch(':id/status')
-  @ApiCreatedResponse({
+  @ApiOkResponse({
     description: 'Design project status updated successfully',
   })
   @ApiBadRequestResponse({ description: 'Validation failed or bad request' })
@@ -82,7 +82,7 @@ export class ProjectController {
   }
 
   @Patch(':id/checklist')
-  @ApiCreatedResponse({ description: 'Checklist updated successfully' })
+  @ApiOkResponse({ description: 'Checklist updated successfully' })
   @ApiBadRequestResponse({ description: 'Validation failed or bad request' })
   updateChecklist(
     @Param('id') id: string,
@@ -92,6 +92,7 @@ export class ProjectController {
     return this.projectService.updateChecklist(id, updateChecklistDto, user);
   }
 
+  @ApiOkResponse({ description: 'Checklist remove succesfully' })
   @Delete(':id/checklist')
   deleteChecklist(
     @Param('id') id: string,
@@ -108,25 +109,6 @@ export class ProjectController {
   findAll(@GetUser() user: UserPayload): Promise<DesignProjectSummaryData[]> {
     return this.projectService.findAll(user);
   }
-  // @Get()
-  // findAll() {
-  //   return this.projectService.findAll();
-  // }
-
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.projectService.findOne(+id);
-  // }
-
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
-  //   return this.projectService.update(+id, updateProjectDto);
-  // }
-
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.projectService.remove(+id);
-  // }
 
   @ApiOkResponse({
     description: 'Gets the contract for the project passed by id',
