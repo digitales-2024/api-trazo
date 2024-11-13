@@ -4,6 +4,7 @@ import { SpacesModule } from './spaces/spaces.module';
 import { QuotationsModule } from './quotations/quotations.module';
 import { LevelsModule } from './levels/levels.module';
 import { ProjectModule } from './project/project.module';
+import { ZoningModule } from './zoning/zoning.module';
 import { ProjectCharterModule } from './project-charter/project-charter.module';
 import { ObservationsModule } from './observations/observations.module';
 
@@ -15,6 +16,7 @@ import { ObservationsModule } from './observations/observations.module';
     QuotationsModule,
     LevelsModule,
     ProjectModule,
+    ZoningModule,
     ProjectCharterModule,
     ObservationsModule,
   ],

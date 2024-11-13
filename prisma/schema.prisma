@@ -195,10 +195,6 @@ model Quotation {
   description String @default("") // Descripcion del proyecto. Ejm: "Se planifica diseño de una vivienda multifamiliar..."
   code        String // Código de la cotizacion.
 
-  // Relacion con Client
-  client   Client @relation("client", fields: [clientId], references: [id])
-  clientId String // Llave foránea a la tabla de clientes
-
   status       QuotationStatusType @default(PENDING) // Estado de la cotización
   discount     Float // Descuento aplicado
   totalAmount  Float               @default(0) // Monto total de la cotización
@@ -223,6 +219,12 @@ model Quotation {
   // Relacion con Level
   levels         Level[]         @relation("level")
   designProjects DesignProject[] @relation("QuotationDesignProjects")
+  // Relacion con Client
+  client         Client          @relation("client", fields: [clientId], references: [id])
+  clientId       String // Llave foránea a la tabla de clientes
+  // Relación con Zoning
+  zoning         Zoning          @relation(fields: [zoningId], references: [id])
+  zoningId       String
 }
 
 // Estado de una cotizacion
@@ -302,6 +304,19 @@ enum DesignProjectStatus {
   CONFIRMATION
   PRESENTATION
   COMPLETED
+}
+
+model Zoning {
+  id            String  @id @unique @default(uuid())
+  zoneCode      String  @unique
+  description   String?
+  buildableArea Float
+  openArea      Float
+  isActive      Boolean @default(true)
+
+  createdAt DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime    @updatedAt
+  Quotation Quotation[]
 }
 
 model ProjectCharter {

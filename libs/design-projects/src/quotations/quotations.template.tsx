@@ -1,10 +1,10 @@
-import {
-  LevelData,
-  QuotationDataNested,
-} from '@clients/clients/interfaces/quotation.interface';
 import { Injectable } from '@nestjs/common';
 import { DesignProjectsTemplate } from '../design-projects.template';
 import { spellPricing, twoDecimals } from '../utils';
+import {
+  LevelData,
+  QuotationDataNested,
+} from '../interfaces/quotations.interfaces';
 
 @Injectable()
 export class QuotationTemplate {
@@ -143,7 +143,7 @@ export class QuotationTemplate {
             <span safe>{formatDate(new Date())}</span>
             <br />
             <span class="font-bold uppercase">Plazo de propuesta:&nbsp;</span>
-            <span>{quotation.deliveryTime} dias</span>
+            <span>{quotation.deliveryTime} meses</span>
           </div>
         </div>
         <div class="text-sm">

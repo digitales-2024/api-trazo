@@ -31,15 +31,7 @@ export class DesignProjectsTemplate {
         {'<!DOCTYPE html>'}
         <head>
           <style safe>{tailwindFile}</style>
-          <style>
-            {`@media print {
-              @page {
-                  size: A4 portrait;
-                  margin-top: 15mm;
-                  margin-bottom: 15mm;
-              }
-            }`}
-          </style>
+          <style></style>
         </head>
         <body style="width: 297mm;">{children}</body>
       </>
