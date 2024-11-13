@@ -1,10 +1,10 @@
-import { QuotationDataNested } from '@clients/clients/interfaces/quotation.interface';
 import {
   DesignProject,
   Client,
   User,
   DesignProjectStatus,
 } from '@prisma/client';
+import { QuotationDataNested } from './quotations.interfaces';
 
 interface BaseDesignProject {
   id: string;

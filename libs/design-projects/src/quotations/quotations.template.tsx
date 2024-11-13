@@ -1,10 +1,10 @@
-import {
-  LevelData,
-  QuotationDataNested,
-} from '@clients/clients/interfaces/quotation.interface';
 import { Injectable } from '@nestjs/common';
 import { DesignProjectsTemplate } from '../design-projects.template';
 import { spellPricing, twoDecimals } from '../utils';
+import {
+  LevelData,
+  QuotationDataNested,
+} from '../interfaces/quotations.interfaces';
 
 @Injectable()
 export class QuotationTemplate {

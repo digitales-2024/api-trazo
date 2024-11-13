@@ -12,14 +12,10 @@ import { ProjectCharterModule } from './project-charter/project-charter.module';
   exports: [DesignProjectsService, DesignProjectsModule],
   imports: [
     SpacesModule,
-
     QuotationsModule,
-
     LevelsModule,
-
     ProjectModule,
     ZoningModule,
-    ,
     ProjectCharterModule,
   ],
 })
