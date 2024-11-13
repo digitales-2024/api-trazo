@@ -13,7 +13,7 @@ export class CreateSpaceDto {
   name: string;
 
   @ApiProperty({
-    name: 'name',
+    name: 'description',
     description: 'Description',
   })
   @IsString()

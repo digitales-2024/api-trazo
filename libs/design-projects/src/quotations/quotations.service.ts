@@ -944,4 +944,19 @@ export class QuotationsService {
 
     return this.template.renderPdf(quotation, editCount);
   }
+
+  async validateApprovedQuotation(
+    quotationId: string,
+    user: UserData,
+  ): Promise<void> {
+    const quotation = await this.findOne(quotationId, user);
+
+    if (!quotation) {
+      throw new NotFoundException(`Quotation not found`);
+    }
+
+    if (quotation.status !== 'APPROVED') {
+      throw new BadRequestException(`Quotation is not approved`);
+    }
+  }
 }

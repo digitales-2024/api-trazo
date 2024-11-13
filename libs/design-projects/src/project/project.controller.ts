@@ -7,6 +7,7 @@ import {
   HttpStatus,
   HttpCode,
   Get,
+  Delete,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -18,9 +19,13 @@ import {
   ApiOkResponse,
 } from '@nestjs/swagger';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
-import { UserData } from '@login/login/interfaces';
+import { UserData, UserPayload } from '@login/login/interfaces';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 import { ExportProjectPdfDto } from './dto/export-project-pdf.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
+import { UpdateChecklistDto } from './dto/update-checklist.dto';
+import { DeleteChecklistDto } from './dto/delete-checklist.dto';
+import { DesignProjectSummaryData } from '../interfaces/project.interfaces';
 
 @ApiTags('Design Projects')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -41,8 +46,30 @@ export class ProjectController {
     return this.projectService.create(createDesignProjectDto, user);
   }
 
+  @Get(':id')
+  @ApiOkResponse({
+    description: 'Design project retrieved successfully',
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid project ID or project not found',
+  })
+  findOne(@Param('id') id: string) {
+    return this.projectService.findOne(id);
+  }
+
+  @Patch(':id')
+  @ApiOkResponse({ description: 'Design project updated successfully' })
+  @ApiBadRequestResponse({ description: 'Validation failed or bad request' })
+  update(
+    @Param('id') id: string,
+    @Body() updateProjectDto: UpdateProjectDto,
+    @GetUser() user: UserData,
+  ) {
+    return this.projectService.update(id, updateProjectDto, user);
+  }
+
   @Patch(':id/status')
-  @ApiCreatedResponse({
+  @ApiOkResponse({
     description: 'Design project status updated successfully',
   })
   @ApiBadRequestResponse({ description: 'Validation failed or bad request' })
@@ -54,36 +81,34 @@ export class ProjectController {
     return this.projectService.updateStatus(id, updateProjectStatusDto, user);
   }
 
-  @Get(':id')
-  @ApiCreatedResponse({
-    description: 'Design project retrieved successfully',
-  })
-  @ApiBadRequestResponse({
-    description: 'Invalid project ID or project not found',
-  })
-  findOne(@Param('id') id: string) {
-    return this.projectService.findOne(id);
+  @Patch(':id/checklist')
+  @ApiOkResponse({ description: 'Checklist updated successfully' })
+  @ApiBadRequestResponse({ description: 'Validation failed or bad request' })
+  updateChecklist(
+    @Param('id') id: string,
+    @Body() updateChecklistDto: UpdateChecklistDto,
+    @GetUser() user: UserData,
+  ) {
+    return this.projectService.updateChecklist(id, updateChecklistDto, user);
   }
 
-  // @Get()
-  // findAll() {
-  //   return this.projectService.findAll();
-  // }
+  @ApiOkResponse({ description: 'Checklist remove succesfully' })
+  @Delete(':id/checklist')
+  deleteChecklist(
+    @Param('id') id: string,
+    @Body() deleteChecklistDto: DeleteChecklistDto,
+    @GetUser() user: UserData,
+  ) {
+    return this.projectService.deleteChecklist(id, deleteChecklistDto, user);
+  }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.projectService.findOne(+id);
-  // }
-
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
-  //   return this.projectService.update(+id, updateProjectDto);
-  // }
-
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.projectService.remove(+id);
-  // }
+  @Get()
+  @ApiOkResponse({
+    description: 'Get all design projects',
+  })
+  findAll(@GetUser() user: UserPayload): Promise<DesignProjectSummaryData[]> {
+    return this.projectService.findAll(user);
+  }
 
   @ApiOkResponse({
     description: 'Gets the contract for the project passed by id',

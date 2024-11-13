@@ -1,14 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsUUID, IsString, IsArray } from 'class-validator';
+import { IsNotEmpty, IsUUID, IsString, IsDateString } from 'class-validator';
 
 export class CreateProjectDto {
   @ApiProperty({
-    description: 'Array containing meetings details',
-    example: '[]',
+    description: 'Name of the project',
+    example: 'Proyecto Residencial San Luis',
   })
-  @IsArray()
-  meetings: string[];
+  @IsString()
+  @IsNotEmpty()
+  @Transform(({ value }) => value.trim())
+  name: string;
 
   @ApiProperty({
     description: 'Location of the project',
@@ -37,7 +39,6 @@ export class CreateProjectDto {
 
   @ApiProperty({
     description: 'Client ID associated with the project',
-    example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @IsUUID()
   @IsNotEmpty()
@@ -45,7 +46,6 @@ export class CreateProjectDto {
 
   @ApiProperty({
     description: 'Quotation ID associated with the project',
-    example: '987e4567-e89b-12d3-a456-426614174321',
   })
   @IsUUID()
   @IsNotEmpty()
@@ -53,9 +53,15 @@ export class CreateProjectDto {
 
   @ApiProperty({
     description: 'Designer ID assigned to the project',
-    example: '456e4567-e89b-12d3-a456-426614174999',
   })
   @IsUUID()
   @IsNotEmpty()
   designerId: string;
+
+  @ApiProperty({
+    description: 'Fecha para el plano arquitectónico',
+    example: '2024-01-15',
+  })
+  @IsDateString()
+  startProjectDate: string;
 }

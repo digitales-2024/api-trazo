@@ -6,7 +6,6 @@ import { Transform } from 'class-transformer';
 export class UpdateProjectStatusDto {
   @ApiProperty({
     description: 'New status for the design project',
-    example: 'ENGINEERING',
   })
   @Transform(({ value }) => value?.toUpperCase()) // Transformar a mayúsculas
   @IsEnum(DesignProjectStatus, {

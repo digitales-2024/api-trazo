@@ -8,6 +8,7 @@ import { UsersModule } from '@login/login/admin/users/users.module';
 import { ProjectTemplate } from './project.template';
 import { QuotationsModule } from '../quotations/quotations.module';
 import { BusinessModule } from '@business/business';
+import { ProjectCharterModule } from '../project-charter/project-charter.module';
 
 @Module({
   controllers: [ProjectController],
@@ -19,6 +20,7 @@ import { BusinessModule } from '@business/business';
     UsersModule,
     QuotationsModule,
     BusinessModule,
+    ProjectCharterModule,
   ],
 })
 export class ProjectModule {}
