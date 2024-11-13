@@ -8,12 +8,10 @@ import { apiReference } from '@scalar/nestjs-api-reference';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  if (process.env.NODE_ENV !== 'production') {
-    app.enableCors({
-      origin: process.env.WEB_URL,
-      credentials: true,
-    });
-  }
+  app.enableCors({
+    origin: process.env.WEB_URL,
+    credentials: true,
+  });
 
   app.use(cookieParser());
 
