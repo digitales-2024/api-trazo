@@ -17,12 +17,10 @@ import { AuditService } from '@login/login/admin/audit/audit.service';
 import { ClientsService } from '@clients/clients';
 import { DeleteQuotationsDto } from './dto/delete-quotation.dto';
 import { handleException } from '@login/login/utils';
-import {
-  QuotationDataNested,
-  QuotationSummaryData,
-} from '@clients/clients/interfaces/quotation.interface';
 import * as Puppeteer from 'puppeteer';
 import { QuotationTemplate } from './quotations.template';
+import { QuotationSummaryData } from '../interfaces';
+import { QuotationDataNested } from '../interfaces/quotations.interfaces';
 
 @Injectable()
 export class QuotationsService {
@@ -64,6 +62,7 @@ export class QuotationsService {
       metering,
       levels,
       totalAmount,
+      zoningId,
     } = createQuotationDto;
 
     await this.prisma.$transaction(async (prisma) => {
@@ -104,6 +103,11 @@ export class QuotationsService {
           client: {
             connect: {
               id: client.id,
+            },
+          },
+          zoning: {
+            connect: {
+              id: zoningId,
             },
           },
           totalAmount,
@@ -262,6 +266,7 @@ export class QuotationsService {
         select: {
           id: true,
           name: true,
+          publicCode: true,
           status: true,
           totalAmount: true,
           metering: true,
@@ -281,6 +286,7 @@ export class QuotationsService {
       const quotationsWithLevels = await Promise.all(
         quotations.map(async (quotation) => ({
           id: quotation.id,
+          publicCode: quotation.publicCode,
           name: quotation.name,
           status: quotation.status,
           totalAmount: quotation.totalAmount,
@@ -916,6 +922,7 @@ export class QuotationsService {
     const pdfBufferUint8Array = await page.pdf({
       format: 'A4',
       preferCSSPageSize: true,
+      margin: { top: '50px', bottom: '50px' },
     });
     await browser.close();
 
