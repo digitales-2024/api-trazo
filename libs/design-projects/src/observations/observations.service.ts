@@ -13,6 +13,8 @@ import { Observation } from '@prisma/client';
 import { ProjectCharterService } from '../project-charter/project-charter.service';
 import { UpdateObservationDto } from './dto/update-observation.dto';
 import { DeleteObservationsDto } from './dto/delete-observation.dto';
+import { ProjectService } from '../project/project.service';
+import { ObservationsTemplate } from './observations.template';
 
 @Injectable()
 export class ObservationsService {
@@ -22,6 +24,8 @@ export class ObservationsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly projectCharter: ProjectCharterService,
+    private readonly projectService: ProjectService,
+    private readonly template: ObservationsTemplate,
   ) {}
 
   /**
@@ -410,5 +414,16 @@ export class ObservationsService {
 
       handleException(error, 'Error deleting observations');
     }
+  }
+
+  // métodos para generar el contrato como PDF
+  async genPdfLayout(id: string): Promise<string> {
+    // Get project data from id
+    const project = await this.projectService.findByIdNested(id);
+
+    console.log('meeting id:', id);
+    // Get the data
+
+    return await this.template.render(project);
   }
 }

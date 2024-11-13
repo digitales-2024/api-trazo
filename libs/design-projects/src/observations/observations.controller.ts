@@ -108,4 +108,12 @@ export class ObservationsController {
   ): Promise<Observation[]> {
     return this.observationsService.findAllByProjectCharter(projectCharterId);
   }
+
+  @ApiOkResponse({
+    description: 'Gets the contract for the project passed by id',
+  })
+  @Get(':id/pdflayout')
+  genPdfLayout(@Param('id') id: string) {
+    return this.observationsService.genPdfLayout(id);
+  }
 }

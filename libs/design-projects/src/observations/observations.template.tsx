@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { DesignProjectsTemplate } from '../design-projects.template';
 import { QuotationTemplate } from '../quotations/quotations.template';
-import { DesignProjectDataNested } from '../interfaces/project.interface';
+import { DesignProjectDataNested } from '../interfaces/project.interfaces';
 
 @Injectable()
-export class MeetingsTemplate {
+export class ObservationsTemplate {
   render(project: DesignProjectDataNested) {
     return (
       <DesignProjectsTemplate.skeleton>
@@ -15,9 +15,9 @@ export class MeetingsTemplate {
             quotationCreatedAt={new Date()}
             label="Acta de Proyecto"
           />
-          <MeetingsTemplate.meetingDetails project={project} />
-          <MeetingsTemplate.meetingNotes />
-          <MeetingsTemplate.meetingsFooter />
+          <ObservationsTemplate.meetingDetails project={project} />
+          <ObservationsTemplate.meetingNotes />
+          <ObservationsTemplate.meetingsFooter />
         </div>
       </DesignProjectsTemplate.skeleton>
     );
@@ -78,7 +78,7 @@ export class MeetingsTemplate {
         </div>
 
         {[1, 2, 3, 4, 5].map((n) => (
-          <MeetingsTemplate.meetingNoteEntry n={n} />
+          <ObservationsTemplate.meetingNoteEntry n={n} />
         ))}
       </div>
     );
