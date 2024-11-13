@@ -30,7 +30,7 @@ import { DesignProjectSummaryData } from '../interfaces/project.interfaces';
 @ApiTags('Design Projects')
 @ApiBadRequestResponse({ description: 'Bad Request' })
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-@Controller({ path: 'project', version: '1' })
+@Controller({ path: 'design-project', version: '1' })
 @Auth()
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
@@ -41,7 +41,7 @@ export class ProjectController {
   @HttpCode(HttpStatus.CREATED)
   create(
     @Body() createDesignProjectDto: CreateProjectDto,
-    @GetUser() user: UserData, // Obtener los datos del usuario autenticado
+    @GetUser() user: UserData,
   ) {
     return this.projectService.create(createDesignProjectDto, user);
   }
