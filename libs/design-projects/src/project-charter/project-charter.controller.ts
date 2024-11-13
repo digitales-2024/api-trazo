@@ -1,34 +1,40 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { ProjectCharterService } from './project-charter.service';
+import {
+  ApiBadRequestResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+import { ProjectCharter } from '@prisma/client';
+import { Auth } from '@login/login/admin/auth/decorators';
 // import { CreateProjectCharterDto } from './dto/create-project-charter.dto';
 // import { UpdateProjectCharterDto } from './dto/update-project-charter.dto';
 
-@Controller('project-charter')
+@Controller({
+  path: 'project-charter',
+  version: '1',
+})
+@ApiTags('Project Charter')
+@ApiBadRequestResponse({ description: 'Bad Request' })
+@ApiUnauthorizedResponse({ description: 'Unauthorized' })
+@Auth()
 export class ProjectCharterController {
   constructor(private readonly projectCharterService: ProjectCharterService) {}
 
-  // @Post()
-  // create(@Body() createProjectCharterDto: CreateProjectCharterDto) {
-  //   return this.projectCharterService.create(createProjectCharterDto);
-  // }
+  @Get(':id')
+  @ApiOkResponse({ description: 'Get project charter by id' })
+  @ApiNotFoundResponse({ description: 'Project charter not found' })
+  findOne(@Param('id') id: string): Promise<ProjectCharter> {
+    return this.projectCharterService.findOne(id);
+  }
 
-  // @Get()
-  // findAll() {
-  //   return this.projectCharterService.findAll();
-  // }
-
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.projectCharterService.findOne(+id);
-  // }
-
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateProjectCharterDto: UpdateProjectCharterDto) {
-  //   return this.projectCharterService.update(+id, updateProjectCharterDto);
-  // }
-
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.projectCharterService.remove(+id);
-  // }
+  @Get()
+  @ApiOkResponse({
+    description: 'Get all project charters',
+  })
+  findAll(): Promise<ProjectCharter[]> {
+    return this.projectCharterService.findAll();
+  }
 }
