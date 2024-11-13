@@ -30,7 +30,7 @@ import { DesignProjectSummaryData } from '../interfaces/project.interfaces';
 @ApiTags('Design Projects')
 @ApiBadRequestResponse({ description: 'Bad Request' })
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-@Controller({ path: 'project', version: '1' })
+@Controller({ path: 'design-project', version: '1' })
 @Auth()
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
