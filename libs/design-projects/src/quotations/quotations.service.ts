@@ -276,6 +276,12 @@ export class QuotationsService {
               name: true,
             },
           },
+          zoning: {
+            select: {
+              id: true,
+              zoneCode: true,
+            },
+          },
         },
         orderBy: {
           createdAt: 'asc',
@@ -294,6 +300,10 @@ export class QuotationsService {
           client: {
             id: quotation.client.id,
             name: quotation.client.name,
+          },
+          zoning: {
+            id: quotation.zoning.id,
+            zoneCode: quotation.zoning.zoneCode,
           },
         })),
       );
@@ -353,6 +363,12 @@ export class QuotationsService {
             name: true,
           },
         },
+        zoning: {
+          select: {
+            id: true,
+            zoneCode: true,
+          },
+        },
         levels: {
           select: {
             id: true,
@@ -403,6 +419,10 @@ export class QuotationsService {
         id: quotation.client.id,
         name: quotation.client.name,
       },
+      zoning: {
+        id: quotation.zoning.id,
+        zoneCode: quotation.zoning.zoneCode,
+      },
       levels: quotation.levels.map((level) => ({
         id: level.id,
         name: level.name,
@@ -446,6 +466,7 @@ export class QuotationsService {
       metering,
       levels,
       clientId,
+      zoningId,
       totalAmount,
     } = updateQuotationDto;
 
@@ -512,6 +533,11 @@ export class QuotationsService {
               id: clientId,
             },
           },
+          zoning: {
+            connect: {
+              id: zoningId,
+            },
+          },
           totalAmount,
           discount,
           deliveryTime,
@@ -537,7 +563,7 @@ export class QuotationsService {
               id: true,
               amount: true,
               area: true,
-              spaceId: true, // Este es el espacio correcto que usaremos para comparar
+              spaceId: true,
             },
           },
         },

@@ -77,6 +77,7 @@ export type QuotationSummaryData = Pick<
   'id' | 'name' | 'status' | 'totalAmount' | 'metering' | 'publicCode'
 > & {
   client: { id: string; name: string };
+  zoning: { id: string; zoneCode: string };
 };
 
 export type QuotationDataNested = Pick<
@@ -102,6 +103,7 @@ export type QuotationDataNested = Pick<
   | 'publicCode'
 > & {
   client: { id: string; name: string };
+  zoning: { id: string; zoneCode: string };
   levels: Array<LevelData>;
 };
 
