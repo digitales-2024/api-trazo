@@ -5,6 +5,7 @@ import { QuotationsModule } from './quotations/quotations.module';
 import { LevelsModule } from './levels/levels.module';
 import { ProjectModule } from './project/project.module';
 import { ProjectCharterModule } from './project-charter/project-charter.module';
+import { ObservationsModule } from './observations/observations.module';
 
 @Module({
   providers: [DesignProjectsService],
@@ -15,6 +16,7 @@ import { ProjectCharterModule } from './project-charter/project-charter.module';
     LevelsModule,
     ProjectModule,
     ProjectCharterModule,
+    ObservationsModule,
   ],
 })
 export class DesignProjectsModule {}

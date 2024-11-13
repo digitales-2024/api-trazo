@@ -41,7 +41,7 @@ export class ProjectController {
   @HttpCode(HttpStatus.CREATED)
   create(
     @Body() createDesignProjectDto: CreateProjectDto,
-    @GetUser() user: UserData, // Obtener los datos del usuario autenticado
+    @GetUser() user: UserData,
   ) {
     return this.projectService.create(createDesignProjectDto, user);
   }

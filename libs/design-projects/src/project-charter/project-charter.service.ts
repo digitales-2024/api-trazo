@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService, PrismaTransaction } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
 
@@ -37,5 +37,22 @@ export class ProjectCharterService {
       );
       throw error;
     }
+  }
+
+  /**
+   * Find a project charter by ID
+   * @param id Project charter ID
+   * @returns Project charter or throws NotFoundException
+   */
+  async findById(id: string) {
+    const projectCharter = await this.prisma.projectCharter.findUnique({
+      where: { id },
+    });
+
+    if (!projectCharter) {
+      throw new NotFoundException('Project charter not found');
+    }
+
+    return projectCharter;
   }
 }
