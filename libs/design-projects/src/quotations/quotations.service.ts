@@ -954,7 +954,7 @@ export class QuotationsService {
 
     return new StreamableFile(pdfBufferUint8Array, {
       type: 'application/pdf',
-      disposition: 'attachment; filename="cotizacion_demo_2.pdf"',
+      disposition: 'attachment; filename="cotizacion-gen.pdf"',
     });
   }
 

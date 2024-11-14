@@ -798,7 +798,7 @@ export class ProjectService {
    * Gets the project, quotation, levels and spaces by id.
    * Used by the PDF renderer only
    */
-  private async findByIdNested(id: string): Promise<DesignProjectDataNested> {
+  async findByIdNested(id: string): Promise<DesignProjectDataNested> {
     const project = await this.prisma.designProject.findUnique({
       where: { id },
       select: {
@@ -810,6 +810,11 @@ export class ProjectService {
         province: true,
         startProjectDate: true,
         status: true,
+        projectCharters: {
+          select: {
+            id: true,
+          },
+        },
         client: {
           select: {
             id: true,
@@ -841,6 +846,7 @@ export class ProjectService {
             sanitaryCost: true,
             metering: true,
             createdAt: true,
+            zoning: true,
             levels: {
               select: {
                 id: true,
@@ -882,6 +888,7 @@ export class ProjectService {
       province: project.province,
       status: project.status,
       startProjectDate: project.startProjectDate,
+      projectCharters: project.projectCharters,
       quotation: {
         id: quotation.id,
         name: quotation.name,
@@ -901,6 +908,7 @@ export class ProjectService {
         electricCost: quotation.electricCost,
         sanitaryCost: quotation.sanitaryCost,
         metering: quotation.metering,
+        zoning: quotation.zoning,
         levels: quotation.levels.map((level) => ({
           id: level.id,
           name: level.name,

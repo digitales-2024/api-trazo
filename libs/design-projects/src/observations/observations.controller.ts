@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Delete,
+  StreamableFile,
 } from '@nestjs/common';
 import { ObservationsService } from './observations.service';
 import { CreateObservationDto } from './dto/create-observation.dto';
@@ -107,5 +108,18 @@ export class ObservationsController {
     @Param('id') projectCharterId: string,
   ): Promise<Observation[]> {
     return this.observationsService.findAllByProjectCharter(projectCharterId);
+  }
+
+  @ApiOkResponse({
+    description: 'Gets the contract for the project passed by id',
+  })
+  @Get(':id/pdflayout')
+  genPdfLayout(@Param('id') id: string) {
+    return this.observationsService.genPdfLayout(id);
+  }
+
+  @Get(':id/pdf')
+  genPdf(@Param('id') id: string): Promise<StreamableFile> {
+    return this.observationsService.genPdf(id);
   }
 }

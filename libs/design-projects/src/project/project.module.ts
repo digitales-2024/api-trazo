@@ -22,5 +22,6 @@ import { ProjectCharterModule } from '../project-charter/project-charter.module'
     BusinessModule,
     ProjectCharterModule,
   ],
+  exports: [ProjectService],
 })
 export class ProjectModule {}
