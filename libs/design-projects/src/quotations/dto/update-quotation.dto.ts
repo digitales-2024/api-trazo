@@ -214,6 +214,16 @@ export class UpdateQuotationDto extends PartialType(CreateQuotationDto) {
   @IsNotEmpty()
   clientId: string;
 
+  // Relacion con Zoning
+  @ApiProperty({
+    name: 'zoningId',
+    description: 'Id of the zoning this quotation belongs to',
+    example: 'aaaaa-0000-ffff',
+  })
+  @IsString()
+  @IsNotEmpty()
+  zoningId: string;
+
   @ApiProperty({
     name: 'totalAmount',
     description: 'Total Amount of the quotation',
