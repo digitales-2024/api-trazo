@@ -9,7 +9,7 @@ import {
 import { CreateProjectDto } from './dto/create-project.dto';
 import { PrismaService } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
-import { UserData, UserPayload } from '@login/login/interfaces';
+import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { ClientsService } from '@clients/clients';
 import { UsersService } from '@login/login/admin/users/users.service';
 import { handleException } from '@login/login/utils';
@@ -222,7 +222,7 @@ export class ProjectService {
   async create(
     createDesignProjectDto: CreateProjectDto,
     user: UserData,
-  ): Promise<{ statusCode: number; message: string }> {
+  ): Promise<HttpResponse> {
     const {
       name,
       ubicationProject,
@@ -279,6 +279,7 @@ export class ProjectService {
       return {
         statusCode: HttpStatus.CREATED,
         message: 'Design Project created successfully',
+        data: null,
       };
     } catch (error) {
       this.logger.error(
@@ -307,7 +308,7 @@ export class ProjectService {
     id: string,
     updateProjectDto: UpdateProjectDto,
     user: UserData,
-  ): Promise<{ statusCode: number; message: string }> {
+  ): Promise<HttpResponse> {
     const {
       ubicationProject,
       clientId,
@@ -371,6 +372,7 @@ export class ProjectService {
       return {
         statusCode: HttpStatus.OK,
         message: 'Design project updated successfully',
+        data: null,
       };
     } catch (error) {
       this.logger.error(
@@ -400,7 +402,7 @@ export class ProjectService {
     id: string,
     updateProjectStatusDto: UpdateProjectStatusDto,
     user: UserData,
-  ): Promise<{ statusCode: number; message: string }> {
+  ): Promise<HttpResponse> {
     const { newStatus } = updateProjectStatusDto;
 
     try {
@@ -473,6 +475,7 @@ export class ProjectService {
       return {
         statusCode: HttpStatus.OK,
         message: 'Design project status updated successfully',
+        data: null,
       };
     } catch (error) {
       this.logger.error(
@@ -501,7 +504,7 @@ export class ProjectService {
     id: string,
     updateChecklistDto: UpdateChecklistDto,
     user: UserData,
-  ): Promise<{ statusCode: number; message: string }> {
+  ): Promise<HttpResponse> {
     try {
       await this.prisma.$transaction(async (prisma) => {
         const project = await this.findById(id);
@@ -528,6 +531,7 @@ export class ProjectService {
           return {
             statusCode: HttpStatus.OK,
             message: 'Checklist updated successfully',
+            data: null,
           };
         }
 
@@ -552,6 +556,7 @@ export class ProjectService {
       return {
         statusCode: HttpStatus.OK,
         message: 'Checklist updated successfully',
+        data: null,
       };
     } catch (error) {
       this.logger.error(
@@ -584,7 +589,7 @@ export class ProjectService {
     id: string,
     deleteChecklistDto: DeleteChecklistDto,
     user: UserData,
-  ): Promise<{ statusCode: number; message: string }> {
+  ): Promise<HttpResponse> {
     try {
       // Validar que hay datos para actualizar
       this.validateChanges(deleteChecklistDto);
@@ -610,6 +615,7 @@ export class ProjectService {
           return {
             statusCode: HttpStatus.OK,
             message: 'No changes needed, dates were already empty',
+            data: null,
           };
         }
 
@@ -640,6 +646,7 @@ export class ProjectService {
         return {
           statusCode: HttpStatus.OK,
           message: 'Checklist dates deleted successfully',
+          data: null,
         };
       });
 
