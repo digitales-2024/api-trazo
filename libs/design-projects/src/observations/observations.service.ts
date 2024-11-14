@@ -1,8 +1,10 @@
 import {
+  BadRequestException,
   HttpStatus,
   Injectable,
   Logger,
   NotFoundException,
+  StreamableFile,
 } from '@nestjs/common';
 import { CreateObservationDto } from './dto/create-observation.dto';
 import { PrismaService } from '@prisma/prisma';
@@ -13,6 +15,9 @@ import { Observation } from '@prisma/client';
 import { ProjectCharterService } from '../project-charter/project-charter.service';
 import { UpdateObservationDto } from './dto/update-observation.dto';
 import { DeleteObservationsDto } from './dto/delete-observation.dto';
+import { ProjectService } from '../project/project.service';
+import { ObservationsTemplate } from './observations.template';
+import * as Puppeteer from 'puppeteer';
 
 @Injectable()
 export class ObservationsService {
@@ -22,6 +27,8 @@ export class ObservationsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly projectCharter: ProjectCharterService,
+    private readonly projectService: ProjectService,
+    private readonly template: ObservationsTemplate,
   ) {}
 
   /**
@@ -410,5 +417,72 @@ export class ObservationsService {
 
       handleException(error, 'Error deleting observations');
     }
+  }
+
+  // genera el pdf del layout
+  async genPdf(id: string): Promise<StreamableFile> {
+    // Get project data from id
+    const project = await this.projectService.findByIdNested(id);
+    if (project.projectCharters.length !== 1) {
+      this.logger.warn(
+        `Found a design project with 0, 2 or more charters. Project id ${project.id}, charters: ${project.projectCharters}`,
+      );
+      throw new BadRequestException('Error fetching charters for this project');
+    }
+    const charterId = project.projectCharters[0].id;
+    const observations = await this.findAllByProjectCharter(charterId);
+
+    const pdfHtml = await this.template.render(project, observations);
+
+    // Generar el PDF usando Puppeteer
+    const browser = await Puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(pdfHtml);
+
+    // The size of the page in px, before accounting for the pdf margin
+    const pageBody = await page.$('body');
+    const boundingBox = await pageBody.boundingBox();
+    const pageHeight = boundingBox.height;
+    const pageHeightMilli = pageHeight * 0.2645833333;
+
+    // A4 paper is 297mm in heigth. The PDF has 5mm margin top & bottom.
+    // So we count the number of pages as its height / 287mm
+    const numberOfPages = Math.ceil(pageHeightMilli / 287);
+
+    // Replace this value in the html
+    const newPageHtml = pdfHtml.replace(
+      '{{pageCount}}',
+      numberOfPages.toString(),
+    );
+    // Set the page with the number of pages
+    await page.setContent(newPageHtml);
+
+    const pdfBufferUint8Array = await page.pdf({
+      format: 'A4',
+      preferCSSPageSize: true,
+      margin: { top: '50px', bottom: '50px' },
+    });
+    await browser.close();
+
+    return new StreamableFile(pdfBufferUint8Array, {
+      type: 'application/pdf',
+      disposition: 'attachment; filename="acta-de-proyecto-gen.pdf"',
+    });
+  }
+
+  // métodos para generar el contrato como PDF
+  async genPdfLayout(id: string): Promise<string> {
+    // Get project data from id
+    const project = await this.projectService.findByIdNested(id);
+    if (project.projectCharters.length !== 1) {
+      this.logger.warn(
+        `Found a design project with 0, 2 or more charters. Project id ${project.id}, charters: ${project.projectCharters}`,
+      );
+      throw new BadRequestException('Error fetching charters for this project');
+    }
+    const charterId = project.projectCharters[0].id;
+    const observations = await this.findAllByProjectCharter(charterId);
+
+    return await this.template.render(project, observations);
   }
 }

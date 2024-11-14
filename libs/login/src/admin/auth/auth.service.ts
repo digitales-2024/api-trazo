@@ -161,10 +161,6 @@ export class AuthService {
 
       const userDB = await this.userService.findByEmail(email);
 
-      if (!userDB.mustChangePassword) {
-        throw new ForbiddenException('You do not need to change your password');
-      }
-
       const isPasswordMatching = await bcrypt.compare(
         password,
         userDB.password,

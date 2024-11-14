@@ -65,6 +65,7 @@ export type DesignProjectDataNested = Omit<
   | 'dateElectrical'
   | 'dateSanitary'
 > & {
+  projectCharters: { id: string }[];
   client: Pick<
     Client,
     'id' | 'name' | 'address' | 'province' | 'department' | 'rucDni'
