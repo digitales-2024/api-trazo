@@ -5,7 +5,9 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": true,
-    "assets": ["libs/login/src/email/templates/**/*"]
+    "assets": [
+      "libs/login/src/email/templates/**/*"
+    ]
   },
   "projects": {
     "login": {
@@ -60,6 +62,15 @@
       "sourceRoot": "libs/sunat-change/src",
       "compilerOptions": {
         "tsConfigPath": "libs/sunat-change/tsconfig.lib.json"
+      }
+    },
+    "project-execution": {
+      "type": "library",
+      "root": "libs/project-execution",
+      "entryFile": "index",
+      "sourceRoot": "libs/project-execution/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/project-execution/tsconfig.lib.json"
       }
     }
   }

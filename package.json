@@ -117,7 +117,8 @@
       "^@clients/clients(|/.*)$": "<rootDir>/libs/clients/src/$1",
       "^@business/business(|/.*)$": "<rootDir>/libs/business/src/$1",
       "^@design-projects/design-projects(|/.*)$": "<rootDir>/libs/design-projects/src/$1",
-      "^@sunat-change/sunat-change(|/.*)$": "<rootDir>/libs/sunat-change/src/$1"
+      "^@sunat-change/sunat-change(|/.*)$": "<rootDir>/libs/sunat-change/src/$1",
+      "^@project-execution/project-execution(|/.*)$": "<rootDir>/libs/project-execution/src/$1"
     }
   }
 }
