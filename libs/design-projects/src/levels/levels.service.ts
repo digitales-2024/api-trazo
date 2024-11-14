@@ -14,7 +14,7 @@ import { AuditService } from '@login/login/admin/audit/audit.service';
 import { QuotationsService } from '../quotations/quotations.service';
 import { AuditActionType, Level } from '@prisma/client';
 import { LevelUpdateData } from '../interfaces/levels.interfaces';
-import { LevelData } from '@clients/clients/interfaces';
+import { LevelData } from '../interfaces';
 
 @Injectable()
 export class LevelsService {

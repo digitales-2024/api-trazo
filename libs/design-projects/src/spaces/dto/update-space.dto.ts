@@ -15,7 +15,7 @@ export class UpdateSpaceDto extends PartialType(CreateSpaceDto) {
   name?: string;
 
   @ApiProperty({
-    name: 'name',
+    name: 'description',
     description: 'Description',
   })
   @IsString()
