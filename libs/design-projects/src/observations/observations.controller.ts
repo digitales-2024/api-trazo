@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Delete,
+  StreamableFile,
 } from '@nestjs/common';
 import { ObservationsService } from './observations.service';
 import { CreateObservationDto } from './dto/create-observation.dto';
@@ -115,5 +116,10 @@ export class ObservationsController {
   @Get(':id/pdflayout')
   genPdfLayout(@Param('id') id: string) {
     return this.observationsService.genPdfLayout(id);
+  }
+
+  @Get(':id/pdf')
+  genPdf(@Param('id') id: string): Promise<StreamableFile> {
+    return this.observationsService.genPdf(id);
   }
 }

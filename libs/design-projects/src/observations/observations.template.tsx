@@ -12,7 +12,7 @@ export class ObservationsTemplate {
         <div class="px-16">
           <QuotationTemplate.header
             quotationCode="SGC-D06"
-            quotationVersion={2}
+            quotationVersion={observations.length}
             // fecha de la creacion de este documento
             quotationCreatedAt={new Date()}
             label="Acta de Proyecto"
