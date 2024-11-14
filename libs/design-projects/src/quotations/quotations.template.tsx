@@ -35,7 +35,6 @@ export class QuotationTemplate {
     // The price of each m2, after the discount is applied
     const pricePerSquareMeterDiscounted =
       (priceAfterDiscount * pricePerSquareMeter) / priceBeforeDiscount;
-    const finalPriceSoles = priceAfterDiscount * quotation.exchangeRate;
 
     return (
       <DesignProjectsTemplate.skeleton>
@@ -56,6 +55,7 @@ export class QuotationTemplate {
             items={
               quotation.integratedProjectDetails as unknown as Array<IntegralProjectItem>
             }
+            totalAmount={quotation.totalAmount}
             exchangeRate={quotation.exchangeRate}
             discount={quotation.discount}
             pricePerSquareMeter={pricePerSquareMeter}
@@ -66,10 +66,10 @@ export class QuotationTemplate {
           <QuotationTemplate.projectNotes />
           <div class="h-[3px] w-full bg-black my-8" />
           <QuotationTemplate.executionSchedule
-            scheduledDays={quotation.deliveryTime}
+            scheduledMonths={quotation.deliveryTime}
           />
           <QuotationTemplate.paymentSchedule
-            finalPriceSoles={finalPriceSoles}
+            finalPriceSoles={quotation.totalAmount}
             costItems={quotation.paymentSchedule as unknown as Array<CostItem>}
           />
           <QuotationTemplate.finalNotes />
@@ -306,6 +306,7 @@ export class QuotationTemplate {
 
   private static integralProyect(props: {
     items: Array<IntegralProjectItem>;
+    totalAmount: number;
     exchangeRate: number;
     discount: number;
     pricePerSquareMeter: number;
@@ -388,7 +389,7 @@ export class QuotationTemplate {
               class="inline-block border-4 border-black pl-4 pr-1 font-bold"
               safe
             >
-              S/. {twoDecimals(discountedPrice * props.exchangeRate)}
+              S/. {twoDecimals(props.totalAmount)}
             </span>
           </div>
         </div>
@@ -463,7 +464,7 @@ export class QuotationTemplate {
     );
   }
 
-  private static executionSchedule(props: { scheduledDays: number }) {
+  private static executionSchedule(props: { scheduledMonths: number }) {
     return (
       <div class="my-8 grid grid-cols-[8fr_1fr_2fr_4fr]">
         <p class="font-bold uppercase pb-4">
@@ -478,7 +479,7 @@ export class QuotationTemplate {
         </p>
         <span />
         <span class="font-bold uppercase text-center">
-          {props.scheduledDays} días
+          {props.scheduledMonths} meses
         </span>
         <span />
       </div>
