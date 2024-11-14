@@ -2,21 +2,23 @@ import { Injectable } from '@nestjs/common';
 import { DesignProjectsTemplate } from '../design-projects.template';
 import { QuotationTemplate } from '../quotations/quotations.template';
 import { DesignProjectDataNested } from '../interfaces/project.interfaces';
+import { Observation } from '@prisma/client';
 
 @Injectable()
 export class ObservationsTemplate {
-  render(project: DesignProjectDataNested) {
+  render(project: DesignProjectDataNested, observations: Array<Observation>) {
     return (
       <DesignProjectsTemplate.skeleton>
         <div class="px-16">
           <QuotationTemplate.header
             quotationCode="SGC-D06"
             quotationVersion={2}
+            // fecha de la creacion de este documento
             quotationCreatedAt={new Date()}
             label="Acta de Proyecto"
           />
           <ObservationsTemplate.meetingDetails project={project} />
-          <ObservationsTemplate.meetingNotes />
+          <ObservationsTemplate.meetingNotes observations={observations} />
           <ObservationsTemplate.meetingsFooter />
         </div>
       </DesignProjectsTemplate.skeleton>
@@ -24,6 +26,8 @@ export class ObservationsTemplate {
   }
 
   private static meetingDetails(props: { project: DesignProjectDataNested }) {
+    const projectStartDate = new Date(props.project.startProjectDate);
+
     return (
       <div class="text-sm mb-4">
         <div class="text-center font-bold bg-zinc-100 py-1 border border-black mt-1">
@@ -53,15 +57,20 @@ export class ObservationsTemplate {
           <div class="font-bold text-center bg-zinc-100 border-b border-r border-black flex items-center justify-center">
             Fecha de inicio de proyecto
           </div>
-          <div class="border-b border-r border-black p-2">
-            --fecha from db--
+          <div class="border-b border-r border-black p-2" safe>
+            {projectStartDate.toLocaleDateString('es-PE', {
+              year: '2-digit',
+              month: '2-digit',
+              day: 'numeric',
+              timeZone: 'America/Lima',
+            })}
           </div>
         </div>
       </div>
     );
   }
 
-  private static meetingNotes() {
+  private static meetingNotes(props: { observations: Array<Observation> }) {
     return (
       <div class="grid grid-cols-[1fr_20fr_4fr_6fr] text-sm">
         <div class="uppercase bg-zinc-100 font-bold text-center py-1 border border-black flex items-center justify-center">
@@ -77,24 +86,41 @@ export class ObservationsTemplate {
           Firma
         </div>
 
-        {[1, 2, 3, 4, 5].map((n) => (
-          <ObservationsTemplate.meetingNoteEntry n={n} />
+        {props.observations.map((observation, arrIdx) => (
+          <ObservationsTemplate.meetingNoteEntry
+            n={arrIdx + 1}
+            observation={observation}
+          />
         ))}
       </div>
     );
   }
 
-  private static meetingNoteEntry(props: { n: number }) {
+  private static meetingNoteEntry(props: {
+    n: number;
+    observation: Observation;
+  }) {
     return (
       <>
         <div class="text-center py-1 border-x border-b border-black flex items-center justify-center">
           {props.n}
         </div>
-        <div class="text-center py-1 border-b border-r border-black flex items-center justify-center">
-          1er nivel...
+        <div
+          class="text-center py-1 border-b border-r border-black flex items-center justify-center"
+          safe
+        >
+          {props.observation.observation}
         </div>
-        <div class="text-center py-1 border-b border-r border-black flex items-center justify-center">
-          21/10/2023
+        <div
+          class="text-center py-1 border-b border-r border-black flex items-center justify-center"
+          safe
+        >
+          {props.observation.createdAt.toLocaleDateString('es-PE', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            timeZone: 'America/Lima',
+          })}
         </div>
         <div class="text-center py-1 border-b border-r border-black flex items-center justify-center h-16"></div>
       </>

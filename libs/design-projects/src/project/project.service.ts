@@ -48,7 +48,7 @@ export class ProjectService {
     private readonly template: ProjectTemplate,
     private readonly quotation: QuotationsService,
     private readonly projectCharter: ProjectCharterService,
-  ) { }
+  ) {}
 
   /**
    * Genera un código único para un nuevo proyecto de diseño con el formato PRY-DIS-XXX
@@ -519,7 +519,7 @@ export class ProjectService {
         const hasChanges =
           (updateChecklistDto.dateArchitectural &&
             updateChecklistDto.dateArchitectural !==
-            project.dateArchitectural) ||
+              project.dateArchitectural) ||
           (updateChecklistDto.dateStructural &&
             updateChecklistDto.dateStructural !== project.dateStructural) ||
           (updateChecklistDto.dateElectrical &&
@@ -810,6 +810,11 @@ export class ProjectService {
         province: true,
         startProjectDate: true,
         status: true,
+        projectCharters: {
+          select: {
+            id: true,
+          },
+        },
         client: {
           select: {
             id: true,
@@ -883,6 +888,7 @@ export class ProjectService {
       province: project.province,
       status: project.status,
       startProjectDate: project.startProjectDate,
+      projectCharters: project.projectCharters,
       quotation: {
         id: quotation.id,
         name: quotation.name,

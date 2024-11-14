@@ -566,11 +566,12 @@ export class QuotationTemplate {
  * Formats a date to DD/MM/YYYY
  */
 function formatDate(d: Date): string {
-  const day = d.getDay().toString().padStart(2, '0');
-  const month = d.getMonth().toString().padStart(2, '0');
-  const year = d.getFullYear().toString().padStart(4, '0');
-
-  return `${day}/${month}/${year}`;
+  return d.toLocaleDateString('es-PE', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: 'America/Lima',
+  });
 }
 
 export interface IntegralProjectItem {

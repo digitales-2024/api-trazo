@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   HttpStatus,
   Injectable,
   Logger,
@@ -420,10 +421,15 @@ export class ObservationsService {
   async genPdfLayout(id: string): Promise<string> {
     // Get project data from id
     const project = await this.projectService.findByIdNested(id);
+    if (project.projectCharters.length !== 1) {
+      this.logger.warn(
+        `Found a design project with 0, 2 or more charters. Project id ${project.id}, charters: ${project.projectCharters}`,
+      );
+      throw new BadRequestException('Error fetching charters for this project');
+    }
+    const charterId = project.projectCharters[0].id;
+    const observations = await this.findAllByProjectCharter(charterId);
 
-    console.log('meeting id:', id);
-    // Get the data
-
-    return await this.template.render(project);
+    return await this.template.render(project, observations);
   }
 }
