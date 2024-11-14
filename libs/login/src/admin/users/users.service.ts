@@ -33,7 +33,7 @@ export class UsersService {
     private readonly rolService: RolService,
     private readonly eventEmitter: TypedEventEmitter,
     private readonly audit: AuditService,
-  ) {}
+  ) { }
 
   /**
    * Crear un usuario en la base de datos
