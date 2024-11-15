@@ -7,8 +7,8 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { ProjectCharter } from '@prisma/client';
 import { Auth } from '@login/login/admin/auth/decorators';
+import { ProjectCharterData } from '../interfaces';
 // import { CreateProjectCharterDto } from './dto/create-project-charter.dto';
 // import { UpdateProjectCharterDto } from './dto/update-project-charter.dto';
 
@@ -26,7 +26,7 @@ export class ProjectCharterController {
   @Get(':id')
   @ApiOkResponse({ description: 'Get project charter by id' })
   @ApiNotFoundResponse({ description: 'Project charter not found' })
-  findOne(@Param('id') id: string): Promise<ProjectCharter> {
+  findOne(@Param('id') id: string): Promise<ProjectCharterData> {
     return this.projectCharterService.findOne(id);
   }
 
@@ -34,7 +34,7 @@ export class ProjectCharterController {
   @ApiOkResponse({
     description: 'Get all project charters',
   })
-  findAll(): Promise<ProjectCharter[]> {
+  findAll(): Promise<ProjectCharterData[]> {
     return this.projectCharterService.findAll();
   }
 }
