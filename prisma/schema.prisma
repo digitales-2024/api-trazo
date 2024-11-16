@@ -339,6 +339,7 @@ model Observation {
   id String @id @unique @default(uuid())
 
   observation String
+  meetingDate String
 
   // Relación con ProjectCharter
   projectCharter   ProjectCharter @relation("ChartObservations", fields: [projectCharterId], references: [id])
