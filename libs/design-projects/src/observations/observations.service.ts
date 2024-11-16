@@ -11,13 +11,14 @@ import { PrismaService } from '@prisma/prisma';
 import { handleException } from '@login/login/utils';
 import { AuditService } from '@login/login/admin/audit/audit.service';
 import { HttpResponse, UserData } from '@login/login/interfaces';
-import { Observation } from '@prisma/client';
+import { AuditActionType } from '@prisma/client';
 import { ProjectCharterService } from '../project-charter/project-charter.service';
 import { UpdateObservationDto } from './dto/update-observation.dto';
 import { DeleteObservationsDto } from './dto/delete-observation.dto';
 import { ProjectService } from '../project/project.service';
 import { ObservationsTemplate } from './observations.template';
 import * as Puppeteer from 'puppeteer';
+import { ObservationData, ObservationProject } from '../interfaces';
 
 @Injectable()
 export class ObservationsService {
@@ -37,7 +38,10 @@ export class ObservationsService {
    * @param user User creating the observation
    * @returns Created observation data
    */
-  async create(createObservationDto: CreateObservationDto, user: UserData) {
+  async create(
+    createObservationDto: CreateObservationDto,
+    user: UserData,
+  ): Promise<HttpResponse<ObservationData>> {
     try {
       // Verify project charter exists
       await this.projectCharter.findById(createObservationDto.projectCharterId);
@@ -47,6 +51,7 @@ export class ObservationsService {
         const observation = await prisma.observation.create({
           data: {
             observation: createObservationDto.observation,
+            meetingDate: createObservationDto.meetingDate,
             projectCharter: {
               connect: {
                 id: createObservationDto.projectCharterId,
@@ -59,7 +64,7 @@ export class ObservationsService {
         await this.audit.create({
           entityId: observation.id,
           entityType: 'observation',
-          action: 'CREATE',
+          action: AuditActionType.CREATE,
           performedById: user.id,
           createdAt: new Date(),
         });
@@ -68,7 +73,7 @@ export class ObservationsService {
       });
 
       return {
-        statusCode: 201,
+        statusCode: HttpStatus.CREATED,
         message: 'Observation created successfully',
         data: newObservation,
       };
@@ -97,29 +102,57 @@ export class ObservationsService {
     id: string,
     updateObservationDto: UpdateObservationDto,
     user: UserData,
-  ): Promise<HttpResponse<Observation>> {
+  ): Promise<HttpResponse<ObservationData>> {
     try {
       // Verify observation exists
       const existingObservation = await this.findById(id);
+      const { observation, meetingDate } = updateObservationDto;
 
-      // Validate if there are changes
-      if (
-        existingObservation.observation === updateObservationDto.observation
-      ) {
+      // Validar si hay cambios
+      const noChanges =
+        (observation === undefined ||
+          observation === existingObservation.observation) &&
+        (meetingDate === undefined ||
+          meetingDate === existingObservation.meetingDate);
+
+      if (noChanges) {
         return {
-          statusCode: 200,
-          message: 'No changes required',
-          data: existingObservation,
+          statusCode: HttpStatus.OK,
+          message: 'Observation updated successfully',
+          data: {
+            id: existingObservation.id,
+            observation: existingObservation.observation,
+            meetingDate: existingObservation.meetingDate,
+            projectCharterId: existingObservation.projectCharterId,
+          },
         };
       }
+
+      // Construir el objeto de actualización dinámicamente solo con los campos presentes
+      const updateData: any = {};
+      if (
+        observation !== undefined &&
+        observation !== existingObservation.observation
+      )
+        updateData.observation = observation;
+      if (
+        meetingDate !== undefined &&
+        meetingDate !== existingObservation.meetingDate
+      )
+        updateData.meetingDate = meetingDate;
 
       const updatedObservation = await this.prisma.$transaction(
         async (prisma) => {
           // Update the observation
           const observation = await prisma.observation.update({
             where: { id },
-            data: {
-              observation: updateObservationDto.observation,
+
+            data: updateData,
+            select: {
+              id: true,
+              observation: true,
+              meetingDate: true,
+              projectCharterId: true,
             },
           });
 
@@ -127,7 +160,7 @@ export class ObservationsService {
           await this.audit.create({
             entityId: observation.id,
             entityType: 'observation',
-            action: 'UPDATE',
+            action: AuditActionType.UPDATE,
             performedById: user.id,
             createdAt: new Date(),
           });
@@ -137,7 +170,7 @@ export class ObservationsService {
       );
 
       return {
-        statusCode: 200,
+        statusCode: HttpStatus.OK,
         message: 'Observation updated successfully',
         data: updatedObservation,
       };
@@ -147,7 +180,10 @@ export class ObservationsService {
         error.stack,
       );
 
-      if (error instanceof NotFoundException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
 
@@ -160,10 +196,15 @@ export class ObservationsService {
    * @param id Observation ID
    * @returns Found observation or throws NotFoundException
    */
-  async findById(id: string): Promise<Observation> {
+  async findById(id: string): Promise<ObservationData> {
     const observation = await this.prisma.observation.findUnique({
       where: { id },
-      include: {},
+      select: {
+        id: true,
+        observation: true,
+        meetingDate: true,
+        projectCharterId: true,
+      },
     });
 
     if (!observation) {
@@ -178,7 +219,7 @@ export class ObservationsService {
    * @param id Observation ID
    * @returns Observation data or throws NotFoundException
    */
-  async findOne(id: string): Promise<Observation> {
+  async findOne(id: string): Promise<ObservationData> {
     try {
       return await this.findById(id);
     } catch (error) {
@@ -200,13 +241,16 @@ export class ObservationsService {
    * @param user Usuario que realiza la petición
    * @returns Lista de todas las observaciones
    */
-  async findAll(): Promise<Observation[]> {
+  async findAll(): Promise<ObservationProject[]> {
     try {
       return await this.prisma.observation.findMany({
         orderBy: {
           createdAt: 'desc',
         },
-        include: {
+        select: {
+          id: true,
+          observation: true,
+          meetingDate: true,
           projectCharter: {
             select: {
               designProject: {
@@ -232,7 +276,7 @@ export class ObservationsService {
    */
   async findAllByProjectCharter(
     projectCharterId: string,
-  ): Promise<Observation[]> {
+  ): Promise<ObservationProject[]> {
     try {
       // Verificar que el Project Charter existe
       await this.projectCharter.findById(projectCharterId);
@@ -241,10 +285,14 @@ export class ObservationsService {
         where: {
           projectCharterId,
         },
+
         orderBy: {
           createdAt: 'desc',
         },
-        include: {
+        select: {
+          id: true,
+          observation: true,
+          meetingDate: true,
           projectCharter: {
             select: {
               designProject: {

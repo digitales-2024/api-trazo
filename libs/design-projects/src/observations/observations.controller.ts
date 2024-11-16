@@ -21,8 +21,8 @@ import {
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import { UserData } from '@login/login/interfaces';
 import { UpdateObservationDto } from './dto/update-observation.dto';
-import { Observation } from '@prisma/client';
 import { DeleteObservationsDto } from './dto/delete-observation.dto';
+import { ObservationData, ObservationProject } from '../interfaces';
 
 @ApiTags('Observations')
 @Controller({
@@ -50,7 +50,7 @@ export class ObservationsController {
   @Get(':id')
   @ApiOkResponse({ description: 'Observation found' })
   @ApiNotFoundResponse({ description: 'Observation not found' })
-  findOne(@Param('id') id: string): Promise<Observation> {
+  findOne(@Param('id') id: string): Promise<ObservationData> {
     return this.observationsService.findOne(id);
   }
 
@@ -94,7 +94,7 @@ export class ObservationsController {
   @Get()
   @ApiOkResponse({ description: 'Get all observations' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  findAll(): Promise<Observation[]> {
+  findAll(): Promise<ObservationProject[]> {
     return this.observationsService.findAll();
   }
 
@@ -106,7 +106,7 @@ export class ObservationsController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   findAllByProjectCharter(
     @Param('id') projectCharterId: string,
-  ): Promise<Observation[]> {
+  ): Promise<ObservationProject[]> {
     return this.observationsService.findAllByProjectCharter(projectCharterId);
   }
 
