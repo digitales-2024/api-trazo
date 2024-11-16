@@ -13,14 +13,12 @@ export class CreateResourceDto {
   @ApiProperty({
     description: 'Type of resource',
     enum: ResourceType,
-    example: ResourceType.TOOLS,
   })
   @IsEnum(ResourceType)
   type: ResourceType;
 
   @ApiProperty({
     description: 'Name of the resource',
-    example: 'Martillo',
   })
   @IsString()
   @IsNotEmpty()
@@ -29,7 +27,6 @@ export class CreateResourceDto {
 
   @ApiProperty({
     description: 'Unit of measurement',
-    example: 'und',
   })
   @IsString()
   @IsNotEmpty()
@@ -38,7 +35,6 @@ export class CreateResourceDto {
 
   @ApiProperty({
     description: 'Cost per unit',
-    example: 15.5,
   })
   @IsNumber()
   @IsPositive()
