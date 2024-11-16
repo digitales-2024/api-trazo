@@ -2,11 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { DesignProjectsTemplate } from '../design-projects.template';
 import { QuotationTemplate } from '../quotations/quotations.template';
 import { DesignProjectDataNested } from '../interfaces/project.interfaces';
-import { Observation } from '@prisma/client';
+import { ObservationProject } from '../interfaces';
 
 @Injectable()
 export class ObservationsTemplate {
-  render(project: DesignProjectDataNested, observations: Array<Observation>) {
+  render(
+    project: DesignProjectDataNested,
+    observations: Array<ObservationProject>,
+  ) {
     return (
       <DesignProjectsTemplate.skeleton>
         <div class="px-16">
@@ -70,7 +73,9 @@ export class ObservationsTemplate {
     );
   }
 
-  private static meetingNotes(props: { observations: Array<Observation> }) {
+  private static meetingNotes(props: {
+    observations: Array<ObservationProject>;
+  }) {
     return (
       <div class="grid grid-cols-[1fr_20fr_4fr_6fr] text-sm">
         <div class="uppercase bg-zinc-100 font-bold text-center py-1 border border-black flex items-center justify-center">
@@ -98,7 +103,7 @@ export class ObservationsTemplate {
 
   private static meetingNoteEntry(props: {
     n: number;
-    observation: Observation;
+    observation: ObservationProject;
   }) {
     return (
       <>
@@ -115,7 +120,7 @@ export class ObservationsTemplate {
           class="text-center py-1 border-b border-r border-black flex items-center justify-center"
           safe
         >
-          {props.observation.createdAt.toLocaleDateString('es-PE', {
+          {new Date(props.observation.meetingDate).toLocaleDateString('es-PE', {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
