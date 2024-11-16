@@ -50,6 +50,60 @@ export class ResourceController {
   ): Promise<HttpResponse<ResourceData>> {
     return this.resourceService.create(createResourceDto, user);
   }
+
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'Update an existing resource',
+    description: 'Updates the specified resource with the provided data',
+  })
+  @ApiOkResponse({
+    description: 'Resource updated successfully',
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid input or resource name already exists',
+  })
+  @ApiNotFoundResponse({
+    description: 'Resource not found',
+  })
+  update(
+    @Param('id') id: string,
+    @Body() updateResourceDto: UpdateResourceDto,
+    @GetUser() user: UserData,
+  ): Promise<HttpResponse<ResourceData>> {
+    return this.resourceService.update(id, updateResourceDto, user);
+  }
+
+  @Patch('reactivate/all')
+  @ApiOperation({
+    summary: 'Reactive all resources',
+    description: 'Reactive all resources',
+  })
+  @ApiOkResponse({
+    description: 'Resources reactivated successfully',
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid input or resources not found',
+  })
+  reactivateAll(
+    @GetUser() user: UserData,
+    @Body() deleteResourcesDto: DeleteResourcesDto,
+  ) {
+    return this.resourceService.reactivateAll(user, deleteResourcesDto);
+  }
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get a resource by ID',
+    description: 'Returns the resource with the specified ID',
+  })
+  @ApiOkResponse({
+    description: 'Resource found successfully',
+  })
+  @ApiNotFoundResponse({
+    description: 'Resource not found',
+  })
+  findOne(@Param('id') id: string): Promise<ResourceData> {
+    return this.resourceService.findOne(id);
+  }
   @Get('tools')
   @ApiOperation({
     summary: 'Get all tool resources',
@@ -98,64 +152,21 @@ export class ResourceController {
     return this.resourceService.findByType(ResourceType.SERVICES, user);
   }
 
-  @ApiOkResponse({ description: 'Resources deactivated successfully' })
+  @Delete('remove/all')
+  @ApiOperation({
+    summary: 'Desactive all resources',
+    description: 'Desactive all resources',
+  })
+  @ApiOkResponse({
+    description: 'Resources deactivated successfully',
+  })
   @ApiBadRequestResponse({
     description: 'Invalid input or resources not found',
   })
-  @Delete('remove/all')
   deactivateAll(
     @Body() deleteResourcesDto: DeleteResourcesDto,
     @GetUser() user: UserData,
   ): Promise<Omit<HttpResponse, 'data'>> {
     return this.resourceService.removeAll(deleteResourcesDto, user);
-  }
-
-  @ApiOkResponse({ description: 'Resources reactivated successfully' })
-  @ApiBadRequestResponse({
-    description: 'Invalid input or resources not found',
-  })
-  @Patch('reactivate/all')
-  reactivateAll(
-    @GetUser() user: UserData,
-    @Body() deleteResourcesDto: DeleteResourcesDto,
-  ) {
-    return this.resourceService.reactivateAll(user, deleteResourcesDto);
-  }
-
-  @Patch(':id')
-  @ApiOperation({
-    summary: 'Update an existing resource',
-    description: 'Updates the specified resource with the provided data',
-  })
-  @ApiOkResponse({
-    description: 'Resource updated successfully',
-  })
-  @ApiBadRequestResponse({
-    description: 'Invalid input or resource name already exists',
-  })
-  @ApiNotFoundResponse({
-    description: 'Resource not found',
-  })
-  update(
-    @Param('id') id: string,
-    @Body() updateResourceDto: UpdateResourceDto,
-    @GetUser() user: UserData,
-  ): Promise<HttpResponse<ResourceData>> {
-    return this.resourceService.update(id, updateResourceDto, user);
-  }
-
-  @Get(':id')
-  @ApiOperation({
-    summary: 'Get a resource by ID',
-    description: 'Returns the resource with the specified ID',
-  })
-  @ApiOkResponse({
-    description: 'Resource found successfully',
-  })
-  @ApiNotFoundResponse({
-    description: 'Resource not found',
-  })
-  findOne(@Param('id') id: string): Promise<ResourceData> {
-    return this.resourceService.findOne(id);
   }
 }
