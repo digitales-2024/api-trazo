@@ -98,7 +98,7 @@ export class ResourceService {
       }
     }
 
-    return hasChanges ? true : false;
+    return hasChanges;
   }
 
   /**

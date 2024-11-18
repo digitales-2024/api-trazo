@@ -219,7 +219,7 @@ export class ProjectService {
       }
     }
 
-    return hasChanges ? true : false;
+    return hasChanges;
   }
 
   /**
