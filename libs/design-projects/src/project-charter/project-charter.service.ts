@@ -1,13 +1,9 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService, PrismaTransaction } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
 import { handleException } from '@login/login/utils';
 import { ProjectCharter } from '@prisma/client';
+import { UserData } from '@login/login/interfaces';
 
 @Injectable()
 export class ProjectCharterService {
@@ -19,32 +15,6 @@ export class ProjectCharterService {
   ) {}
 
   /**
-   * Valida si un DTO tiene cambios significativos para actualizar
-   * @param dto DTO a validar
-   * @throws BadRequestException si no hay cambios o el DTO está vacío
-   */
-  private validateChanges<T extends object>(dto: T): void {
-    // Verifica si el DTO es null o undefined
-    if (!dto) {
-      throw new BadRequestException('No data provided for update');
-    }
-
-    // Verifica si el DTO es un objeto vacío
-    if (Object.keys(dto).length === 0) {
-      throw new BadRequestException('Update data is empty');
-    }
-
-    // Verifica si todos los campos son undefined o null
-    const hasValidValues = Object.values(dto).some(
-      (value) => value !== undefined && value !== null,
-    );
-
-    if (!hasValidValues) {
-      throw new BadRequestException('No valid values provided for update');
-    }
-  }
-
-  /**
    * Creates a new project charter linked to a design project
    * @param designProjectId ID of the design project
    * @param prismaTransaction Prisma transaction context
@@ -52,9 +22,10 @@ export class ProjectCharterService {
   async create(
     designProjectId: string,
     prismaTransaction: PrismaTransaction,
+    user: UserData,
   ): Promise<void> {
     try {
-      await prismaTransaction.projectCharter.create({
+      const newProjectCharter = await prismaTransaction.projectCharter.create({
         data: {
           designProject: {
             connect: {
@@ -62,6 +33,14 @@ export class ProjectCharterService {
             },
           },
         },
+      });
+      // Registrar la acción en la auditoría
+      await this.audit.create({
+        entityId: newProjectCharter.id,
+        entityType: 'projectCharter',
+        action: 'CREATE',
+        performedById: user.id,
+        createdAt: new Date(),
       });
     } catch (error) {
       this.logger.error(
@@ -77,7 +56,7 @@ export class ProjectCharterService {
    * @param id Project charter ID
    * @returns Project charter or throws NotFoundException
    */
-  async findById(id: string) {
+  async findById(id: string): Promise<ProjectCharter> {
     const projectCharter = await this.prisma.projectCharter.findUnique({
       where: { id },
     });

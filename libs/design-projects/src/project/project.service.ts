@@ -287,7 +287,7 @@ export class ProjectService {
         });
 
         // Crear el project charter
-        await this.projectCharter.create(newProject.id, prisma);
+        await this.projectCharter.create(newProject.id, prisma, user);
         // Registrar la acción en la auditoría
         await this.audit.create({
           entityId: newProject.id,
