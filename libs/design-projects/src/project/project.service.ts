@@ -21,6 +21,7 @@ import { DesignProjectData } from '../interfaces';
 import {
   DesignProjectDataNested,
   DesignProjectSummaryData,
+  ProjectStatusUpdateData,
 } from '../interfaces/project.interfaces';
 import { ExportProjectPdfDto } from './dto/export-project-pdf.dto';
 import * as Fs from 'fs';
@@ -185,13 +186,16 @@ export class ProjectService {
       );
     }
   }
-
   /**
-   * Valida si un DTO tiene cambios significativos para actualizar
-   * @param dto DTO a validar
+   * Valida si un DTO tiene cambios significativos comparando con los datos existentes
+   * @param dto DTO con los cambios propuestos
+   * @param currentData Objeto actual desde la base de datos
    * @throws BadRequestException si no hay cambios o el DTO está vacío
    */
-  private validateChanges<T extends object>(dto: T): void {
+  private validateChanges<T extends object>(
+    dto: Partial<T>,
+    currentData: T,
+  ): void {
     // Verifica si el DTO es null o undefined
     if (!dto) {
       throw new BadRequestException('No data provided for update');
@@ -209,6 +213,24 @@ export class ProjectService {
 
     if (!hasValidValues) {
       throw new BadRequestException('No valid values provided for update');
+    }
+
+    // Verifica si hay cambios reales comparando con los datos actuales
+    let hasChanges = false;
+    for (const [key, newValue] of Object.entries(dto)) {
+      // Solo compara si el campo está presente en el DTO y no es undefined
+      if (newValue !== undefined && key in currentData) {
+        const currentValue = currentData[key];
+        // Compara los valores y marca si hay algún cambio
+        if (newValue !== currentValue) {
+          hasChanges = true;
+          break;
+        }
+      }
+    }
+
+    if (!hasChanges) {
+      throw new BadRequestException(`No changes detected`);
     }
   }
 
@@ -308,7 +330,7 @@ export class ProjectService {
     id: string,
     updateProjectDto: UpdateProjectDto,
     user: UserData,
-  ): Promise<HttpResponse> {
+  ): Promise<HttpResponse<DesignProjectData>> {
     const {
       ubicationProject,
       clientId,
@@ -321,32 +343,27 @@ export class ProjectService {
     } = updateProjectDto;
 
     try {
-      await this.prisma.$transaction(async (prisma) => {
-        this.validateChanges(updateProjectDto);
-
+      const updatedProject = await this.prisma.$transaction(async (prisma) => {
         const project = await this.findById(id);
-
-        if (clientId && clientId !== project.client.id) {
+        if (quotationId) {
+          await this.quotation.validateApprovedQuotation(quotationId, user);
+        }
+        if (clientId) {
           await this.client.findById(clientId);
         }
-
-        if (designerId && designerId !== project.designer.id) {
+        if (designerId) {
           await this.user.findById(designerId);
         }
 
-        // Si se está actualizando el quotationId
-        if (updateProjectDto.quotationId) {
-          // Validar que la cotización existe y está aprobada
-          await this.quotation.validateApprovedQuotation(
-            updateProjectDto.quotationId,
-            user,
-          );
-
-          // Validar que no existe otro proyecto con esta cotización
-          await this.validateUniqueQuotation(updateProjectDto.quotationId, id);
+        // Luego validar unicidad de cotización
+        if (quotationId && quotationId !== project.quotation.id) {
+          await this.validateUniqueQuotation(quotationId, id);
         }
 
-        await prisma.designProject.update({
+        // Finalmente validar si hay cambios
+        this.validateChanges(updateProjectDto, project);
+        // Return the updated project
+        const updated = await prisma.designProject.update({
           where: { id },
           data: {
             ubicationProject,
@@ -358,6 +375,29 @@ export class ProjectService {
             name,
             startProjectDate,
           },
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            ubicationProject: true,
+            department: true,
+            province: true,
+            status: true,
+            client: {
+              select: { id: true, name: true },
+            },
+            quotation: {
+              select: { id: true, publicCode: true },
+            },
+            designer: {
+              select: { id: true, name: true },
+            },
+            dateArchitectural: true,
+            dateStructural: true,
+            dateElectrical: true,
+            dateSanitary: true,
+            startProjectDate: true,
+          },
         });
 
         await this.audit.create({
@@ -367,12 +407,14 @@ export class ProjectService {
           performedById: user.id,
           createdAt: new Date(),
         });
+
+        return updated;
       });
 
       return {
         statusCode: HttpStatus.OK,
         message: 'Design project updated successfully',
-        data: null,
+        data: updatedProject as DesignProjectData,
       };
     } catch (error) {
       this.logger.error(
@@ -390,6 +432,7 @@ export class ProjectService {
       handleException(error, 'Error updating project');
     }
   }
+
   /**
    * Actualiza el estado del proyecto según las transiciones permitidas
    * @param id - ID del proyecto
@@ -397,23 +440,19 @@ export class ProjectService {
    * @param user - Usuario que realiza la acción
    * @throws {BadRequestException} Si la transición no es válida
    * @throws {NotFoundException} Si el proyecto no existe
+   * @returns Promise<HttpResponse<ProjectStatusUpdateData>>
    */
   async updateStatus(
     id: string,
     updateProjectStatusDto: UpdateProjectStatusDto,
     user: UserData,
-  ): Promise<HttpResponse> {
+  ): Promise<HttpResponse<ProjectStatusUpdateData>> {
     const { newStatus } = updateProjectStatusDto;
 
     try {
-      await this.prisma.$transaction(async (prisma) => {
+      const updatedProject = await this.prisma.$transaction(async (prisma) => {
         const project = await this.findById(id);
-
-        this.validateChanges(updateProjectStatusDto);
-
-        if (project.status === newStatus) {
-          return; // No es necesario actualizar
-        }
+        const previousStatus = project.status;
 
         // Validar transiciones permitidas
         const validTransitions = {
@@ -430,36 +469,37 @@ export class ProjectService {
         // Verificar si la transición es válida
         if (!allowedNextStates.includes(newStatus)) {
           throw new BadRequestException(
-            `Invalid status transition. Cannot move from ${project.status} to ${newStatus}',
-            )}`,
+            `Invalid status transition. Cannot move from ${project.status} to ${newStatus}`,
           );
         }
+
         // Validar la transición según el nuevo estado
         switch (newStatus) {
           case 'ENGINEERING':
             await this.canMoveToEngineering(project);
             break;
-
           case 'CONFIRMATION':
             await this.canMoveToConfirmation(project);
             break;
-
           case 'PRESENTATION':
             await this.canMoveToPresentation(project);
             break;
-
           case 'COMPLETED':
             await this.canMoveToCompleted(project);
             break;
-
           default:
             throw new BadRequestException(`Invalid status: ${newStatus}`);
         }
 
         // Actualizar estado
-        await prisma.designProject.update({
+        const updatedProject = await prisma.designProject.update({
           where: { id },
           data: { status: newStatus },
+          select: {
+            id: true,
+            status: true,
+            updatedAt: true,
+          },
         });
 
         // Registrar en auditoría
@@ -470,12 +510,19 @@ export class ProjectService {
           performedById: user.id,
           createdAt: new Date(),
         });
+
+        return {
+          id: updatedProject.id,
+          previousStatus: previousStatus,
+          currentStatus: updatedProject.status,
+          updatedAt: updatedProject.updatedAt,
+        };
       });
 
       return {
         statusCode: HttpStatus.OK,
         message: 'Design project status updated successfully',
-        data: null,
+        data: updatedProject,
       };
     } catch (error) {
       this.logger.error(
@@ -513,7 +560,7 @@ export class ProjectService {
           throw new NotFoundException(`Design project not found`);
         }
 
-        this.validateChanges(updateChecklistDto);
+        this.validateChanges(updateChecklistDto, project);
 
         // Verificar si hay cambios en al menos uno de los campos
         const hasChanges =
@@ -592,7 +639,6 @@ export class ProjectService {
   ): Promise<HttpResponse> {
     try {
       // Validar que hay datos para actualizar
-      this.validateChanges(deleteChecklistDto);
 
       if (deleteChecklistDto.datesToDelete.length === 0) {
         throw new BadRequestException('No dates provided to delete');

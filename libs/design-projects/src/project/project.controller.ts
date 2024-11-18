@@ -19,13 +19,17 @@ import {
   ApiOkResponse,
 } from '@nestjs/swagger';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
-import { UserData, UserPayload } from '@login/login/interfaces';
+import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 import { ExportProjectPdfDto } from './dto/export-project-pdf.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateChecklistDto } from './dto/update-checklist.dto';
 import { DeleteChecklistDto } from './dto/delete-checklist.dto';
-import { DesignProjectSummaryData } from '../interfaces/project.interfaces';
+import {
+  DesignProjectData,
+  DesignProjectSummaryData,
+  ProjectStatusUpdateData,
+} from '../interfaces/project.interfaces';
 
 @ApiTags('Design Projects')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -53,7 +57,7 @@ export class ProjectController {
   @ApiBadRequestResponse({
     description: 'Invalid project ID or project not found',
   })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string): Promise<DesignProjectData> {
     return this.projectService.findOne(id);
   }
 
@@ -64,7 +68,7 @@ export class ProjectController {
     @Param('id') id: string,
     @Body() updateProjectDto: UpdateProjectDto,
     @GetUser() user: UserData,
-  ) {
+  ): Promise<HttpResponse<DesignProjectData>> {
     return this.projectService.update(id, updateProjectDto, user);
   }
 
@@ -77,7 +81,7 @@ export class ProjectController {
     @Param('id') id: string,
     @Body() updateProjectStatusDto: UpdateProjectStatusDto,
     @GetUser() user: UserData,
-  ) {
+  ): Promise<HttpResponse<ProjectStatusUpdateData>> {
     return this.projectService.updateStatus(id, updateProjectStatusDto, user);
   }
 
@@ -88,7 +92,7 @@ export class ProjectController {
     @Param('id') id: string,
     @Body() updateChecklistDto: UpdateChecklistDto,
     @GetUser() user: UserData,
-  ) {
+  ): Promise<HttpResponse> {
     return this.projectService.updateChecklist(id, updateChecklistDto, user);
   }
 
@@ -98,7 +102,7 @@ export class ProjectController {
     @Param('id') id: string,
     @Body() deleteChecklistDto: DeleteChecklistDto,
     @GetUser() user: UserData,
-  ) {
+  ): Promise<HttpResponse> {
     return this.projectService.deleteChecklist(id, deleteChecklistDto, user);
   }
 
