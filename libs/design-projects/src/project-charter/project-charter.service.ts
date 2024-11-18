@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService, PrismaTransaction } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
 import { handleException } from '@login/login/utils';
-import { ProjectCharter } from '@prisma/client';
+import { ProjectCharterData } from '../interfaces';
 import { UserData } from '@login/login/interfaces';
 
 @Injectable()
@@ -56,9 +56,31 @@ export class ProjectCharterService {
    * @param id Project charter ID
    * @returns Project charter or throws NotFoundException
    */
-  async findById(id: string): Promise<ProjectCharter> {
+  async findById(id: string): Promise<ProjectCharterData> {
     const projectCharter = await this.prisma.projectCharter.findUnique({
       where: { id },
+      select: {
+        id: true,
+        designProject: {
+          select: {
+            id: true,
+            code: true,
+            status: true,
+            client: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            designer: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!projectCharter) {
@@ -75,7 +97,7 @@ export class ProjectCharterService {
    * @returns Project charter con sus relaciones
    * @throws {NotFoundException} Si el project charter no existe
    */
-  async findOne(id: string): Promise<ProjectCharter> {
+  async findOne(id: string): Promise<ProjectCharterData> {
     try {
       return await this.findById(id);
     } catch (error) {
@@ -98,30 +120,56 @@ export class ProjectCharterService {
    * @returns Lista de project charters con sus relaciones
    * @throws {InternalServerErrorException} Si hay un error al obtener los datos
    */
-  async findAll(): Promise<ProjectCharter[]> {
+  async findAll(): Promise<ProjectCharterData[]> {
     try {
-      return await this.prisma.projectCharter.findMany({
-        include: {
+      const projectsCharters = await this.prisma.projectCharter.findMany({
+        select: {
+          id: true,
           designProject: {
             select: {
+              id: true,
               code: true,
-              name: true,
+              status: true,
               client: {
                 select: {
+                  id: true,
+                  name: true,
+                },
+              },
+              designer: {
+                select: {
+                  id: true,
                   name: true,
                 },
               },
             },
           },
-          observations: true,
         },
         orderBy: {
-          createdAt: 'desc',
+          createdAt: 'asc',
         },
       });
+
+      // Mapea los resultados al tipo ProjectCharterData
+      return projectsCharters.map((ProjectCharter) => ({
+        id: ProjectCharter.id,
+        designProject: {
+          id: ProjectCharter.designProject.id,
+          code: ProjectCharter.designProject.code,
+          status: ProjectCharter.designProject.status,
+          client: {
+            id: ProjectCharter.designProject.client.id,
+            name: ProjectCharter.designProject.client.name,
+          },
+          designer: {
+            id: ProjectCharter.designProject.designer.id,
+            name: ProjectCharter.designProject.designer.name,
+          },
+        },
+      })) as ProjectCharterData[];
     } catch (error) {
-      this.logger.error('Error getting all project charters', error.stack);
-      handleException(error, 'Error getting all project charters');
+      this.logger.error('Error getting all clients');
+      handleException(error, 'Error getting all clients');
     }
   }
 }

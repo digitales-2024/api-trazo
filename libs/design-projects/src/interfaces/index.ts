@@ -8,3 +8,4 @@ export {
 } from './quotations.interfaces';
 export { DesignProjectData } from './project.interfaces';
 export { ZoningData } from './zoning.interfaces';
+export { ProjectCharterData } from './projectCharter.interfaces';
