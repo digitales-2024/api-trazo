@@ -291,6 +291,14 @@ export class ResourceService {
     user: UserPayload,
   ): Promise<ResourceData[]> {
     try {
+      // Validar que el tipo sea uno de los valores permitidos
+      if (!Object.values(ResourceType).includes(type)) {
+        throw new BadRequestException(
+          `Invalid resource type. Must be one of: ${Object.values(
+            ResourceType,
+          ).join(', ')}`,
+        );
+      }
       const resources = await this.prisma.resource.findMany({
         where: {
           type,
@@ -311,8 +319,19 @@ export class ResourceService {
 
       return resources;
     } catch (error) {
-      this.logger.error(`Error getting resources of type ${type}`, error.stack);
-      handleException(error, `Error getting resources of type ${type}`);
+      this.logger.error(
+        `Error retrieving resource: ${error.message}`,
+        error.stack,
+      );
+
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      handleException(error, 'Error retrieving resources ');
     }
   }
 

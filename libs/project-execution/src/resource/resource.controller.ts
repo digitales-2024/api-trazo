@@ -87,10 +87,25 @@ export class ResourceController {
   reactivateAll(
     @GetUser() user: UserData,
     @Body() deleteResourcesDto: DeleteResourcesDto,
-  ) {
+  ): Promise<Omit<HttpResponse, 'data'>> {
     return this.resourceService.reactivateAll(user, deleteResourcesDto);
   }
-  @Get(':id')
+
+  @Get(':type')
+  @ApiOperation({
+    summary: 'Get a resource by TYPE',
+    description: 'Returns the resources with the specified TYPE',
+  })
+  @ApiOkResponse({
+    description: 'Resources found successfully',
+  })
+  @ApiNotFoundResponse({
+    description: 'Resources not found',
+  })
+  findByType(@Param('type') type: ResourceType, @GetUser() user: UserPayload) {
+    return this.resourceService.findByType(type, user);
+  }
+  @Get('item/:id')
   @ApiOperation({
     summary: 'Get a resource by ID',
     description: 'Returns the resource with the specified ID',
@@ -103,53 +118,6 @@ export class ResourceController {
   })
   findOne(@Param('id') id: string): Promise<ResourceData> {
     return this.resourceService.findOne(id);
-  }
-  @Get('tools')
-  @ApiOperation({
-    summary: 'Get all tool resources',
-    description: 'Returns all resources of type TOOLS',
-  })
-  @ApiOkResponse({
-    description: 'Tool resources found successfully',
-  })
-  findTools(@GetUser() user: UserPayload) {
-    return this.resourceService.findByType(ResourceType.TOOLS, user);
-  }
-
-  @Get('labor')
-  @ApiOperation({
-    summary: 'Get all labor resources',
-    description: 'Returns all resources of type LABOR',
-  })
-  @ApiOkResponse({
-    description: 'Labor resources found successfully',
-  })
-  findLabor(@GetUser() user: UserPayload) {
-    return this.resourceService.findByType(ResourceType.LABOR, user);
-  }
-
-  @Get('supplies')
-  @ApiOperation({
-    summary: 'Get all supply resources',
-    description: 'Returns all resources of type SUPPLIES',
-  })
-  @ApiOkResponse({
-    description: 'Supply resources found successfully',
-  })
-  findSupplies(@GetUser() user: UserPayload) {
-    return this.resourceService.findByType(ResourceType.SUPPLIES, user);
-  }
-
-  @Get('services')
-  @ApiOperation({
-    summary: 'Get all service resources',
-    description: 'Returns all resources of type SERVICES',
-  })
-  @ApiOkResponse({
-    description: 'Service resources found successfully',
-  })
-  findServices(@GetUser() user: UserPayload) {
-    return this.resourceService.findByType(ResourceType.SERVICES, user);
   }
 
   @Delete('remove/all')
