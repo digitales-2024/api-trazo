@@ -190,29 +190,19 @@ export class ProjectService {
    * Valida si un DTO tiene cambios significativos comparando con los datos existentes
    * @param dto DTO con los cambios propuestos
    * @param currentData Objeto actual desde la base de datos
-   * @throws BadRequestException si no hay cambios o el DTO está vacío
+   * @return verdadero si hay cambios , falso si no hay cambios
    */
   private validateChanges<T extends object>(
     dto: Partial<T>,
     currentData: T,
-  ): void {
-    // Verifica si el DTO es null o undefined
-    if (!dto) {
-      throw new BadRequestException('No data provided for update');
-    }
-
-    // Verifica si el DTO es un objeto vacío
-    if (Object.keys(dto).length === 0) {
-      throw new BadRequestException('Update data is empty');
-    }
-
+  ): boolean {
     // Verifica si todos los campos son undefined o null
     const hasValidValues = Object.values(dto).some(
       (value) => value !== undefined && value !== null,
     );
 
     if (!hasValidValues) {
-      throw new BadRequestException('No valid values provided for update');
+      return false;
     }
 
     // Verifica si hay cambios reales comparando con los datos actuales
@@ -229,9 +219,7 @@ export class ProjectService {
       }
     }
 
-    if (!hasChanges) {
-      throw new BadRequestException(`No changes detected`);
-    }
+    return hasChanges ? true : false;
   }
 
   /**
@@ -360,8 +348,16 @@ export class ProjectService {
           await this.validateUniqueQuotation(quotationId, id);
         }
 
-        // Finalmente validar si hay cambios
-        this.validateChanges(updateProjectDto, project);
+        // Validar cambios comparando con los datos actuales
+        const hasChange = this.validateChanges(updateProjectDto, project);
+
+        if (!hasChange) {
+          return {
+            statusCode: HttpStatus.OK,
+            message: 'Project updated successfully',
+            data: project,
+          };
+        }
         // Return the updated project
         const updated = await prisma.designProject.update({
           where: { id },
@@ -560,7 +556,16 @@ export class ProjectService {
           throw new NotFoundException(`Design project not found`);
         }
 
-        this.validateChanges(updateChecklistDto, project);
+        // Validar cambios comparando con los datos actuales
+        const hasChange = this.validateChanges(updateChecklistDto, project);
+
+        if (!hasChange) {
+          return {
+            statusCode: HttpStatus.OK,
+            message: 'CheckList updated successfully',
+            data: project,
+          };
+        }
 
         // Verificar si hay cambios en al menos uno de los campos
         const hasChanges =

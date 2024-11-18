@@ -69,29 +69,19 @@ export class ResourceService {
    * Valida si un DTO tiene cambios significativos comparando con los datos existentes
    * @param dto DTO con los cambios propuestos
    * @param currentData Objeto actual desde la base de datos
-   * @throws BadRequestException si no hay cambios o el DTO está vacío
+   * @return verdadero si hay cambios , falso si no hay cambios
    */
   private validateChanges<T extends object>(
     dto: Partial<T>,
     currentData: T,
-  ): void {
-    // Verifica si el DTO es null o undefined
-    if (!dto) {
-      throw new BadRequestException('No data provided for update');
-    }
-
-    // Verifica si el DTO es un objeto vacío
-    if (Object.keys(dto).length === 0) {
-      throw new BadRequestException('Update data is empty');
-    }
-
+  ): boolean {
     // Verifica si todos los campos son undefined o null
     const hasValidValues = Object.values(dto).some(
       (value) => value !== undefined && value !== null,
     );
 
     if (!hasValidValues) {
-      throw new BadRequestException('No valid values provided for update');
+      return false;
     }
 
     // Verifica si hay cambios reales comparando con los datos actuales
@@ -108,9 +98,7 @@ export class ResourceService {
       }
     }
 
-    if (!hasChanges) {
-      throw new BadRequestException('No changes detected');
-    }
+    return hasChanges ? true : false;
   }
 
   /**
@@ -213,7 +201,18 @@ export class ResourceService {
       const currentResource = await this.findById(id);
 
       // Validar cambios comparando con los datos actuales
-      this.validateChanges(updateResourceDto, currentResource);
+      const hasChange = this.validateChanges(
+        updateResourceDto,
+        currentResource,
+      );
+
+      if (!hasChange) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Resource updated successfully',
+          data: currentResource,
+        };
+      }
 
       // Verificar que no exista otro recurso con el mismo nombre y tipo
       const existingResource = await this.findByNameAndType(name, type, id);
