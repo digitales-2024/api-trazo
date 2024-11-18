@@ -66,11 +66,15 @@ export class ResourceService {
   }
 
   /**
-   * Valida si un DTO tiene cambios significativos para actualizar
-   * @param dto DTO a validar
+   * Valida si un DTO tiene cambios significativos comparando con los datos existentes
+   * @param dto DTO con los cambios propuestos
+   * @param currentData Objeto actual desde la base de datos
    * @throws BadRequestException si no hay cambios o el DTO está vacío
    */
-  private validateChanges<T extends object>(dto: T): void {
+  private validateChanges<T extends object>(
+    dto: Partial<T>,
+    currentData: T,
+  ): void {
     // Verifica si el DTO es null o undefined
     if (!dto) {
       throw new BadRequestException('No data provided for update');
@@ -88,6 +92,24 @@ export class ResourceService {
 
     if (!hasValidValues) {
       throw new BadRequestException('No valid values provided for update');
+    }
+
+    // Verifica si hay cambios reales comparando con los datos actuales
+    let hasChanges = false;
+    for (const [key, newValue] of Object.entries(dto)) {
+      // Solo compara si el campo está presente en el DTO y no es undefined
+      if (newValue !== undefined && key in currentData) {
+        const currentValue = currentData[key];
+        // Compara los valores y marca si hay algún cambio
+        if (newValue !== currentValue) {
+          hasChanges = true;
+          break;
+        }
+      }
+    }
+
+    if (!hasChanges) {
+      throw new BadRequestException('No changes detected');
     }
   }
 
@@ -188,7 +210,10 @@ export class ResourceService {
     const { name, type, unit, unitCost } = updateResourceDto;
 
     try {
-      this.validateChanges(updateResourceDto);
+      const currentResource = await this.findById(id);
+
+      // Validar cambios comparando con los datos actuales
+      this.validateChanges(updateResourceDto, currentResource);
 
       // Verificar que no exista otro recurso con el mismo nombre y tipo
       const existingResource = await this.findByNameAndType(name, type, id);
@@ -354,7 +379,6 @@ export class ResourceService {
   ): Promise<Omit<HttpResponse, 'data'>> {
     try {
       await this.prisma.$transaction(async (prisma) => {
-        this.validateChanges(deleteResourcesDto);
         // Buscar los recursos en la base de datos
         const resourcesDB = await prisma.resource.findMany({
           where: {
@@ -440,7 +464,6 @@ export class ResourceService {
   ): Promise<Omit<HttpResponse, 'data'>> {
     try {
       await this.prisma.$transaction(async (prisma) => {
-        this.validateChanges(deleteResourcesDto);
         // Buscar los recursos en la base de datos
         const resourcesDB = await prisma.resource.findMany({
           where: {
