@@ -306,12 +306,6 @@ export class ObservationsService {
         },
       });
 
-      if (!observations || observations.length === 0) {
-        throw new NotFoundException(
-          'No observations found for this project charter',
-        );
-      }
-
       return observations;
     } catch (error) {
       this.logger.error(
@@ -319,7 +313,10 @@ export class ObservationsService {
         error.stack,
       );
 
-      if (error instanceof NotFoundException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
 
@@ -401,36 +398,40 @@ export class ObservationsService {
    * @returns Mensaje de confirmación
    */
   async removeAllByProjectCharter(
-    projectCharterId: string,
+    deleteObservationsDto: DeleteObservationsDto,
     user: UserData,
   ): Promise<HttpResponse<undefined>> {
     try {
-      // Verificar que el Project Charter existe
-      await this.projectCharter.findById(projectCharterId);
-
       await this.prisma.$transaction(async (prisma) => {
-        // Obtener todas las observaciones del Project Charter
-        const observations = await prisma.observation.findMany({
+        // Verificar que todos los project charters existen
+        const projectCharterToDelete = await prisma.projectCharter.findMany({
           where: {
-            projectCharterId,
-          },
-          select: {
-            id: true,
+            id: {
+              in: deleteObservationsDto.ids,
+            },
           },
         });
 
-        if (observations.length === 0) {
-          return {
-            statusCode: HttpStatus.OK,
-            message: 'No observations to delete',
-            data: undefined,
-          };
+        if (
+          projectCharterToDelete.length !== deleteObservationsDto.ids.length
+        ) {
+          throw new NotFoundException('Some observations were not found');
         }
+
+        const observations = await prisma.observation.findMany({
+          where: {
+            projectCharterId: {
+              in: deleteObservationsDto.ids,
+            },
+          },
+        });
 
         // Eliminar las observaciones
         await prisma.observation.deleteMany({
           where: {
-            projectCharterId,
+            projectCharterId: {
+              in: deleteObservationsDto.ids,
+            },
           },
         });
 

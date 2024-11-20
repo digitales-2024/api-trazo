@@ -19,7 +19,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
-import { UserData } from '@login/login/interfaces';
+import { HttpResponse, UserData } from '@login/login/interfaces';
 import { UpdateObservationDto } from './dto/update-observation.dto';
 import { DeleteObservationsDto } from './dto/delete-observation.dto';
 import { ObservationData, ObservationProject } from '../interfaces';
@@ -43,7 +43,7 @@ export class ObservationsController {
   create(
     @Body() createObservationDto: CreateObservationDto,
     @GetUser() user: UserData,
-  ) {
+  ): Promise<HttpResponse<ObservationData>> {
     return this.observationsService.create(createObservationDto, user);
   }
 
@@ -62,7 +62,7 @@ export class ObservationsController {
     @Param('id') id: string,
     @Body() updateObservationDto: UpdateObservationDto,
     @GetUser() user: UserData,
-  ) {
+  ): Promise<HttpResponse<ObservationData>> {
     return this.observationsService.update(id, updateObservationDto, user);
   }
 
@@ -77,20 +77,21 @@ export class ObservationsController {
     return this.observationsService.removeAll(deleteObservationsDto, user);
   }
 
-  @Delete('project-charter/:id')
+  @Delete('project-charter/removeAll')
   @ApiOkResponse({
     description: 'All observations from project charter deleted successfully',
   })
   @ApiNotFoundResponse({ description: 'Project charter not found' })
   removeAllByProjectCharter(
-    @Param('id') projectCharterId: string,
+    @Body() deleteObservationsDto: DeleteObservationsDto,
     @GetUser() user: UserData,
   ) {
     return this.observationsService.removeAllByProjectCharter(
-      projectCharterId,
+      deleteObservationsDto,
       user,
     );
   }
+
   @Get()
   @ApiOkResponse({ description: 'Get all observations' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
