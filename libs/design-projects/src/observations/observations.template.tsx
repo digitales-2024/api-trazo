@@ -120,12 +120,18 @@ export class ObservationsTemplate {
           class="text-center py-1 border-b border-r border-black flex items-center justify-center"
           safe
         >
-          {new Date(props.observation.meetingDate).toLocaleDateString('es-PE', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            timeZone: 'America/Lima',
-          })}
+          {(() => {
+            const [year, month, day] = props.observation.meetingDate
+              .split('-')
+              .map(Number);
+            const date = new Date(year, month - 1, day);
+            return date.toLocaleDateString('es-PE', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              timeZone: 'America/Lima',
+            });
+          })()}
         </div>
         <div class="text-center py-1 border-b border-r border-black flex items-center justify-center h-16"></div>
       </>
