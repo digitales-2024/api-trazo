@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { IsDateString, IsNotEmpty, IsString, IsUUID } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateObservationDto {
@@ -19,4 +19,12 @@ export class CreateObservationDto {
   @IsNotEmpty()
   @Transform(({ value }) => value.trim())
   observation: string;
+
+  @ApiProperty({
+    description: 'Meeting date of the recorded observation',
+    example: '2024-01-15',
+  })
+  @IsNotEmpty()
+  @IsDateString()
+  meetingDate: string;
 }

@@ -19,10 +19,10 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
-import { UserData } from '@login/login/interfaces';
+import { HttpResponse, UserData } from '@login/login/interfaces';
 import { UpdateObservationDto } from './dto/update-observation.dto';
-import { Observation } from '@prisma/client';
 import { DeleteObservationsDto } from './dto/delete-observation.dto';
+import { ObservationData, ObservationProject } from '../interfaces';
 
 @ApiTags('Observations')
 @Controller({
@@ -43,14 +43,14 @@ export class ObservationsController {
   create(
     @Body() createObservationDto: CreateObservationDto,
     @GetUser() user: UserData,
-  ) {
+  ): Promise<HttpResponse<ObservationData>> {
     return this.observationsService.create(createObservationDto, user);
   }
 
   @Get(':id')
   @ApiOkResponse({ description: 'Observation found' })
   @ApiNotFoundResponse({ description: 'Observation not found' })
-  findOne(@Param('id') id: string): Promise<Observation> {
+  findOne(@Param('id') id: string): Promise<ObservationData> {
     return this.observationsService.findOne(id);
   }
 
@@ -62,7 +62,7 @@ export class ObservationsController {
     @Param('id') id: string,
     @Body() updateObservationDto: UpdateObservationDto,
     @GetUser() user: UserData,
-  ) {
+  ): Promise<HttpResponse<ObservationData>> {
     return this.observationsService.update(id, updateObservationDto, user);
   }
 
@@ -77,24 +77,25 @@ export class ObservationsController {
     return this.observationsService.removeAll(deleteObservationsDto, user);
   }
 
-  @Delete('project-charter/:id')
+  @Delete('project-charter/removeAll')
   @ApiOkResponse({
     description: 'All observations from project charter deleted successfully',
   })
   @ApiNotFoundResponse({ description: 'Project charter not found' })
   removeAllByProjectCharter(
-    @Param('id') projectCharterId: string,
+    @Body() deleteObservationsDto: DeleteObservationsDto,
     @GetUser() user: UserData,
   ) {
     return this.observationsService.removeAllByProjectCharter(
-      projectCharterId,
+      deleteObservationsDto,
       user,
     );
   }
+
   @Get()
   @ApiOkResponse({ description: 'Get all observations' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  findAll(): Promise<Observation[]> {
+  findAll(): Promise<ObservationProject[]> {
     return this.observationsService.findAll();
   }
 
@@ -106,7 +107,7 @@ export class ObservationsController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   findAllByProjectCharter(
     @Param('id') projectCharterId: string,
-  ): Promise<Observation[]> {
+  ): Promise<ObservationProject[]> {
     return this.observationsService.findAllByProjectCharter(projectCharterId);
   }
 

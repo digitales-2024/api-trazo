@@ -9,8 +9,6 @@ import {
 } from '@nestjs/swagger';
 import { Auth } from '@login/login/admin/auth/decorators';
 import { ProjectCharterData } from '../interfaces';
-// import { CreateProjectCharterDto } from './dto/create-project-charter.dto';
-// import { UpdateProjectCharterDto } from './dto/update-project-charter.dto';
 
 @Controller({
   path: 'project-charter',
