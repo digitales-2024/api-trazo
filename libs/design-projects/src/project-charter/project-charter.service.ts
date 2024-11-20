@@ -3,6 +3,7 @@ import { PrismaService, PrismaTransaction } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
 import { handleException } from '@login/login/utils';
 import { ProjectCharterData } from '../interfaces';
+import { UserData } from '@login/login/interfaces';
 
 @Injectable()
 export class ProjectCharterService {
@@ -21,9 +22,10 @@ export class ProjectCharterService {
   async create(
     designProjectId: string,
     prismaTransaction: PrismaTransaction,
+    user: UserData,
   ): Promise<void> {
     try {
-      await prismaTransaction.projectCharter.create({
+      const newProjectCharter = await prismaTransaction.projectCharter.create({
         data: {
           designProject: {
             connect: {
@@ -31,6 +33,14 @@ export class ProjectCharterService {
             },
           },
         },
+      });
+      // Registrar la acción en la auditoría
+      await this.audit.create({
+        entityId: newProjectCharter.id,
+        entityType: 'projectCharter',
+        action: 'CREATE',
+        performedById: user.id,
+        createdAt: new Date(),
       });
     } catch (error) {
       this.logger.error(
@@ -46,7 +56,7 @@ export class ProjectCharterService {
    * @param id Project charter ID
    * @returns Project charter or throws NotFoundException
    */
-  async findById(id: string) {
+  async findById(id: string): Promise<ProjectCharterData> {
     const projectCharter = await this.prisma.projectCharter.findUnique({
       where: { id },
       select: {
