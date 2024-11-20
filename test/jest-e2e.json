@@ -22,6 +22,8 @@
     "@business/business/(.*)": "<rootDir>/../libs/business/src/$1",
     "@business/business": "<rootDir>/../libs/business/src",
     "@sunat-change/sunat-change/(.*)": "<rootDir>/../libs/sunat-change/src/$1",
-    "@sunat-change/sunat-change": "<rootDir>/../libs/sunat-change/src"
+    "@sunat-change/sunat-change": "<rootDir>/../libs/sunat-change/src",
+    "@project-execution/project-execution/(.*)": "<rootDir>/../libs/project-execution/src/$1",
+    "@project-execution/project-execution": "<rootDir>/../libs/project-execution/src"
   }
 }

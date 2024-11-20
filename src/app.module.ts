@@ -7,6 +7,7 @@ import { ClientsModule } from '@clients/clients';
 import { BusinessModule } from '@business/business';
 import { DesignProjectsModule } from '@design-projects/design-projects';
 import { SunatChangeModule } from '@sunat-change/sunat-change';
+import { ProjectExecutionModule } from '@project-execution/project-execution';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { SunatChangeModule } from '@sunat-change/sunat-change';
     DesignProjectsModule,
     BusinessModule,
     SunatChangeModule,
+    ProjectExecutionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

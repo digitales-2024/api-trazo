@@ -339,6 +339,7 @@ model Observation {
   id String @id @unique @default(uuid())
 
   observation String
+  meetingDate String
 
   // Relación con ProjectCharter
   projectCharter   ProjectCharter @relation("ChartObservations", fields: [projectCharterId], references: [id])
@@ -347,4 +348,22 @@ model Observation {
   // Timestamps
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
+}
+
+model Resource {
+  id        String       @id @unique @default(uuid())
+  type      ResourceType
+  name      String
+  unit      String
+  unitCost  Float
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime     @updatedAt
+}
+
+enum ResourceType {
+  TOOLS
+  LABOR
+  SUPPLIES
+  SERVICES
 }
