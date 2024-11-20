@@ -52,6 +52,13 @@ export type DesignProjectSummaryData = BaseDesignProject & {
   };
 };
 
+export type ProjectStatusUpdateData = {
+  id: string;
+  previousStatus: DesignProjectStatus;
+  currentStatus: DesignProjectStatus;
+  updatedAt: Date;
+};
+
 export type DesignProjectDataNested = Omit<
   DesignProject,
   | 'createdAt'

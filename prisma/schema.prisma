@@ -349,3 +349,21 @@ model Observation {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
 }
+
+model Resource {
+  id        String       @id @unique @default(uuid())
+  type      ResourceType
+  name      String
+  unit      String
+  unitCost  Float
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime     @updatedAt
+}
+
+enum ResourceType {
+  TOOLS
+  LABOR
+  SUPPLIES
+  SERVICES
+}
