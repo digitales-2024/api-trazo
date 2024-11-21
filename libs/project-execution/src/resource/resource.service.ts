@@ -56,7 +56,7 @@ export class ResourceService {
     if (resourceDB) {
       if (!resourceDB.isActive) {
         throw new BadRequestException(
-          `This resource with name "${name}" and type "${type}" is inactive, contact the superadmin to reactivate it`,
+          `This resource is inactive, contact the superadmin to reactivate it`,
         );
       }
       throw new BadRequestException(`Resource already exists`);
