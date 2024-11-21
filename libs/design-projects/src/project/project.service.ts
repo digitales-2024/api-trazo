@@ -1062,7 +1062,7 @@ export class ProjectService {
     const pdfHtml = await this.template.renderContract(
       allData,
       business[0],
-      new Date(dto.signingDate),
+      new Date(dto.signingDate + 'T12:00:00.000-05:00'),
     );
 
     // Cargar imágenes para la cabecera y pie de página

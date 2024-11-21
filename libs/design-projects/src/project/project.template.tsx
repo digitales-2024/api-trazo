@@ -429,6 +429,7 @@ export class ProjectTemplate {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',
+                  timeZone: 'America/Lima',
                 })}
               </span>
               .
