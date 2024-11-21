@@ -187,9 +187,6 @@ export class ProjectCharterService {
           },
         })),
       );
-
-      console.log(JSON.stringify(projectsChartersWithObservations, null, 2));
-
       return projectsChartersWithObservations as ProjectCharterAllData[];
     } catch (error) {
       this.logger.error('Error getting all clients');
