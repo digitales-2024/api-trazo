@@ -15,3 +15,7 @@ export type ProjectCharterData = Pick<ProjectCharter, 'id'> & {
     };
   };
 };
+
+export type ProjectCharterAllData = ProjectCharterData & {
+  amountOfObservations: number;
+};

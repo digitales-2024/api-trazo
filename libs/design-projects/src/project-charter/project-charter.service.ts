@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService, PrismaTransaction } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
 import { handleException } from '@login/login/utils';
-import { ProjectCharterData } from '../interfaces';
+import { ProjectCharterAllData, ProjectCharterData } from '../interfaces';
 import { UserData } from '@login/login/interfaces';
 
 @Injectable()
@@ -22,7 +22,7 @@ export class ProjectCharterService {
         projectCharterId: id,
       },
     });
-    if (!observationDB) {
+    if (observationDB.length === 0) {
       return 0;
     }
     return observationDB.length;
@@ -134,7 +134,7 @@ export class ProjectCharterService {
    * @returns Lista de project charters con sus relaciones
    * @throws {InternalServerErrorException} Si hay un error al obtener los datos
    */
-  async findAll(): Promise<ProjectCharterData[]> {
+  async findAll(): Promise<ProjectCharterAllData[]> {
     try {
       const projectsCharters = await this.prisma.projectCharter.findMany({
         select: {
@@ -187,8 +187,7 @@ export class ProjectCharterService {
           },
         })),
       );
-
-      return projectsChartersWithObservations as ProjectCharterData[];
+      return projectsChartersWithObservations as ProjectCharterAllData[];
     } catch (error) {
       this.logger.error('Error getting all clients');
       handleException(error, 'Error getting all clients');
