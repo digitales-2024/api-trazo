@@ -18,7 +18,7 @@ export class QuotationTemplate {
     // calculate all the neccesary values once
     const totalArea = quotation.levels
       .map(
-        (l) => l.spaces.map((space) => space.area).reduce((a, b) => a + b),
+        (l) => l.spaces.map((space) => space.area).reduce((a, b) => a + b, 0),
         0,
       )
       .reduce((a, b) => a + b, 0);

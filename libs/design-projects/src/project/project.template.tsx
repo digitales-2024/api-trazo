@@ -25,7 +25,7 @@ export class ProjectTemplate {
     const totalArea = quotation.levels
       .map(
         (level) =>
-          level.spaces.map((space) => space.area).reduce((a, b) => a + b),
+          level.spaces.map((space) => space.area).reduce((a, b) => a + b, 0),
         0,
       )
       .reduce((a, b) => a + b, 0);
