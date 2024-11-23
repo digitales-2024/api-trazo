@@ -39,7 +39,9 @@ export class ProjectTemplate {
       .reduce((acc, next) => acc + next, 0);
     const priceBeforeDiscount = totalArea * pricePerSquareMeter;
     // Final price in USD after discount
-    const priceAfterDiscount = priceBeforeDiscount - quotation.discount;
+    const priceAfterDiscount = Math.abs(
+      priceBeforeDiscount - quotation.discount,
+    );
     const finalPriceSoles = priceAfterDiscount * quotation.exchangeRate;
 
     return (
