@@ -25,7 +25,7 @@ export class ProjectTemplate {
     const totalArea = quotation.levels
       .map(
         (level) =>
-          level.spaces.map((space) => space.area).reduce((a, b) => a + b),
+          level.spaces.map((space) => space.area).reduce((a, b) => a + b, 0),
         0,
       )
       .reduce((a, b) => a + b, 0);
@@ -39,7 +39,9 @@ export class ProjectTemplate {
       .reduce((acc, next) => acc + next, 0);
     const priceBeforeDiscount = totalArea * pricePerSquareMeter;
     // Final price in USD after discount
-    const priceAfterDiscount = priceBeforeDiscount - quotation.discount;
+    const priceAfterDiscount = Math.abs(
+      priceBeforeDiscount - quotation.discount,
+    );
     const finalPriceSoles = priceAfterDiscount * quotation.exchangeRate;
 
     return (
@@ -429,6 +431,7 @@ export class ProjectTemplate {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',
+                  timeZone: 'America/Lima',
                 })}
               </span>
               .

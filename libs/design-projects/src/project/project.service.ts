@@ -17,7 +17,7 @@ import { ProjectTemplate } from './project.template';
 import Puppeteer from 'puppeteer';
 import { BusinessService } from '@business/business';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
-import { DesignProjectData } from '../interfaces';
+import { DesignProjectData, QuotationSummaryData } from '../interfaces';
 import {
   DesignProjectDataNested,
   DesignProjectSummaryData,
@@ -31,7 +31,7 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { UpdateChecklistDto } from './dto/update-checklist.dto';
 import { DeleteChecklistDto } from './dto/delete-checklist.dto';
 import { ProjectCharterService } from '../project-charter/project-charter.service';
-import { DesignProjectStatus } from '@prisma/client';
+import { DesignProjectStatus, QuotationStatusType } from '@prisma/client';
 
 /**
  * Servicio para gestionar proyectos de diseño
@@ -718,6 +718,67 @@ export class ProjectService {
       handleException(error, 'Error deleting project checklist dates');
     }
   }
+
+  /**
+   * Obtiene todas las cotizaciones que se pueden utilizar para
+   * crear un proyecto de diseño.
+   * Estas cotizaciones cumplen:
+   * - estan aprobadas
+   * - no estan siendo utilizadas en otro proyecto de diseño
+   */
+  async findCreatable(): Promise<QuotationSummaryData[]> {
+    const quotations = await this.prisma.quotation.findMany({
+      where: {
+        status: QuotationStatusType.APPROVED,
+        designProjects: {
+          none: {},
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        publicCode: true,
+        status: true,
+        totalAmount: true,
+        metering: true,
+        client: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        zoning: {
+          select: {
+            id: true,
+            zoneCode: true,
+          },
+        },
+      },
+    });
+
+    // Mapea los resultados al tipo QuotationData y espera a que se resuelvan las promesas de levels
+    const quotationsWithLevels: QuotationSummaryData[] = quotations.map(
+      (quotation) => ({
+        id: quotation.id,
+        publicCode: quotation.publicCode,
+        name: quotation.name,
+        status: quotation.status,
+        totalAmount: quotation.totalAmount,
+        metering: quotation.metering,
+        client: {
+          id: quotation.client.id,
+          name: quotation.client.name,
+        },
+        zoning: {
+          id: quotation.zoning.id,
+          zoneCode: quotation.zoning.zoneCode,
+        },
+      }),
+    );
+
+    return quotationsWithLevels;
+  }
+
   /**
    * Busca un proyecto de diseño por ID
    * @param id - ID del proyecto
@@ -1001,7 +1062,7 @@ export class ProjectService {
     const pdfHtml = await this.template.renderContract(
       allData,
       business[0],
-      new Date(dto.signingDate),
+      new Date(dto.signingDate + 'T12:00:00.000-05:00'),
     );
 
     // Cargar imágenes para la cabecera y pie de página
