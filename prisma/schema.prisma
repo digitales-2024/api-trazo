@@ -448,8 +448,6 @@ model CategoryBudget {
 model SubcategoryBudget {
   id String @id @unique @default(uuid())
 
-  quantity Float
-  unitCost Float
   subtotal Float
 
   subcategoryId String
@@ -510,6 +508,36 @@ model subWorkItemBudget {
   updatedAt DateTime @updatedAt
 }
 
+model ApuBudget {
+  id          String @id @unique @default(uuid())
+  unitCost    Float
+  performance Int
+  workHours   Int    @default(8)
+
+  // Relación con ApuOnResource
+  apuResource ApuOnResourceBudget[] @relation("apu")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+model ApuOnResourceBudget {
+  id String @id @unique @default(uuid())
+
+  quantity Float
+  subtotal Float
+  group    String?
+
+  // Relación con Resource
+  resourceId String
+
+  apu   ApuBudget @relation("apu", fields: [apuId], references: [id])
+  apuId String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
 // Estado de una cotizacion
 enum BudgetStatusType {
   PENDING
@@ -546,13 +574,12 @@ model Subcategory {
 }
 
 model WorkItem {
-  id          String  @id @unique @default(uuid())
-  name        String  @unique
-  unit        String?
-  unitCost    Float?
-  subtotal    Float?
-  performance Int
-  isActive    Boolean @default(true)
+  id       String  @id @unique @default(uuid())
+  name     String  @unique
+  unit     String?
+  unitCost Float?
+  subtotal Float?
+  isActive Boolean @default(true)
 
   // Relación con Subcategory
   subcategory   Subcategory @relation("subcategoryWorkItem", fields: [subcategoryId], references: [id])
@@ -587,9 +614,10 @@ model SubWorkItem {
 }
 
 model Apu {
-  id         String  @id @unique @default(uuid())
-  unitCost   Float
-  isTemplate Boolean @default(true)
+  id          String @id @unique @default(uuid())
+  unitCost    Float
+  performance Int
+  workHours   Int
 
   // Relación con ApuOnResource
   apuResource ApuOnResource[] @relation("apu")
@@ -603,6 +631,7 @@ model ApuOnResource {
 
   quantity Float
   subtotal Float
+  group    String?
 
   resource   Resource @relation("resource", fields: [resourceId], references: [id])
   resourceId String
