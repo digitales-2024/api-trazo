@@ -103,7 +103,12 @@ export type QuotationDataNested = Pick<
   | 'publicCode'
 > & {
   client: { id: string; name: string };
-  zoning: { id: string; zoneCode: string };
+  zoning: {
+    id: string;
+    zoneCode: string;
+    buildableArea: number;
+    openArea: number;
+  };
   levels: Array<LevelData>;
 };
 
