@@ -39,13 +39,13 @@ export class SubcategoryController {
     return this.subcategoryService.create(createSubcategoryDto, user);
   }
 
-  @ApiOkResponse({ description: 'Get all categories' })
+  @ApiOkResponse({ description: 'Get all subcategories' })
   @Get()
   findAll(@GetUser() user: UserPayload): Promise<SubcategoryData[]> {
     return this.subcategoryService.findAll(user);
   }
 
-  @ApiOkResponse({ description: 'Get all categories' })
+  @ApiOkResponse({ description: 'Get all subcategories from category' })
   @Get('category/:id')
   getAllSubcategoriesFromCategory(
     @Param('id') id: string,
