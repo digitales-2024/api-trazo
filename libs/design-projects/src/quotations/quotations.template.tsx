@@ -401,7 +401,7 @@ export class QuotationTemplate {
         </div>
 
         <div>
-          <b safe>SON: {spellPricing(discountedPrice * props.exchangeRate)}</b>
+          <b safe>SON: {spellPricing(props.totalAmount)}</b>
         </div>
       </div>
     );
