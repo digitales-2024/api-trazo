@@ -67,7 +67,7 @@ export class CategoryController {
   @Delete('remove/all')
   deactivate(
     @Body() categories: DeleteCategoriesDto,
-    @GetUser() user: UserData,
+    @GetUser() user: UserPayload,
   ): Promise<Omit<HttpResponse, 'data'>> {
     return this.categoryService.removeAll(categories, user);
   }

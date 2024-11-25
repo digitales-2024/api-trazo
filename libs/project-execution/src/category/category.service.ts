@@ -1,6 +1,8 @@
 import {
   BadRequestException,
+  forwardRef,
   HttpStatus,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -13,11 +15,15 @@ import { CategoryData } from '../interfaces';
 import { handleException } from '@login/login/utils';
 import { AuditActionType } from '@prisma/client';
 import { DeleteCategoriesDto } from './dto/delete-category.dto';
-
+import { SubcategoryService } from '../subcategory/subcategory.service';
 @Injectable()
 export class CategoryService {
   private readonly logger = new Logger(CategoryService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => SubcategoryService))
+    private readonly subcategoryService: SubcategoryService,
+  ) {}
 
   /**
    * Crea una nueva categoría
@@ -364,7 +370,7 @@ export class CategoryService {
    */
   async removeAll(
     categories: DeleteCategoriesDto,
-    user: UserData,
+    user: UserPayload,
   ): Promise<Omit<HttpResponse, 'data'>> {
     try {
       await this.prisma.$transaction(async (prisma) => {
@@ -372,6 +378,7 @@ export class CategoryService {
         const categoriesDB = await prisma.category.findMany({
           where: {
             id: { in: categories.ids },
+            isActive: { equals: true },
           },
           select: {
             id: true,
@@ -386,6 +393,18 @@ export class CategoryService {
         }
 
         const deactivatePromises = categoriesDB.map(async (categoryDelete) => {
+          const subcategoriesDB =
+            await this.subcategoryService.getAllSubcategoriesFromCategory(
+              categoryDelete.id,
+              user,
+            );
+          for (const subcategory of subcategoriesDB) {
+            if (subcategory.isActive) {
+              throw new BadRequestException(
+                'This category has active subcategories',
+              );
+            }
+          }
           // Desactivar las categorías
           await prisma.category.update({
             where: { id: categoryDelete.id },
