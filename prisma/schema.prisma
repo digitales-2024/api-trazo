@@ -473,8 +473,8 @@ model WorkItemBudget {
   // Relación con WorkItem
   workItemId String
 
-  // Relación con APU
-  apuId String?
+  // Relación con APU Budget
+  apuBudgetId String?
 
   // Relación con SubcategoryBudget
   subcategoryBudget   SubcategoryBudget @relation("workItemBudget", fields: [subcategoryBudgetId], references: [id])
@@ -497,8 +497,8 @@ model subWorkItemBudget {
   // Relación con SubWorkItem
   subWorkItemId String
 
-  // Relación con APU
-  apuId String?
+  // Relación con APU Budget
+  apuBudgetId String?
 
   // Relación con WorkItemBudget
   workItemBudget   WorkItemBudget @relation("subWorkItemBudget", fields: [workItemBudgetId], references: [id])
