@@ -1,11 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
+import { PrismaService } from '@prisma/prisma';
+import { UserData } from '@login/login/interfaces';
 
 @Injectable()
 export class BudgetService {
-  create(createBudgetDto: CreateBudgetDto) {
-    return `This action adds a new budget ${createBudgetDto}`;
+  private readonly logger = new Logger(BudgetService.name);
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(createBudgetDto: CreateBudgetDto, user: UserData) {
+    return `This action adds a new budget ${createBudgetDto} ${user}`;
   }
 
   findAll() {

@@ -12,10 +12,12 @@ import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 import {
   ApiBadRequestResponse,
+  ApiCreatedResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { Auth } from '@login/login/admin/auth/decorators';
+import { Auth, GetUser } from '@login/login/admin/auth/decorators';
+import { UserData } from '@login/login/interfaces';
 
 @ApiTags('Budget')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -25,9 +27,12 @@ import { Auth } from '@login/login/admin/auth/decorators';
 export class BudgetController {
   constructor(private readonly budgetService: BudgetService) {}
 
+  @ApiCreatedResponse({
+    description: 'Budget successfully created',
+  })
   @Post()
-  create(@Body() createBudgetDto: CreateBudgetDto) {
-    return this.budgetService.create(createBudgetDto);
+  create(@Body() createBudgetDto: CreateBudgetDto, @GetUser() user: UserData) {
+    return this.budgetService.create(createBudgetDto, user);
   }
 
   @Get()
