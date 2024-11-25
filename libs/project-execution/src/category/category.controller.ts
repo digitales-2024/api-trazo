@@ -63,7 +63,7 @@ export class CategoryController {
     return this.categoryService.update(id, updateCategoryDto, user);
   }
 
-  @ApiOkResponse({ description: 'Clients deactivated' })
+  @ApiOkResponse({ description: 'Categories deactivated' })
   @Delete('remove/all')
   deactivate(
     @Body() categories: DeleteCategoriesDto,
@@ -72,7 +72,7 @@ export class CategoryController {
     return this.categoryService.removeAll(categories, user);
   }
 
-  @ApiOkResponse({ description: 'Clients reactivated' })
+  @ApiOkResponse({ description: 'Categories reactivated' })
   @Patch('reactivate/all')
   reactivateAll(
     @GetUser() user: UserData,
