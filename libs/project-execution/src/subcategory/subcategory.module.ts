@@ -8,5 +8,6 @@ import { PrismaModule } from '@prisma/prisma';
   controllers: [SubcategoryController],
   providers: [SubcategoryService],
   imports: [PrismaModule, forwardRef(() => CategoryModule)],
+  exports: [SubcategoryService],
 })
 export class SubcategoryModule {}
