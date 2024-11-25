@@ -18,7 +18,7 @@ export class QuotationTemplate {
     // calculate all the neccesary values once
     const totalArea = quotation.levels
       .map(
-        (l) => l.spaces.map((space) => space.area).reduce((a, b) => a + b),
+        (l) => l.spaces.map((space) => space.area).reduce((a, b) => a + b, 0),
         0,
       )
       .reduce((a, b) => a + b, 0);
@@ -202,8 +202,14 @@ export class QuotationTemplate {
     quotation: QuotationDataNested;
     totalArea: number;
   }) {
-    const availableArea = props.quotation.landArea * 0.65;
+    const zoning = props.quotation.zoning;
+    // numbers from 0 to 100
+    const buildableArea = zoning.buildableArea;
+    const openArea = zoning.openArea;
+
+    const availableArea = props.quotation.landArea * (buildableArea / 100);
     const freeArea = props.quotation.landArea - availableArea;
+
     const availableAreaStr = twoDecimals(availableArea);
     const freeAreaStr = twoDecimals(freeArea);
 
@@ -238,7 +244,7 @@ export class QuotationTemplate {
         <div class="grid grid-cols-[20rem_15rem_auto] py-8">
           <div>
             <span class="uppercase">Area construible&nbsp;</span>
-            65%
+            {buildableArea}%
           </div>
           <div class="font-bold text-right" safe>
             {availableAreaStr}
@@ -247,7 +253,7 @@ export class QuotationTemplate {
 
           <div>
             <span class="uppercase">Area libre&nbsp;&emsp;&emsp;&emsp;</span>
-            45%
+            {openArea}%
           </div>
           <div class="font-bold text-right" safe>
             {freeAreaStr}
@@ -395,7 +401,7 @@ export class QuotationTemplate {
         </div>
 
         <div>
-          <b safe>SON: {spellPricing(discountedPrice * props.exchangeRate)}</b>
+          <b safe>SON: {spellPricing(props.totalAmount)}</b>
         </div>
       </div>
     );

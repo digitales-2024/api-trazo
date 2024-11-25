@@ -26,7 +26,7 @@ export class CreateProjectDto {
   })
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => value.trim().toLowerCase())
+  @Transform(({ value }) => value.trim())
   province: string;
 
   @ApiProperty({

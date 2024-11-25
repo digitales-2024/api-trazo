@@ -50,6 +50,15 @@ export class ProjectController {
     return this.projectService.create(createDesignProjectDto, user);
   }
 
+  @Get('quotation-for-create')
+  @ApiOkResponse({
+    description:
+      'Get all quotations that can be used to create a Project (approved, and not linked to another project)',
+  })
+  findCreatable() {
+    return this.projectService.findCreatable();
+  }
+
   @Get(':id')
   @ApiOkResponse({
     description: 'Design project retrieved successfully',

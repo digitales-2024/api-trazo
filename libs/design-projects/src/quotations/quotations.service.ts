@@ -367,6 +367,8 @@ export class QuotationsService {
           select: {
             id: true,
             zoneCode: true,
+            buildableArea: true,
+            openArea: true,
           },
         },
         levels: {
@@ -422,6 +424,8 @@ export class QuotationsService {
       zoning: {
         id: quotation.zoning.id,
         zoneCode: quotation.zoning.zoneCode,
+        buildableArea: quotation.zoning.buildableArea,
+        openArea: quotation.zoning.openArea,
       },
       levels: quotation.levels.map((level) => ({
         id: level.id,
