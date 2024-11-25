@@ -70,7 +70,7 @@ export class SubcategoryController {
     return this.subcategoryService.update(id, updateSubcategoryDto, user);
   }
 
-  @ApiOkResponse({ description: 'Subcategory deactivated' })
+  @ApiOkResponse({ description: 'Subcategories deactivated' })
   @Delete('remove/all')
   deactivate(
     @Body() subcategories: DeleteSubcategoriesDto,
@@ -79,7 +79,7 @@ export class SubcategoryController {
     return this.subcategoryService.removeAll(subcategories, user);
   }
 
-  @ApiOkResponse({ description: 'Subcategory reactivated' })
+  @ApiOkResponse({ description: 'Subcategories reactivated' })
   @Patch('reactivate/all')
   reactivateAll(
     @GetUser() user: UserData,
