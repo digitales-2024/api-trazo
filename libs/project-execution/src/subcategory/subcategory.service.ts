@@ -82,7 +82,7 @@ export class SubcategoryService {
 
       return {
         statusCode: HttpStatus.CREATED,
-        message: 'Category created successfully',
+        message: 'Subcategory created successfully',
         data: {
           id: newSubcategory.id,
           name: newSubcategory.name,
@@ -426,7 +426,7 @@ export class SubcategoryService {
 
         // Validar que se encontraron las subcategorias
         if (subcategoriesDB.length === 0) {
-          throw new NotFoundException('Category not found or inactive');
+          throw new NotFoundException('Subcategory not found or inactive');
         }
 
         // Reactivar las subcategorias
@@ -459,7 +459,7 @@ export class SubcategoryService {
 
       return {
         statusCode: HttpStatus.OK,
-        message: 'subcategories reactivate successfully',
+        message: 'Subcategories reactivate successfully',
       };
     } catch (error) {
       this.logger.error('Error reactivating subcategories', error.stack);
@@ -489,6 +489,7 @@ export class SubcategoryService {
         const subcategoriesDB = await prisma.subcategory.findMany({
           where: {
             id: { in: subcategories.ids },
+            isActive: { equals: true },
           },
           select: {
             id: true,
@@ -499,13 +500,13 @@ export class SubcategoryService {
 
         // Validar que se encontraron las subcategorias
         if (subcategoriesDB.length === 0) {
-          throw new NotFoundException('Category not found or inactive');
+          throw new NotFoundException('Subcategory not found or inactive');
         }
 
         const deactivatePromises = subcategoriesDB.map(
           async (subcategoryDelete) => {
             // Desactivar las subcategorias
-            await prisma.category.update({
+            await prisma.subcategory.update({
               where: { id: subcategoryDelete.id },
               data: { isActive: false },
             });
