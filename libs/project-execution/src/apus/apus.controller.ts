@@ -13,12 +13,14 @@ import { UpdateApusDto } from './dto/update-apus.dto';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import { UserData } from '@login/login/interfaces';
+import { ApuReturn } from '../interfaces/apu.interfaces';
 
 @ApiTags('Apus')
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -50,8 +52,15 @@ export class ApusController {
   }
 
   @Get()
-  findAll() {
-    return this.apusService.findAll();
+  @ApiOperation({
+    summary: 'Get all APUs',
+    description: 'Returns all the APUs in the system',
+  })
+  @ApiOkResponse({
+    description: 'Get all APUs',
+  })
+  async findAll(): Promise<Array<ApuReturn>> {
+    return await this.apusService.findAll();
   }
 
   @Get(':id')

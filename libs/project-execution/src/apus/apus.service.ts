@@ -6,6 +6,7 @@ import { HttpResponse, UserData } from '@login/login/interfaces';
 
 import { AuditActionType } from '@prisma/client';
 import { roundToTwoDecimals } from '../utils';
+import { ApuReturn } from '../interfaces/apu.interfaces';
 
 @Injectable()
 export class ApusService {
@@ -51,6 +52,7 @@ export class ApusService {
       const resourceCost = resourcesOnDb.find(
         (r2) => r2.id === r.resourceId,
       ).unitCost;
+
       const cost = this.computeResourceCost(
         r,
         resourceCost,
@@ -62,19 +64,11 @@ export class ApusService {
         cost,
       };
     });
-    const computedUnitCost = resources
-      .map((r) => {
-        const resourceCost = resourcesOnDb.find(
-          (r2) => r2.id === r.resourceId,
-        ).unitCost;
-        return this.computeResourceCost(
-          r,
-          resourceCost,
-          workHours,
-          performance,
-        );
-      })
-      .reduce((x, y) => x + y, 0);
+    const computedUnitCost = resourcesWithCost.reduce(
+      (r1, r2) => r1 + r2.cost,
+      0,
+    );
+
     if (computedUnitCost !== unitCost) {
       this.logger.error(
         `While creating an APU, the unit cost computed on the backend didnt match the one sent by the frontend.\nExpected unitCost to be ${computedUnitCost}, got ${unitCost}`,
@@ -181,8 +175,17 @@ export class ApusService {
     return computedCost;
   }
 
-  findAll() {
-    return `This action returns all apus`;
+  async findAll(): Promise<Array<ApuReturn>> {
+    const apus = await this.prisma.apu.findMany({
+      select: {
+        id: true,
+        unitCost: true,
+        workHours: true,
+        performance: true,
+      },
+    });
+
+    return apus;
   }
 
   findOne(id: number) {
@@ -190,7 +193,7 @@ export class ApusService {
   }
 
   update(id: number, updateApusDto: UpdateApusDto) {
-    return `This action updates a #${id} apus`;
+    return `This action updates a #${id} apus ${updateApusDto}`;
   }
 
   remove(id: number) {
