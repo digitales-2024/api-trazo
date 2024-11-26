@@ -157,7 +157,7 @@ export class ApusService {
     // to get the value of `quantity`.
     let quantity = resource.quantity;
     if (!!resource.group) {
-      const newQuantity = (resource.group * workHours) / performance;
+      const newQuantity = roundToTwoDecimals((resource.group * workHours) / performance);
 
       // If a cuadrilla (group) is sent by the frontend,
       // then the frontedn should have also sent a quantity.
