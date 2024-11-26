@@ -13,6 +13,7 @@ import { UpdateApusDto } from './dto/update-apus.dto';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -20,7 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import { UserData } from '@login/login/interfaces';
-import { ApuReturn } from '../interfaces/apu.interfaces';
+import { ApuReturn, ApuReturnNested } from '../interfaces/apu.interfaces';
 
 @ApiTags('Apus')
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -64,8 +65,18 @@ export class ApusController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.apusService.findOne(+id);
+  @ApiOperation({
+    summary: 'Get APU by id',
+    description: 'Returns a single APU by id, or fails',
+  })
+  @ApiOkResponse({
+    description: 'APU found by id',
+  })
+  @ApiNotFoundResponse({
+    description: 'No APU found with the given id',
+  })
+  async findOne(@Param('id') id: string): Promise<ApuReturnNested> {
+    return this.apusService.findById(id);
   }
 
   @Patch(':id')

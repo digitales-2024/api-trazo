@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateApuResourceDto, CreateApusDto } from './dto/create-apus.dto';
 import { UpdateApusDto } from './dto/update-apus.dto';
 import { PrismaService } from '@prisma/prisma';
@@ -6,7 +11,7 @@ import { HttpResponse, UserData } from '@login/login/interfaces';
 
 import { AuditActionType } from '@prisma/client';
 import { roundToTwoDecimals } from '../utils';
-import { ApuReturn } from '../interfaces/apu.interfaces';
+import { ApuReturn, ApuReturnNested } from '../interfaces/apu.interfaces';
 
 @Injectable()
 export class ApusService {
@@ -34,6 +39,7 @@ export class ApusService {
         id: {
           in: uniqueIds,
         },
+        isActive: true,
       },
       select: {
         id: true,
@@ -156,7 +162,7 @@ export class ApusService {
       );
 
       // If a cuadrilla (group) is sent by the frontend,
-      // then the frontedn should have also sent a quantity.
+      // then the frontend should have also sent a quantity.
       // Assert its value is correct
       if (newQuantity !== quantity) {
         this.logger.error(
@@ -188,8 +194,43 @@ export class ApusService {
     return apus;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} apus`;
+  async findById(id: string): Promise<ApuReturnNested> {
+    const apu = await this.prisma.apu.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        performance: true,
+        workHours: true,
+        unitCost: true,
+        apuResource: {
+          select: {
+            id: true,
+            group: true,
+            quantity: true,
+            resource: {
+              select: {
+                id: true,
+                name: true,
+                unitCost: true,
+                type: true,
+                unit: true,
+              },
+            },
+            subtotal: true,
+          },
+        },
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!apu) {
+      throw new NotFoundException('Apu not found');
+    }
+
+    return apu;
   }
 
   update(id: number, updateApusDto: UpdateApusDto) {
