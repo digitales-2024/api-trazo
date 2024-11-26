@@ -26,9 +26,10 @@ export class CreateCategoryFromBudgetDto {
     name: 'subtotal',
     description: 'Subtotal of the category',
   })
+  @IsNumber()
+  @IsNotEmpty()
   subtotal: number;
 
-  // subcategorias del presupuesto
   @ApiProperty({
     name: 'subcategory',
     description:
@@ -38,7 +39,6 @@ export class CreateCategoryFromBudgetDto {
       {
         subcategoryId: 'id de la subcategoria',
         subtotal: 0,
-
         workitem: [
           {
             workitemId: 'id del workitem',
@@ -72,9 +72,10 @@ export class CreateSubcategoryBudgetDto {
     name: 'subtotal',
     description: 'Subtotal of the subcategory',
   })
+  @IsNumber()
+  @IsNotEmpty()
   subtotal: number;
 
-  // items del presupuesto
   @ApiProperty({
     name: 'workitem',
     description:
@@ -93,7 +94,7 @@ export class CreateSubcategoryBudgetDto {
   @ArrayNotEmpty()
   @ValidateNested({ each: true })
   @Type(() => CreateWorkitemBudgetDto)
-  workitem: CreateWorkitemBudgetDto[];
+  workItem: CreateWorkitemBudgetDto[];
 }
 
 export class CreateWorkitemBudgetDto {
@@ -133,9 +134,8 @@ export class CreateWorkitemBudgetDto {
   @IsString()
   @IsUUID()
   @IsNotEmpty()
-  workitemId: string;
+  workItemId: string;
 
-  // subpartidas de la partida de obra
   @ApiProperty({
     name: 'subworkitem',
     description: 'Array of subworkitems that belong to this workitem',
@@ -154,7 +154,7 @@ export class CreateWorkitemBudgetDto {
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => CreateSubworkitemBudgetDto)
-  subworkitem?: CreateSubworkitemBudgetDto[];
+  subWorkItem?: CreateSubworkitemBudgetDto[];
 }
 
 export class CreateSubworkitemBudgetDto {
@@ -190,5 +190,5 @@ export class CreateSubworkitemBudgetDto {
   @IsString()
   @IsUUID()
   @IsNotEmpty()
-  subworkitemId: string;
+  subWorkItemId: string;
 }
