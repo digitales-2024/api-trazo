@@ -573,12 +573,22 @@ model Subcategory {
   workItem WorkItem[] @relation("subcategoryWorkItem")
 }
 
+// partida
 model WorkItem {
   id       String  @id @unique @default(uuid())
+  // nombre de la partida
   name     String  @unique
+  // unidad de la partida
+  // Si esto es nulo significa que esta partida contiene
+  // subpartidas.
   unit     String?
+  // costo por unidad de la partida.
+  // este costo es el mismo que el costo unitario del APU al que
+  // se vincula
+  // Si esto es nulo significa que esta partida contiene
+  // subpartidas.
   unitCost Float?
-  subtotal Float?
+
   isActive Boolean @default(true)
 
   // Relación con Subcategory
@@ -586,9 +596,11 @@ model WorkItem {
   subcategoryId String
 
   // Relación con APU
+  // Si esto es nulo significa que esta partida contiene
+  // subpartidas.
   apuId String?
 
-  //Relación con SubWorkItem
+  // Relación con SubWorkItem (subpartidas)
   subWorkItem SubWorkItem[] @relation("workItem")
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
@@ -599,7 +611,6 @@ model SubWorkItem {
   id       String  @id @unique @default(uuid())
   name     String  @unique
   unit     String?
-  unitCost Float?
   isActive Boolean @default(true)
 
   // Relación con APU
