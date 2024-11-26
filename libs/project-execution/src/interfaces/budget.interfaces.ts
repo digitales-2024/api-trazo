@@ -2,10 +2,10 @@ import { Budget } from '@prisma/client';
 
 export type BudgetData = Pick<
   Budget,
-  'id' | 'name' | 'codeBudget' | 'ubication' | 'status' | 'dateProject'
+  'id' | 'name' | 'codeBudget' | 'code' | 'ubication' | 'status' | 'dateProject'
 > & {
-  client: { id: string; name: string };
-  designProject: { id: string; code: string };
+  clientBudget: { id: string; name: string };
+  designProjectBudget: { id: string; code: string };
   budgetDetail: {
     id: string;
     directCost: number;
