@@ -233,8 +233,23 @@ export class ApusService {
     return apu;
   }
 
-  update(id: number, updateApusDto: UpdateApusDto) {
-    return `This action updates a #${id} apus ${updateApusDto}`;
+  async update(id: string, updateApusDto: UpdateApusDto, user: UserData) {
+    // if there is nothing to update, exit early
+    const keys = Object.keys(updateApusDto);
+    if (keys.length === 0) {
+      return;
+    }
+
+    // TODO: implement when neccesary
+    // get the current APU by id
+
+    // diff resources: delete old resources, edit existing resources, create new resources,
+
+    // revalidate all constraints, regardless of how many things were changed
+
+    // OK
+
+    return `This action updates a #${id} apus<br />\n ${JSON.stringify(updateApusDto, null, 4)}`;
   }
 
   remove(id: number) {

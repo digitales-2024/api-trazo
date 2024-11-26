@@ -80,8 +80,20 @@ export class ApusController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateApusDto: UpdateApusDto) {
-    return this.apusService.update(+id, updateApusDto);
+  @ApiOperation({
+    summary: 'Update APU',
+    description:
+      'Changes the given fields of this APU. Always performs validation of values.',
+  })
+  @ApiOkResponse({
+    description: 'APU updated',
+  })
+  async update(
+    @Param('id') id: string,
+    @Body() updateApusDto: UpdateApusDto,
+    @GetUser() user: UserData,
+  ) {
+    return await this.apusService.update(id, updateApusDto, user);
   }
 
   @Delete(':id')
