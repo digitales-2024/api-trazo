@@ -17,7 +17,8 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
-import { UserData } from '@login/login/interfaces';
+import { HttpResponse, UserData } from '@login/login/interfaces';
+import { BudgetData } from '../interfaces';
 
 @ApiTags('Budget')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -31,7 +32,10 @@ export class BudgetController {
     description: 'Budget successfully created',
   })
   @Post()
-  create(@Body() createBudgetDto: CreateBudgetDto, @GetUser() user: UserData) {
+  create(
+    @Body() createBudgetDto: CreateBudgetDto,
+    @GetUser() user: UserData,
+  ): Promise<HttpResponse<BudgetData>> {
     return this.budgetService.create(createBudgetDto, user);
   }
 
