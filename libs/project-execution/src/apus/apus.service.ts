@@ -10,7 +10,7 @@ import { roundToTwoDecimals } from '../utils';
 @Injectable()
 export class ApusService {
   private readonly logger = new Logger(ApusService.name);
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(
     createApusDto: CreateApusDto,
@@ -157,7 +157,9 @@ export class ApusService {
     // to get the value of `quantity`.
     let quantity = resource.quantity;
     if (!!resource.group) {
-      const newQuantity = roundToTwoDecimals((resource.group * workHours) / performance);
+      const newQuantity = roundToTwoDecimals(
+        (resource.group * workHours) / performance,
+      );
 
       // If a cuadrilla (group) is sent by the frontend,
       // then the frontedn should have also sent a quantity.
