@@ -615,8 +615,12 @@ model SubWorkItem {
 
 model Apu {
   id          String @id @unique @default(uuid())
+  // costo por cada unidad del APU, calculado de los
+  // costos de los recursos
   unitCost    Float
   performance Int
+  // numero de horas trabajas en mano de obra. solo
+  // es referencial
   workHours   Int
 
   // Relación con ApuOnResource
@@ -631,7 +635,8 @@ model ApuOnResource {
 
   quantity Float
   subtotal Float
-  group    String?
+  // cuadrilla
+  group    Float?
 
   resource   Resource @relation("resource", fields: [resourceId], references: [id])
   resourceId String
