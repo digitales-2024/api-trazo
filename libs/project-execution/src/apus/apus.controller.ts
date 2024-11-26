@@ -11,15 +11,19 @@ import { ApusService } from './apus.service';
 import { CreateApusDto } from './dto/create-apus.dto';
 import { UpdateApusDto } from './dto/update-apus.dto';
 import {
+  ApiBadRequestResponse,
   ApiCreatedResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Auth, GetUser } from '@login/login/admin/auth/decorators';
+import { UserData } from '@login/login/interfaces';
 
 @ApiTags('Apus')
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
 @Controller({ path: 'apus', version: '1' })
+@Auth()
 export class ApusController {
   constructor(private readonly apusService: ApusService) {}
 
@@ -33,10 +37,16 @@ export class ApusController {
   })
   @ApiCreatedResponse({
     description: 'APU created successfully',
-    // type: CreateResourceDto,
   })
-  create(@Body() createApusDto: CreateApusDto) {
-    return this.apusService.create(createApusDto);
+  @ApiBadRequestResponse({
+    description:
+      'Duplicated resource IDs, Resource not found, Invalid quantity on resource, Invalid unit cost',
+  })
+  async create(
+    @Body() createApusDto: CreateApusDto,
+    @GetUser() user: UserData,
+  ) {
+    return await this.apusService.create(createApusDto, user);
   }
 
   @Get()

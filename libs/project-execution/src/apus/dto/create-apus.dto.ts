@@ -13,6 +13,15 @@ import {
 
 export class CreateApusDto {
   @ApiProperty({
+    description:
+      'Cost of each m2 of this APU. This is the sum of the cost of all child resources.',
+    example: 25.0,
+  })
+  @IsNumber()
+  @IsPositive()
+  unitCost: number;
+
+  @ApiProperty({
     description: 'Performance of this APU. For reference only',
     example: 25.0,
   })
@@ -47,7 +56,7 @@ export class CreateApusDto {
 }
 
 // DTO to validate resources used to create an APU
-class CreateApuResourceDto {
+export class CreateApuResourceDto {
   @ApiProperty({
     description: 'ID of the resource to use',
     example: '0000-ffff-0000',
