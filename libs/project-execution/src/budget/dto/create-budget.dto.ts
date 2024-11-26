@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+  ArrayNotEmpty,
+  IsArray,
   IsDateString,
   IsNotEmpty,
   IsNumber,
@@ -9,7 +11,9 @@ import {
   IsUUID,
   Max,
   Min,
+  ValidateNested,
 } from 'class-validator';
+import { CreateCategoryFromBudgetDto } from './create-category-budget.dto';
 
 export class CreateBudgetDto {
   @ApiProperty({
@@ -120,4 +124,39 @@ export class CreateBudgetDto {
   @IsNumber()
   @IsNotEmpty()
   totalCost: number;
+
+  // levels
+  @ApiProperty({
+    name: 'category',
+    description:
+      'Array of categories, subcategories and workitems or subworkitems to create and link with this budget. If empty, wont create any Category-Subcategory-Workitem',
+    required: false,
+    example: [
+      {
+        categoryId: 'id de la categoria',
+        subtotal: 0,
+
+        subcategory: [
+          {
+            subcategoryId: 'id de la subcategoria',
+            subtotal: 0,
+
+            workitem: [
+              {
+                workitemId: 'id del workitem',
+                quantity: 0,
+                unitPrice: 0,
+                subtotal: 0,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  })
+  @IsArray()
+  @ArrayNotEmpty()
+  @ValidateNested({ each: true })
+  @Type(() => CreateCategoryFromBudgetDto)
+  category: CreateCategoryFromBudgetDto[];
 }
