@@ -1,10 +1,10 @@
-import { Optional } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   IsDateString,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   IsUUID,
   Max,
@@ -58,13 +58,12 @@ export class CreateBudgetDto {
   })
   @IsString()
   @IsUUID()
-  @Optional()
+  @IsOptional()
   designProjectId?: string;
 
   @ApiProperty({
     name: 'directCost',
     description: 'Direct cost of the project',
-    example: 'Costo directo del proyecto',
   })
   @IsNumber()
   @IsNotEmpty()
@@ -73,7 +72,6 @@ export class CreateBudgetDto {
   @ApiProperty({
     name: 'overhead',
     description: 'Overhead of the project',
-    example: 'Gastos generales del proyecto',
   })
   @IsNumber()
   @IsNotEmpty()
@@ -82,7 +80,6 @@ export class CreateBudgetDto {
   @ApiProperty({
     name: 'utility',
     description: 'Utility of the project',
-    example: 'Utilidad del proyecto',
   })
   @IsNumber()
   @IsNotEmpty()
@@ -91,16 +88,14 @@ export class CreateBudgetDto {
   @ApiProperty({
     name: 'igv',
     description: 'IGV of the project',
-    example: 'IGV del proyecto',
   })
   @IsNumber()
   @IsNotEmpty()
   igv: number;
 
   @ApiProperty({
-    name: 'percentageDirectCost',
-    description: 'Percentage of direct cost',
-    example: 'Porcentaje de costo directo',
+    name: 'percentageOverhead',
+    description: 'Percentage of overhead',
   })
   @IsNumber()
   @IsNotEmpty()
@@ -109,9 +104,8 @@ export class CreateBudgetDto {
   percentageOverhead: number;
 
   @ApiProperty({
-    name: 'percentageOverhead',
-    description: 'Percentage of overhead',
-    example: 'Porcentaje de gastos generales',
+    name: 'percentageUtility',
+    description: 'Percentage of utility',
   })
   @IsNumber()
   @IsNotEmpty()
@@ -120,9 +114,8 @@ export class CreateBudgetDto {
   percentageUtility: number;
 
   @ApiProperty({
-    name: 'percentageUtility',
-    description: 'Percentage of utility',
-    example: 'Porcentaje de utilidad',
+    name: 'totalCost',
+    description: 'Total cost of the project',
   })
   @IsNumber()
   @IsNotEmpty()
