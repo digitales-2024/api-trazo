@@ -14,6 +14,8 @@ import { ClientsService } from '@clients/clients';
 import { ProjectService } from '@design-projects/design-projects/project/project.service';
 import { AuditActionType } from '@prisma/client';
 import { handleException } from '@login/login/utils';
+import { CategoryService } from '../category/category.service';
+import { SubcategoryService } from '../subcategory/subcategory.service';
 
 @Injectable()
 export class BudgetService {
@@ -22,6 +24,8 @@ export class BudgetService {
     private readonly prisma: PrismaService,
     private readonly clientService: ClientsService,
     private readonly designProjectService: ProjectService,
+    private readonly categoryService: CategoryService,
+    private readonly subcategoryService: SubcategoryService,
   ) {}
 
   private async generateCodeBudget(): Promise<string> {
@@ -61,9 +65,11 @@ export class BudgetService {
       percentageOverhead,
       percentageUtility,
       totalCost,
+      category,
     } = createBudgetDto;
     let newBudget;
     let newBudgetDetail;
+    let newCategory;
     let designProjectDB = null; // Inicializar como null
 
     try {
@@ -146,6 +152,133 @@ export class BudgetService {
           },
         });
 
+        newCategory = await this.prisma.$transaction(async () => {
+          const createdCategories = [];
+
+          for (const element of category) {
+            const categoryDB = await this.categoryService.findById(
+              element.categoryId,
+            );
+            if (categoryDB) {
+              const categoryCreated = await this.prisma.categoryBudget.create({
+                data: {
+                  categoryId: element.categoryId,
+                  budgetDetailId: budgetDetail.id,
+                  subtotal: element.subtotal,
+                },
+                select: {
+                  id: true,
+                  subtotal: true,
+                },
+              });
+
+              const createdSubcategories = await Promise.all(
+                element.subcategory.map(async (subElement) => {
+                  const subcategoryDB = await this.subcategoryService.findById(
+                    subElement.subcategoryId,
+                  );
+                  if (subcategoryDB) {
+                    const subCategoryCreated =
+                      await this.prisma.subcategoryBudget.create({
+                        data: {
+                          subcategoryId: subElement.subcategoryId,
+                          categoryBudgetId: categoryCreated.id,
+                          subtotal: subElement.subtotal,
+                        },
+                        select: {
+                          id: true,
+                          subtotal: true,
+                        },
+                      });
+
+                    const createdWorkItems = await Promise.all(
+                      subElement.workItem.map(async (workElement) => {
+                        const workitemDB =
+                          await this.prisma.workItem.findUnique({
+                            where: {
+                              id: workElement.workItemId,
+                            },
+                          });
+                        if (workitemDB) {
+                          const workItemBudgetCreated =
+                            await this.prisma.workItemBudget.create({
+                              data: {
+                                workItemId: workElement.workItemId,
+                                subcategoryBudgetId: subCategoryCreated.id,
+                                quantity: workElement.quantity,
+                                unitCost: workElement.unitCost,
+                                subtotal: workElement.subtotal,
+                              },
+                              select: {
+                                id: true,
+                                quantity: true,
+                                unitCost: true,
+                                subtotal: true,
+                              },
+                            });
+
+                          const createdSubWorkItems = workElement.subWorkItem
+                            ? await Promise.all(
+                                workElement.subWorkItem.map(
+                                  async (subWorkElement) => {
+                                    const subworkitemDB =
+                                      await this.prisma.subWorkItem.findUnique({
+                                        where: {
+                                          id: subWorkElement.subWorkItemId,
+                                        },
+                                      });
+                                    if (subworkitemDB) {
+                                      return await this.prisma.subWorkItemBudget.create(
+                                        {
+                                          data: {
+                                            workItemBudgetId:
+                                              workItemBudgetCreated.id,
+                                            subWorkItemId:
+                                              subWorkElement.subWorkItemId,
+                                            quantity: subWorkElement.quantity,
+                                            unitCost: subWorkElement.unitCost,
+                                            subtotal: subWorkElement.subtotal,
+                                          },
+                                          select: {
+                                            id: true,
+                                            quantity: true,
+                                            unitCost: true,
+                                            subtotal: true,
+                                          },
+                                        },
+                                      );
+                                    }
+                                  },
+                                ),
+                              )
+                            : [];
+
+                          return {
+                            workItemBudgetCreated,
+                            createdSubWorkItems,
+                          };
+                        }
+                      }),
+                    );
+
+                    return {
+                      subCategoryCreated,
+                      createdWorkItems,
+                    };
+                  }
+                }),
+              );
+
+              createdCategories.push({
+                categoryCreated,
+                createdSubcategories,
+              });
+            }
+          }
+
+          return createdCategories;
+        });
+
         // Registrar la auditoría de la creación del detalle del presupuesto
         await this.prisma.audit.create({
           data: {
@@ -158,6 +291,8 @@ export class BudgetService {
 
         return budgetDetail;
       });
+
+      console.log(JSON.stringify(newCategory, null, 2));
 
       return {
         statusCode: HttpStatus.CREATED,
@@ -178,6 +313,7 @@ export class BudgetService {
               }
             : null,
           budgetDetail: newBudgetDetail,
+          category: newCategory,
         },
       };
     } catch (error) {
