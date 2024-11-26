@@ -141,11 +141,11 @@ export class CreateBudgetDto {
             subcategoryId: 'id de la subcategoria',
             subtotal: 0,
 
-            workitem: [
+            workItem: [
               {
-                workitemId: 'id del workitem',
+                workItemId: 'id del workitem',
                 quantity: 0,
-                unitPrice: 0,
+                unitCost: 0,
                 subtotal: 0,
               },
             ],
