@@ -482,13 +482,13 @@ model WorkItemBudget {
   subcategoryBudgetId String
 
   // Relación con subWorkItemBudget
-  subWorkItemBudget subWorkItemBudget[] @relation("subWorkItemBudget")
+  subWorkItemBudget SubWorkItemBudget[] @relation("subWorkItemBudget")
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
 }
 
-model subWorkItemBudget {
+model SubWorkItemBudget {
   id String @id @unique @default(uuid())
 
   quantity Float
