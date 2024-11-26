@@ -16,4 +16,19 @@ export type BudgetData = Pick<
     percentageUtility: number;
     totalCost: number;
   };
+  category: {
+    id: string;
+    name: string;
+    subcategory: {
+      id: string;
+      name: string;
+      workitem: {
+        id: string;
+        name: string;
+        quantity: number;
+        unitCost: number;
+        subtotal: number;
+      }[];
+    }[];
+  };
 };
