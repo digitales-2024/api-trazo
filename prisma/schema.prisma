@@ -381,6 +381,7 @@ enum ResourceType {
 model Budget {
   id          String @id @unique @default(uuid())
   name        String
+  code        String @unique
   codeBudget  String @default("SGC-P-04-F3")
   ubication   String
   dateProject String
@@ -481,13 +482,13 @@ model WorkItemBudget {
   subcategoryBudgetId String
 
   // Relación con subWorkItemBudget
-  subWorkItemBudget subWorkItemBudget[] @relation("subWorkItemBudget")
+  subWorkItemBudget SubWorkItemBudget[] @relation("subWorkItemBudget")
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
 }
 
-model subWorkItemBudget {
+model SubWorkItemBudget {
   id String @id @unique @default(uuid())
 
   quantity Float
