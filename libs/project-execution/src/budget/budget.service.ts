@@ -8,11 +8,15 @@ import {
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 import { PrismaService } from '@prisma/prisma';
-import { HttpResponse, UserData } from '@login/login/interfaces';
-import { BudgetData } from '../interfaces';
+import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
+import {
+  BudgetData,
+  CategoryBudgetDetails,
+  SummaryBudgetData,
+} from '../interfaces';
 import { ClientsService } from '@clients/clients';
 import { ProjectService } from '@design-projects/design-projects/project/project.service';
-import { AuditActionType } from '@prisma/client';
+import { AuditActionType, BudgetStatusType } from '@prisma/client';
 import { handleException } from '@login/login/utils';
 import { CategoryService } from '../category/category.service';
 import { SubcategoryService } from '../subcategory/subcategory.service';
@@ -292,8 +296,6 @@ export class BudgetService {
         return budgetDetail;
       });
 
-      console.log(JSON.stringify(newCategory, null, 2));
-
       return {
         statusCode: HttpStatus.CREATED,
         message: 'Budget created successfully',
@@ -338,12 +340,322 @@ export class BudgetService {
     }
   }
 
-  findAll() {
-    return `This action returns all budget`;
+  /**
+   * Obtener todos los presupuestos
+   * @param user Usuario que realiza la petición
+   * @returns Lista de presupuestos
+   */
+  async findAll(user: UserPayload): Promise<SummaryBudgetData[]> {
+    try {
+      const budgets = await this.prisma.budget.findMany({
+        where: {
+          ...(user.isSuperAdmin
+            ? {}
+            : {
+                status: {
+                  in: [BudgetStatusType.PENDING, BudgetStatusType.APPROVED],
+                },
+              }), // Filtrar por status solo si no es super admin
+        },
+        select: {
+          id: true,
+          name: true,
+          codeBudget: true,
+          code: true,
+          ubication: true,
+          status: true,
+          dateProject: true,
+          clientBudget: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          designProjectId: true,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+
+      // Mapea los resultados al tipo CategoryData
+      const summaryBudgets = await Promise.all(
+        budgets.map(async (budget) => {
+          const designProjectDB = budget.designProjectId
+            ? await this.designProjectService.findById(budget.designProjectId)
+            : null;
+
+          return {
+            id: budget.id,
+            name: budget.name,
+            codeBudget: budget.codeBudget,
+            code: budget.code,
+            ubication: budget.ubication,
+            status: budget.status,
+            dateProject: budget.dateProject,
+            clientBudget: budget.clientBudget,
+            designProjectBudget: designProjectDB
+              ? {
+                  id: designProjectDB.id,
+                  code: designProjectDB.code,
+                }
+              : null,
+          };
+        }),
+      );
+
+      return summaryBudgets as SummaryBudgetData[];
+    } catch (error) {
+      this.logger.error('Error getting all categories');
+      handleException(error, 'Error getting all categories');
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} budget`;
+  async findOne(id: string): Promise<BudgetData> {
+    try {
+      return await this.findById(id);
+    } catch (error) {
+      this.logger.error('Error get budget');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      handleException(error, 'Error get budget');
+    }
+  }
+
+  /**
+   * Obtener un presupuesto por su id
+   * @param id Id del presupuesto
+   * @returns Datos del presupuesto
+   */
+  async findById(id: string): Promise<BudgetData> {
+    // Buscar el presupuesto con sus relaciones
+    const budget = await this.prisma.budget.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        codeBudget: true,
+        code: true,
+        ubication: true,
+        status: true,
+        dateProject: true,
+        clientBudget: {
+          select: { id: true, name: true },
+        },
+        designProjectId: true,
+        budgetDetail: {
+          select: {
+            id: true,
+            directCost: true,
+            overhead: true,
+            utility: true,
+            igv: true,
+            percentageOverhead: true,
+            percentageUtility: true,
+            totalCost: true,
+          },
+        },
+      },
+    });
+
+    if (!budget) {
+      throw new NotFoundException(`This budget doesnt exist`);
+    }
+
+    const categoriesDB = await this.findCategoryBudgets(
+      budget.budgetDetail.map((detail) => detail.id),
+    );
+
+    let designProjectDB = null;
+    if (budget.designProjectId !== null) {
+      designProjectDB = await this.designProjectService.findById(
+        budget.designProjectId,
+      );
+    }
+
+    // Formatear la respuesta en el tipo esperado
+    const response: BudgetData = {
+      id: budget.id,
+      name: budget.name,
+      codeBudget: budget.codeBudget,
+      code: budget.code,
+      ubication: budget.ubication,
+      status: budget.status,
+      dateProject: budget.dateProject,
+      clientBudget: budget.clientBudget,
+      designProjectBudget: designProjectDB
+        ? {
+            id: designProjectDB.id,
+            code: designProjectDB.code,
+          }
+        : null,
+      budgetDetail: budget.budgetDetail,
+      category: categoriesDB,
+    };
+
+    return response;
+  }
+
+  /**
+   * Obtener los detalles de los presupuestos de una categoría
+   * @param budgetDetailIds Lista de ids de los detalles de presupuesto
+   * @returns Detalles de los presupuestos de una categoría
+   */
+  async findCategoryBudgets(
+    budgetDetailIds: string[],
+  ): Promise<CategoryBudgetDetails[]> {
+    try {
+      const categoryBudgets = await this.prisma.categoryBudget.findMany({
+        where: { budgetDetailId: { in: budgetDetailIds } },
+        select: {
+          id: true,
+          categoryId: true,
+          subtotal: true,
+          budgetDetailId: true,
+        },
+      });
+
+      const subcategoryBudgets = await this.prisma.subcategoryBudget.findMany({
+        where: {
+          categoryBudgetId: {
+            in: categoryBudgets.map((category) => category.id),
+          },
+        },
+        select: {
+          id: true,
+          categoryBudgetId: true,
+          subcategoryId: true,
+          subtotal: true,
+        },
+      });
+
+      const workItemBudgets = await this.prisma.workItemBudget.findMany({
+        where: {
+          subcategoryBudgetId: {
+            in: subcategoryBudgets.map((subcategory) => subcategory.id),
+          },
+        },
+        select: {
+          id: true,
+          workItemId: true,
+          subcategoryBudgetId: true,
+          quantity: true,
+          unitCost: true,
+          subtotal: true,
+        },
+      });
+
+      const subWorkItemBudgets = await this.prisma.subWorkItemBudget.findMany({
+        where: {
+          workItemBudgetId: {
+            in: workItemBudgets.map((workItem) => workItem.id),
+          },
+        },
+        select: {
+          id: true,
+          workItemBudgetId: true,
+          subWorkItemId: true,
+          quantity: true,
+          unitCost: true,
+          subtotal: true,
+        },
+      });
+
+      const categoryBudgetDetails = await Promise.all(
+        categoryBudgets.map(async (category) => {
+          const categoryName = await this.prisma.category.findUnique({
+            where: { id: category.categoryId },
+            select: { name: true },
+          });
+
+          const subcategories = await Promise.all(
+            subcategoryBudgets
+              .filter(
+                (subcategory) => subcategory.categoryBudgetId === category.id,
+              )
+              .map(async (subcategory) => {
+                const subcategoryName =
+                  await this.prisma.subcategory.findUnique({
+                    where: { id: subcategory.subcategoryId },
+                    select: { name: true },
+                  });
+
+                const workitems = await Promise.all(
+                  workItemBudgets
+                    .filter(
+                      (workItem) =>
+                        workItem.subcategoryBudgetId === subcategory.id,
+                    )
+                    .map(async (workItem) => {
+                      const workItemName =
+                        await this.prisma.workItem.findUnique({
+                          where: { id: workItem.workItemId },
+                          select: { name: true },
+                        });
+
+                      const subWorkItems = await Promise.all(
+                        subWorkItemBudgets
+                          .filter(
+                            (subWorkItem) =>
+                              subWorkItem.workItemBudgetId === workItem.id,
+                          )
+                          .map(async (subWorkItem) => {
+                            const subWorkItemName =
+                              await this.prisma.subWorkItem.findUnique({
+                                where: { id: subWorkItem.subWorkItemId },
+                                select: { name: true },
+                              });
+
+                            return {
+                              id: subWorkItem.id,
+                              name: subWorkItemName?.name || '',
+                              quantity: subWorkItem.quantity,
+                              unitCost: subWorkItem.unitCost,
+                              subtotal: subWorkItem.subtotal,
+                            };
+                          }),
+                      );
+
+                      return {
+                        id: workItem.id,
+                        name: workItemName?.name || '',
+                        quantity: workItem.quantity,
+                        unitCost: workItem.unitCost,
+                        subtotal: workItem.subtotal,
+                        subWorkItems: subWorkItems.map((subWorkItem) => ({
+                          id: subWorkItem.id,
+                          name: subWorkItem.name,
+                          quantity: subWorkItem.quantity,
+                          unitCost: subWorkItem.unitCost,
+                          subtotal: subWorkItem.subtotal,
+                        })),
+                      };
+                    }),
+                );
+
+                return {
+                  id: subcategory.id,
+                  name: subcategoryName?.name || '',
+                  workitem: workitems,
+                };
+              }),
+          );
+
+          return {
+            id: category.id,
+            name: categoryName?.name || '',
+            budgetDetailId: category.budgetDetailId,
+            subcategory: subcategories,
+          };
+        }),
+      );
+
+      return categoryBudgetDetails;
+    } catch (error) {
+      this.logger.error('Error getting category budgets');
+      handleException(error, 'Error getting category budgets');
+    }
   }
 
   update(id: number, updateBudgetDto: UpdateBudgetDto) {

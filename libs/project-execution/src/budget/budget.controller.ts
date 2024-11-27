@@ -13,12 +13,13 @@ import { UpdateBudgetDto } from './dto/update-budget.dto';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
-import { HttpResponse, UserData } from '@login/login/interfaces';
-import { BudgetData } from '../interfaces';
+import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
+import { BudgetData, SummaryBudgetData } from '../interfaces';
 
 @ApiTags('Budget')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -39,14 +40,16 @@ export class BudgetController {
     return this.budgetService.create(createBudgetDto, user);
   }
 
+  @ApiOkResponse({ description: 'Get all budgets' })
   @Get()
-  findAll() {
-    return this.budgetService.findAll();
+  findAll(@GetUser() user: UserPayload): Promise<SummaryBudgetData[]> {
+    return this.budgetService.findAll(user);
   }
 
+  @ApiOkResponse({ description: 'Get category by id' })
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.budgetService.findOne(+id);
+  findOne(@Param('id') id: string): Promise<BudgetData> {
+    return this.budgetService.findOne(id);
   }
 
   @Patch(':id')
