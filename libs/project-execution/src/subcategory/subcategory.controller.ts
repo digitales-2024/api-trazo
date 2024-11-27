@@ -66,7 +66,7 @@ export class SubcategoryController {
     @Param('id') id: string,
     @Body() updateSubcategoryDto: UpdateSubcategoryDto,
     @GetUser() user: UserData,
-  ) {
+  ): Promise<HttpResponse<SubcategoryData>> {
     return this.subcategoryService.update(id, updateSubcategoryDto, user);
   }
 
