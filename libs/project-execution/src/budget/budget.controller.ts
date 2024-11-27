@@ -46,7 +46,7 @@ export class BudgetController {
     return this.budgetService.findAll(user);
   }
 
-  @ApiOkResponse({ description: 'Get category by id' })
+  @ApiOkResponse({ description: 'Get budget by id' })
   @Get(':id')
   findOne(@Param('id') id: string): Promise<BudgetData> {
     return this.budgetService.findOne(id);
