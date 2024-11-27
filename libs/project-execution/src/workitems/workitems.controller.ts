@@ -10,8 +10,19 @@ import {
 import { WorkitemsService } from './workitems.service';
 import { CreateWorkitemDto } from './dto/create-workitem.dto';
 import { UpdateWorkitemDto } from './dto/update-workitem.dto';
+import { Auth, GetUser } from '@login/login/admin/auth/decorators';
+import {
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+import { UserData } from '@login/login/interfaces';
 
-@Controller('workitems')
+@ApiTags('WorkItem')
+@ApiUnauthorizedResponse({ description: 'Unauthorized' })
+@Controller({ path: 'work-item', version: '1' })
+@Auth()
 export class WorkitemsController {
   constructor(private readonly workitemsService: WorkitemsService) {}
 
@@ -21,8 +32,15 @@ export class WorkitemsController {
   }
 
   @Get()
-  findAll() {
-    return this.workitemsService.findAll();
+  @ApiOperation({
+    summary: 'Get all WorkItems',
+    description: 'Returns all WorkItems and some information about their APUs',
+  })
+  @ApiOkResponse({
+    description: 'Get all APUs',
+  })
+  async findAll(@GetUser() user: UserData) {
+    return await this.workitemsService.findAll(user);
   }
 
   @Get(':id')

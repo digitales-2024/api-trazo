@@ -5,6 +5,7 @@ import { UpdatePasswordDto } from './dto/update-password.dto';
 import {
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
+  ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import { Response, Request } from 'express';
@@ -19,6 +20,10 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @ApiCreatedResponse({ description: 'Login user' })
+  @ApiOperation({
+    summary: 'Login',
+    description: 'Logs in to the system',
+  })
   @Post('login')
   async login(
     @Body() loginAuthDto: LoginAuthDto,

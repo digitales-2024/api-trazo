@@ -610,8 +610,14 @@ model WorkItem {
 
 model SubWorkItem {
   id       String  @id @unique @default(uuid())
+  // nombre de la partida
   name     String  @unique
-  unit     String?
+  // unidad de la partida
+  unit     String
+  // costo por unidad de la partida.
+  // este costo es el mismo que el costo unitario del APU al que se vincula
+  unitCost Float
+
   isActive Boolean @default(true)
 
   // Relación con APU
