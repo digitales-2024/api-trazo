@@ -601,6 +601,7 @@ model WorkItem {
   apuId String?
 
   // Relación con SubWorkItem (subpartidas)
+  // Si esta relacion existe significa que esta partida tiene subpartidas
   subWorkItem SubWorkItem[] @relation("workItem")
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
