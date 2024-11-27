@@ -715,8 +715,433 @@ export class BudgetService {
     }
   }
 
-  update(id: number, updateBudgetDto: UpdateBudgetDto) {
-    return `This action updates a #${id}  ${updateBudgetDto} budget`;
+  /**
+   * Actualizar un presupuesto
+   * @param id Id del presupuesto
+   * @param updateBudgetDto Datos del presupuesto a actualizar
+   * @param user Usuario que realiza la petición
+   * @returns Datos del presupuesto actualizado
+   */
+  async update(
+    id: string,
+    updateBudgetDto: UpdateBudgetDto,
+    user: UserData,
+  ): Promise<HttpResponse<BudgetData>> {
+    const {
+      name,
+      ubication,
+      dateProject,
+      clientId,
+      designProjectId,
+      directCost,
+      overhead,
+      igv,
+      utility,
+      percentageOverhead,
+      percentageUtility,
+      totalCost,
+      category: updatedCategories,
+    } = updateBudgetDto;
+
+    let updatedBudget;
+    let updatedBudgetDetail;
+    let designProjectDB = null;
+
+    try {
+      // Verificar si el presupuesto existe
+      const existingBudget = await this.prisma.budget.findUnique({
+        where: { id },
+        include: {
+          budgetDetail: {
+            include: {
+              budgetCategory: {
+                include: {
+                  subcategoryBudget: {
+                    include: {
+                      workItemBudget: {
+                        include: {
+                          subWorkItemBudget: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!existingBudget) {
+        throw new NotFoundException('Budget not found');
+      }
+
+      // Validar el cliente
+      await this.clientService.findById(clientId);
+
+      // Validar el proyecto de diseño
+      if (designProjectId) {
+        designProjectDB =
+          await this.designProjectService.findById(designProjectId);
+        if (designProjectDB.status !== 'APPROVED') {
+          throw new BadRequestException('The design project must be approved');
+        }
+      }
+
+      // Iniciar una transacción
+      await this.prisma.$transaction(async (prisma) => {
+        // Actualizar el presupuesto
+        updatedBudget = await prisma.budget.update({
+          where: { id },
+          data: {
+            name,
+            ubication,
+            dateProject,
+            clientId,
+            designProjectId,
+          },
+          select: {
+            id: true,
+            name: true,
+            status: true,
+            code: true,
+            dateProject: true,
+            ubication: true,
+            codeBudget: true,
+            clientBudget: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            designProjectId: true,
+          },
+        });
+
+        const idBudgetDetail = existingBudget.budgetDetail[0].id;
+
+        // Actualizar el detalle del presupuesto
+        updatedBudgetDetail = await prisma.budgetDetail.update({
+          where: { id: idBudgetDetail },
+          data: {
+            directCost,
+            overhead,
+            igv,
+            utility,
+            percentageOverhead,
+            percentageUtility,
+            totalCost,
+          },
+          select: {
+            id: true,
+            directCost: true,
+            overhead: true,
+            igv: true,
+            utility: true,
+            percentageOverhead: true,
+            percentageUtility: true,
+            totalCost: true,
+          },
+        });
+
+        // Procesar las categorías actualizadas
+        const existingCategories =
+          existingBudget.budgetDetail[0].budgetCategory;
+        const updatedCategoryIds = updatedCategories.map(
+          (cat) => cat.categoryId,
+        );
+
+        // Identificar categorías a eliminar
+        const categoriesToDelete = existingCategories.filter(
+          (cat) => !updatedCategoryIds.includes(cat.categoryId),
+        );
+
+        // Eliminar categorías y sus dependencias en orden correcto
+        for (const category of categoriesToDelete) {
+          // Eliminar subcategorías y sus dependencias
+          for (const subcategory of category.subcategoryBudget) {
+            // Eliminar workItems y sus dependencias
+            for (const workItem of subcategory.workItemBudget) {
+              // Eliminar subWorkItems
+              await prisma.subWorkItemBudget.deleteMany({
+                where: { workItemBudgetId: workItem.id },
+              });
+              // Eliminar workItem
+              await prisma.workItemBudget.delete({
+                where: { id: workItem.id },
+              });
+            }
+            // Eliminar subcategoría
+            await prisma.subcategoryBudget.delete({
+              where: { id: subcategory.id },
+            });
+          }
+          // Eliminar categoría
+          await prisma.categoryBudget.delete({
+            where: { id: category.id },
+          });
+        }
+
+        // Procesar categorías actualizadas o nuevas
+        for (const updatedCategory of updatedCategories) {
+          let categoryBudgetId;
+          // Buscar categoría existente
+          let existingCategory = existingCategories.find(
+            (cat) => cat.categoryId === updatedCategory.categoryId,
+          );
+
+          if (existingCategory) {
+            // Actualizar categoría existente
+            await prisma.categoryBudget.update({
+              where: { id: existingCategory.id },
+              data: {
+                subtotal: updatedCategory.subtotal,
+              },
+            });
+            categoryBudgetId = existingCategory.id;
+          } else {
+            // Crear nueva categoría
+            const newCategory = await prisma.categoryBudget.create({
+              data: {
+                categoryId: updatedCategory.categoryId,
+                budgetDetailId: updatedBudgetDetail.id,
+                subtotal: updatedCategory.subtotal,
+              },
+            });
+            categoryBudgetId = newCategory.id;
+            existingCategory = { ...newCategory, subcategoryBudget: [] };
+            existingCategory.subcategoryBudget = [];
+          }
+
+          // Procesar subcategorías
+          const existingSubcategories =
+            existingCategory.subcategoryBudget || [];
+          const updatedSubcategories = updatedCategory.subcategory;
+          const updatedSubcategoryIds = updatedSubcategories.map(
+            (subcat) => subcat.subcategoryId,
+          );
+
+          // Identificar subcategorías a eliminar
+          const subcategoriesToDelete = existingSubcategories.filter(
+            (subcat) => !updatedSubcategoryIds.includes(subcat.subcategoryId),
+          );
+
+          // Eliminar subcategorías y sus dependencias
+          for (const subcategory of subcategoriesToDelete) {
+            // Eliminar workItems y sus dependencias
+            for (const workItem of subcategory.workItemBudget) {
+              // Eliminar subWorkItems
+              await prisma.subWorkItemBudget.deleteMany({
+                where: { workItemBudgetId: workItem.id },
+              });
+              // Eliminar workItem
+              await prisma.workItemBudget.delete({
+                where: { id: workItem.id },
+              });
+            }
+            // Eliminar subcategoría
+            await prisma.subcategoryBudget.delete({
+              where: { id: subcategory.id },
+            });
+          }
+
+          // Procesar subcategorías actualizadas o nuevas
+          for (const updatedSubcategory of updatedSubcategories) {
+            let subcategoryBudgetId;
+            // Buscar subcategoría existente
+            let existingSubcategory = existingSubcategories.find(
+              (subcat) =>
+                subcat.subcategoryId === updatedSubcategory.subcategoryId,
+            );
+
+            if (existingSubcategory) {
+              // Actualizar subcategoría existente
+              await prisma.subcategoryBudget.update({
+                where: { id: existingSubcategory.id },
+                data: {
+                  subtotal: updatedSubcategory.subtotal,
+                },
+              });
+              subcategoryBudgetId = existingSubcategory.id;
+            } else {
+              // Crear nueva subcategoría
+              const newSubcategory = await prisma.subcategoryBudget.create({
+                data: {
+                  subcategoryId: updatedSubcategory.subcategoryId,
+                  categoryBudgetId,
+                  subtotal: updatedSubcategory.subtotal,
+                },
+              });
+              subcategoryBudgetId = newSubcategory.id;
+              existingSubcategory = { ...newSubcategory, workItemBudget: [] };
+              existingSubcategory.workItemBudget = [];
+            }
+
+            // Procesar workItems
+            const existingWorkItems = existingSubcategory.workItemBudget || [];
+            const updatedWorkItems = updatedSubcategory.workItem;
+            const updatedWorkItemIds = updatedWorkItems.map(
+              (item) => item.workItemId,
+            );
+
+            // Identificar workItems a eliminar
+            const workItemsToDelete = existingWorkItems.filter(
+              (item) => !updatedWorkItemIds.includes(item.workItemId),
+            );
+
+            // Eliminar workItems y sus dependencias
+            for (const workItem of workItemsToDelete) {
+              // Eliminar subWorkItems
+              await prisma.subWorkItemBudget.deleteMany({
+                where: { workItemBudgetId: workItem.id },
+              });
+              // Eliminar workItem
+              await prisma.workItemBudget.delete({
+                where: { id: workItem.id },
+              });
+            }
+
+            // Procesar workItems actualizados o nuevos
+            for (const updatedWorkItem of updatedWorkItems) {
+              let workItemBudgetId;
+              // Buscar workItem existente
+              let existingWorkItem = existingWorkItems.find(
+                (item) => item.workItemId === updatedWorkItem.workItemId,
+              );
+
+              if (existingWorkItem) {
+                // Actualizar workItem existente
+                await prisma.workItemBudget.update({
+                  where: { id: existingWorkItem.id },
+                  data: {
+                    quantity: updatedWorkItem.quantity,
+                    unitCost: updatedWorkItem.unitCost,
+                    subtotal: updatedWorkItem.subtotal,
+                  },
+                });
+                workItemBudgetId = existingWorkItem.id;
+              } else {
+                // Crear nuevo workItem
+                const newWorkItem = await prisma.workItemBudget.create({
+                  data: {
+                    workItemId: updatedWorkItem.workItemId,
+                    subcategoryBudgetId,
+                    quantity: updatedWorkItem.quantity,
+                    unitCost: updatedWorkItem.unitCost,
+                    subtotal: updatedWorkItem.subtotal,
+                  },
+                });
+                workItemBudgetId = newWorkItem.id;
+                existingWorkItem = { ...newWorkItem, subWorkItemBudget: [] };
+                existingWorkItem.subWorkItemBudget = [];
+              }
+
+              // Procesar subWorkItems
+              const existingSubWorkItems =
+                existingWorkItem.subWorkItemBudget || [];
+              const updatedSubWorkItems = updatedWorkItem.subWorkItem || [];
+              const updatedSubWorkItemIds = updatedSubWorkItems.map(
+                (subItem) => subItem.subWorkItemId,
+              );
+
+              // Identificar subWorkItems a eliminar
+              const subWorkItemsToDelete = existingSubWorkItems.filter(
+                (subItem) =>
+                  !updatedSubWorkItemIds.includes(subItem.subWorkItemId),
+              );
+
+              // Eliminar subWorkItems
+              for (const subWorkItem of subWorkItemsToDelete) {
+                await prisma.subWorkItemBudget.delete({
+                  where: { id: subWorkItem.id },
+                });
+                console.log('Deleted subWorkItem', subWorkItem.id);
+              }
+
+              // Procesar subWorkItems actualizados o nuevos
+              for (const updatedSubWorkItem of updatedSubWorkItems) {
+                const existingSubWorkItem = existingSubWorkItems.find(
+                  (subItem) =>
+                    subItem.subWorkItemId === updatedSubWorkItem.subWorkItemId,
+                );
+
+                if (existingSubWorkItem) {
+                  // Actualizar subWorkItem existente
+                  await prisma.subWorkItemBudget.update({
+                    where: { id: existingSubWorkItem.id },
+                    data: {
+                      quantity: updatedSubWorkItem.quantity,
+                      unitCost: updatedSubWorkItem.unitCost,
+                      subtotal: updatedSubWorkItem.subtotal,
+                    },
+                  });
+                } else {
+                  // Crear nuevo subWorkItem
+                  await prisma.subWorkItemBudget.create({
+                    data: {
+                      subWorkItemId: updatedSubWorkItem.subWorkItemId,
+                      workItemBudgetId,
+                      quantity: updatedSubWorkItem.quantity,
+                      unitCost: updatedSubWorkItem.unitCost,
+                      subtotal: updatedSubWorkItem.subtotal,
+                    },
+                  });
+                }
+              }
+            }
+          }
+        }
+
+        // Registrar auditoría de la actualización
+        await prisma.audit.create({
+          data: {
+            action: AuditActionType.UPDATE,
+            entityId: id,
+            entityType: 'budget',
+            performedById: user.id,
+          },
+        });
+      });
+
+      // Después de la transacción, obtener las categorías actualizadas con nombres
+      const categoryDetails = await this.findCategoryBudgets([
+        updatedBudgetDetail.id,
+      ]);
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Budget updated successfully',
+        data: {
+          id: updatedBudget.id,
+          name: updatedBudget.name,
+          codeBudget: updatedBudget.codeBudget,
+          code: updatedBudget.code,
+          ubication: updatedBudget.ubication,
+          status: updatedBudget.status,
+          dateProject: updatedBudget.dateProject,
+          clientBudget: updatedBudget.clientBudget,
+          designProjectBudget: designProjectDB
+            ? {
+                id: designProjectDB.id,
+                code: designProjectDB.code,
+              }
+            : null,
+          budgetDetail: updatedBudgetDetail,
+          category: categoryDetails,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`Error updating budget: ${error.message}`, error.stack);
+
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      handleException(error, 'Error updating a budget');
+    }
   }
 
   /**

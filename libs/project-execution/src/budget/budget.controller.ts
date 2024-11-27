@@ -45,13 +45,18 @@ export class BudgetController {
     return this.budgetService.findOne(id);
   }
 
+  @ApiOkResponse({ description: 'Budget successfully updated' })
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateBudgetDto: UpdateBudgetDto) {
-    return this.budgetService.update(+id, updateBudgetDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateBudgetDto: UpdateBudgetDto,
+    @GetUser() user: UserData,
+  ): Promise<HttpResponse<BudgetData>> {
+    return this.budgetService.update(id, updateBudgetDto, user);
   }
 
   @ApiOkResponse({ description: 'Status updated successfully' })
-  @Patch(':id/status')
+  @Patch('status/:id')
   async updateStatus(
     @Param('id') id: string,
     @Body() newStatus: UpdateBudgetStatusDto,
