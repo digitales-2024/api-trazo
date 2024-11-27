@@ -20,6 +20,7 @@ import { AuditActionType, BudgetStatusType } from '@prisma/client';
 import { handleException } from '@login/login/utils';
 import { CategoryService } from '../category/category.service';
 import { SubcategoryService } from '../subcategory/subcategory.service';
+import { UpdateBudgetStatusDto } from './dto/update-status-budget.dto';
 
 @Injectable()
 export class BudgetService {
@@ -498,6 +499,62 @@ export class BudgetService {
   }
 
   /**
+   * Obtener un presupuesto por su id con datos resumidos
+   * @param id Id del presupuesto
+   * @returns Datos resumidos del presupuesto
+   */
+  async findByIdSummaryData(id: string): Promise<SummaryBudgetData> {
+    // Buscar el presupuesto con sus relaciones
+    const budget = await this.prisma.budget.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        codeBudget: true,
+        code: true,
+        ubication: true,
+        status: true,
+        dateProject: true,
+        clientBudget: {
+          select: { id: true, name: true },
+        },
+        designProjectId: true,
+      },
+    });
+
+    if (!budget) {
+      throw new NotFoundException(`This budget doesnt exist`);
+    }
+
+    let designProjectDB = null;
+    if (budget.designProjectId !== null) {
+      designProjectDB = await this.designProjectService.findById(
+        budget.designProjectId,
+      );
+    }
+
+    // Formatear la respuesta en el tipo esperado
+    const response: SummaryBudgetData = {
+      id: budget.id,
+      name: budget.name,
+      codeBudget: budget.codeBudget,
+      code: budget.code,
+      ubication: budget.ubication,
+      status: budget.status,
+      dateProject: budget.dateProject,
+      clientBudget: budget.clientBudget,
+      designProjectBudget: designProjectDB
+        ? {
+            id: designProjectDB.id,
+            code: designProjectDB.code,
+          }
+        : null,
+    };
+
+    return response;
+  }
+
+  /**
    * Obtener los detalles de los presupuestos de una categoría
    * @param budgetDetailIds Lista de ids de los detalles de presupuesto
    * @returns Detalles de los presupuestos de una categoría
@@ -660,6 +717,81 @@ export class BudgetService {
 
   update(id: number, updateBudgetDto: UpdateBudgetDto) {
     return `This action updates a #${id}  ${updateBudgetDto} budget`;
+  }
+
+  /**
+   * Actualizar el estado de un presupuesto
+   * @param id Id del presupuesto
+   * @param updateBudgetStatusDto Datos para actualizar el estado del presupuesto
+   * @param user Usuario que realiza la petición
+   * @returns Datos del presupuesto con el nuevo estado
+   */
+  async updateStatus(
+    id: string,
+    updateBudgetStatusDto: UpdateBudgetStatusDto,
+    user: UserData,
+  ): Promise<HttpResponse<SummaryBudgetData>> {
+    const newStatus = updateBudgetStatusDto.newStatus;
+
+    let budgetDB;
+
+    await this.prisma.$transaction(async (prisma) => {
+      budgetDB = await this.findByIdSummaryData(id);
+
+      if (budgetDB.status === newStatus) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Budget status updated successfully',
+          data: {
+            id: budgetDB.id,
+            name: budgetDB.name,
+            codeBudget: budgetDB.codeBudget,
+            code: budgetDB.code,
+            ubication: budgetDB.ubication,
+            status: budgetDB.status,
+            dateProject: budgetDB.dateProject,
+            clientBudget: budgetDB.clientBudget,
+            designProjectBudget: budgetDB.designProjectBudget,
+          },
+        };
+      }
+
+      // update the status
+      await prisma.budget.update({
+        where: {
+          id,
+        },
+        data: {
+          status: newStatus,
+        },
+      });
+
+      // store the action in audit
+      await this.prisma.audit.create({
+        data: {
+          action: AuditActionType.UPDATE,
+          entityId: budgetDB.id,
+          entityType: 'budget',
+          performedById: user.id,
+        },
+      });
+    });
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Budget status updated successfully',
+      data: {
+        id: budgetDB.id,
+        name: budgetDB.name,
+        codeBudget: budgetDB.codeBudget,
+        code: budgetDB.code,
+        ubication: budgetDB.ubication,
+        status: newStatus,
+        dateProject: budgetDB.dateProject,
+        clientBudget: budgetDB.clientBudget,
+        designProjectBudget: budgetDB.designProjectBudget,
+      },
+    };
   }
 
   remove(id: number) {

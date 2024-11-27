@@ -20,6 +20,7 @@ import {
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { BudgetData, SummaryBudgetData } from '../interfaces';
+import { UpdateBudgetStatusDto } from './dto/update-status-budget.dto';
 
 @ApiTags('Budget')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -55,6 +56,16 @@ export class BudgetController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateBudgetDto: UpdateBudgetDto) {
     return this.budgetService.update(+id, updateBudgetDto);
+  }
+
+  @ApiOkResponse({ description: 'Status updated successfully' })
+  @Patch(':id/status')
+  async updateStatus(
+    @Param('id') id: string,
+    @Body() newStatus: UpdateBudgetStatusDto,
+    @GetUser() user: UserData,
+  ): Promise<HttpResponse<SummaryBudgetData>> {
+    return await this.budgetService.updateStatus(id, newStatus, user);
   }
 
   @Delete(':id')
