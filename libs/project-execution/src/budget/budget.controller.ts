@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
 import { BudgetService } from './budget.service';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
@@ -66,10 +58,5 @@ export class BudgetController {
     @GetUser() user: UserData,
   ): Promise<HttpResponse<SummaryBudgetData>> {
     return await this.budgetService.updateStatus(id, newStatus, user);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.budgetService.remove(+id);
   }
 }

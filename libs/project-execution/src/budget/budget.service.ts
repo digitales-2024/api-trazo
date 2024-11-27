@@ -793,8 +793,4 @@ export class BudgetService {
       },
     };
   }
-
-  remove(id: number) {
-    return `This action removes a #${id} budget`;
-  }
 }
