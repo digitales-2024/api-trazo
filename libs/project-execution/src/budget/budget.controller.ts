@@ -1,23 +1,18 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
 import { BudgetService } from './budget.service';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
-import { UserData } from '@login/login/interfaces';
+import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
+import { BudgetData, SummaryBudgetData } from '../interfaces';
+import { UpdateBudgetStatusDto } from './dto/update-status-budget.dto';
 
 @ApiTags('Budget')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -31,27 +26,42 @@ export class BudgetController {
     description: 'Budget successfully created',
   })
   @Post()
-  create(@Body() createBudgetDto: CreateBudgetDto, @GetUser() user: UserData) {
+  create(
+    @Body() createBudgetDto: CreateBudgetDto,
+    @GetUser() user: UserData,
+  ): Promise<HttpResponse<BudgetData>> {
     return this.budgetService.create(createBudgetDto, user);
   }
 
+  @ApiOkResponse({ description: 'Get all budgets' })
   @Get()
-  findAll() {
-    return this.budgetService.findAll();
+  findAll(@GetUser() user: UserPayload): Promise<SummaryBudgetData[]> {
+    return this.budgetService.findAll(user);
   }
 
+  @ApiOkResponse({ description: 'Get budget by id' })
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.budgetService.findOne(+id);
+  findOne(@Param('id') id: string): Promise<BudgetData> {
+    return this.budgetService.findOne(id);
   }
 
+  @ApiOkResponse({ description: 'Budget successfully updated' })
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateBudgetDto: UpdateBudgetDto) {
-    return this.budgetService.update(+id, updateBudgetDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateBudgetDto: UpdateBudgetDto,
+    @GetUser() user: UserData,
+  ): Promise<HttpResponse<BudgetData>> {
+    return this.budgetService.update(id, updateBudgetDto, user);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.budgetService.remove(+id);
+  @ApiOkResponse({ description: 'Status updated successfully' })
+  @Patch('status/:id')
+  async updateStatus(
+    @Param('id') id: string,
+    @Body() newStatus: UpdateBudgetStatusDto,
+    @GetUser() user: UserData,
+  ): Promise<HttpResponse<SummaryBudgetData>> {
+    return await this.budgetService.updateStatus(id, newStatus, user);
   }
 }
