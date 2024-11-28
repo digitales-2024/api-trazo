@@ -22,10 +22,12 @@ export class ApusService {
     createApusDto: CreateApusDto,
     user: UserData,
   ): Promise<HttpResponse<null>> {
-    const { unitCost, performance, workHours, resources } = createApusDto;
+    const { performance, workHours, resources } = createApusDto;
 
     // Collect all the resources ids
     const resourceIds = resources.map((resource) => resource.resourceId);
+
+    // There is the possibility that the APU is being created without rescources.
 
     // Validate no resource id is duplicated
     const uniqueIds = [...new Set(resourceIds)];
@@ -34,18 +36,22 @@ export class ApusService {
     }
 
     // Validate all resource ids exist
-    const resourcesOnDb = await this.prisma.resource.findMany({
-      where: {
-        id: {
-          in: uniqueIds,
-        },
-        isActive: true,
-      },
-      select: {
-        id: true,
-        unitCost: true,
-      },
-    });
+    const resourcesOnDb =
+      uniqueIds.length === 0
+        ? []
+        : await this.prisma.resource.findMany({
+            where: {
+              id: {
+                in: uniqueIds,
+              },
+              isActive: true,
+            },
+            select: {
+              id: true,
+              unitCost: true,
+            },
+          });
+
     if (resourcesOnDb.length !== uniqueIds.length) {
       this.logger.error(
         `Resources not found while creating APU. Expected \`${uniqueIds}\`, got \`${resourcesOnDb}\``,
@@ -74,13 +80,6 @@ export class ApusService {
       (r1, r2) => r1 + r2.cost,
       0,
     );
-
-    if (computedUnitCost !== unitCost) {
-      this.logger.error(
-        `While creating an APU, the unit cost computed on the backend didnt match the one sent by the frontend.\nExpected unitCost to be ${computedUnitCost}, got ${unitCost}`,
-      );
-      throw new BadRequestException('Invalid unit cost');
-    }
 
     await this.prisma.$transaction(async (prisma) => {
       // Create the APU with its associated ApuOnResource

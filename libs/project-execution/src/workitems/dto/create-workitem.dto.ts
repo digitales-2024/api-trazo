@@ -1,32 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { CreateApusDto } from '@project-execution/project-execution/apus/dto/create-apus.dto';
 import { Type } from 'class-transformer';
 import {
   IsNotEmpty,
-  IsNumber,
-  IsObject,
   IsOptional,
-  IsPositive,
   IsString,
   ValidateNested,
 } from 'class-validator';
-
-class CreateWorkItemApu {
-  @ApiProperty({
-    description: 'Performance of the related APU',
-    example: 25.0,
-  })
-  @IsNumber()
-  @IsPositive()
-  performance: number;
-
-  @ApiProperty({
-    description: 'How many hours a day of work contains for this APU',
-    example: 8,
-  })
-  @IsNumber()
-  @IsPositive()
-  workHours: number;
-}
 
 export class CreateWorkitemDto {
   @ApiProperty({
@@ -51,10 +31,11 @@ export class CreateWorkitemDto {
     example: {
       performance: 25,
       workHours: 8,
+      resources: [],
     },
   })
   @IsOptional()
   @ValidateNested()
-  @Type(() => CreateWorkItemApu)
-  apu: CreateWorkItemApu;
+  @Type(() => CreateApusDto)
+  apu: CreateApusDto;
 }

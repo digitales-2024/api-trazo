@@ -13,16 +13,7 @@ import {
 
 export class CreateApusDto {
   @ApiProperty({
-    description:
-      'Cost of each m2 of this APU. This is the sum of the cost of all child resources.',
-    example: 25.0,
-  })
-  @IsNumber()
-  @IsPositive()
-  unitCost: number;
-
-  @ApiProperty({
-    description: 'Performance of this APU. For reference only',
+    description: 'Performance of this APU.',
     example: 25.0,
   })
   @IsNumber()
@@ -49,7 +40,6 @@ export class CreateApusDto {
     ],
   })
   @IsArray()
-  @ArrayNotEmpty()
   @ValidateNested({ each: true })
   @Type(() => CreateApuResourceDto)
   resources: Array<CreateApuResourceDto>;
