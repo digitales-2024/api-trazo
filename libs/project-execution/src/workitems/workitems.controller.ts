@@ -27,8 +27,12 @@ export class WorkitemsController {
   constructor(private readonly workitemsService: WorkitemsService) {}
 
   @Post()
+  @ApiOperation({
+    summary: 'Create WorkItem',
+    description: 'Creates a WorkItem and its APU, if present',
+  })
   create(@Body() createWorkitemDto: CreateWorkitemDto) {
-    return this.workitemsService.create(createWorkitemDto);
+    this.workitemsService.create(createWorkitemDto);
   }
 
   @Get()
