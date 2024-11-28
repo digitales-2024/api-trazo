@@ -19,15 +19,18 @@ export class CreateWorkitemDto {
 
   @ApiProperty({
     description: 'Unit of measure of the workitem',
+    required: false,
     example: 'm2',
   })
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  unit: number;
+  unit?: string;
 
   @ApiProperty({
     description: 'List of resources to create the APU with',
     type: 'CreateWorkItemApu',
+    required: false,
     example: {
       performance: 25,
       workHours: 8,
@@ -37,5 +40,5 @@ export class CreateWorkitemDto {
   @IsOptional()
   @ValidateNested()
   @Type(() => CreateApusDto)
-  apu: CreateApusDto;
+  apu?: CreateApusDto;
 }

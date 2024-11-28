@@ -31,8 +31,11 @@ export class WorkitemsController {
     summary: 'Create WorkItem',
     description: 'Creates a WorkItem and its APU, if present',
   })
-  create(@Body() createWorkitemDto: CreateWorkitemDto) {
-    this.workitemsService.create(createWorkitemDto);
+  create(
+    @Body() createWorkitemDto: CreateWorkitemDto,
+    @GetUser() user: UserData,
+  ) {
+    this.workitemsService.create(createWorkitemDto, user);
   }
 
   @Get()
