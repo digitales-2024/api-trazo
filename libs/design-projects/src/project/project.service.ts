@@ -804,6 +804,55 @@ export class ProjectService {
       handleException(error, 'Error retrieving project ');
     }
   }
+
+  async findCompletedDesignProjects(): Promise<DesignProjectSummaryData[]> {
+    try {
+      const projects = await this.prisma.designProject.findMany({
+        where: {
+          status: 'COMPLETED',
+        },
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          status: true,
+          startProjectDate: true,
+          ubicationProject: true,
+          department: true,
+          province: true,
+          client: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          quotation: {
+            select: {
+              id: true,
+              publicCode: true,
+            },
+          },
+          designer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      return projects as DesignProjectSummaryData[];
+    } catch (error) {
+      this.logger.error(
+        'Error getting all completed design projects',
+        error.stack,
+      );
+    }
+  }
+
   /**
    * Obtiene información básica de un proyecto por ID
    * @param id - ID del proyecto

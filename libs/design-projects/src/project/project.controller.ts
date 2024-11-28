@@ -123,6 +123,14 @@ export class ProjectController {
     return this.projectService.findAll(user);
   }
 
+  @Get('/status/completed')
+  @ApiOkResponse({
+    description: 'Get all design projects that are completed',
+  })
+  findCompletedDesignProjects(): Promise<DesignProjectSummaryData[]> {
+    return this.projectService.findCompletedDesignProjects();
+  }
+
   @ApiOkResponse({
     description: 'Gets the contract for the project passed by id',
   })

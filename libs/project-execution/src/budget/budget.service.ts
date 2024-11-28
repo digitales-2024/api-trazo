@@ -43,7 +43,7 @@ export class BudgetService {
     const lastIncrement = lastProject
       ? parseInt(lastProject.code.split('-')[2], 10)
       : 0;
-    const projectCode = `PRS-DIS-${String(lastIncrement + 1).padStart(3, '0')}`;
+    const projectCode = `PRS-EJE-${String(lastIncrement + 1).padStart(3, '0')}`;
     return projectCode;
   }
 
