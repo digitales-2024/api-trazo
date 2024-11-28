@@ -5,11 +5,16 @@ import { PrismaService } from '@prisma/prisma';
 import { UserData } from '@login/login/interfaces';
 import { CreateApusDto } from '../apus/dto/create-apus.dto';
 import { AuditActionType } from '@prisma/client';
+import { ApusService } from '../apus/apus.service';
+import { create } from 'domain';
 
 @Injectable()
 export class WorkitemsService {
   private readonly logger = new Logger(WorkitemsService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly apuService: ApusService,
+  ) {}
 
   async create(createWorkitemDto: CreateWorkitemDto, user: UserData) {
     // check if APU is present. if so, assign values and link to an APU
@@ -42,7 +47,39 @@ export class WorkitemsService {
     apu: CreateApusDto,
     user: UserData,
   ) {
-    console.log('Creando partida regular c:');
+    // Create the APU
+    const createdApu = await this.apuService.create(apu, user);
+    const { id: apuId, unitCost } = createdApu.data;
+
+    // Use the APU created to create
+    const workItem = await this.prisma.workItem.create({
+      data: {
+        name,
+        unit,
+        apuId,
+        unitCost,
+
+        subcategory: {
+          connect: {
+            id: '11119324-5081-4443-8f01-25837d5c2daa',
+          },
+        },
+      },
+    });
+
+    // Audit
+    const now = new Date();
+    await this.prisma.audit.create({
+      data: {
+        entityId: workItem.id,
+        entityType: 'WorkItem',
+        action: AuditActionType.CREATE,
+        performedById: user.id,
+        createdAt: now,
+      },
+    });
+
+    // success :D
   }
 
   /**
@@ -88,6 +125,7 @@ export class WorkitemsService {
         name: true,
         unit: true,
         unitCost: true,
+        apuId: true,
         subWorkItem: {
           select: {
             id: true,

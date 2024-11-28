@@ -8,5 +8,6 @@ import { AuditModule } from '@login/login/admin/audit/audit.module';
   controllers: [ApusController],
   providers: [ApusService],
   imports: [PrismaModule, AuditModule],
+  exports: [ApusService],
 })
 export class ApusModule {}

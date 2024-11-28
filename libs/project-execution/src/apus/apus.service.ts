@@ -21,7 +21,7 @@ export class ApusService {
   async create(
     createApusDto: CreateApusDto,
     user: UserData,
-  ): Promise<HttpResponse<null>> {
+  ): Promise<HttpResponse<{ id: string; unitCost: number }>> {
     const { performance, workHours, resources } = createApusDto;
 
     // Collect all the resources ids
@@ -81,7 +81,7 @@ export class ApusService {
       0,
     );
 
-    await this.prisma.$transaction(async (prisma) => {
+    const newApu = await this.prisma.$transaction(async (prisma) => {
       // Create the APU with its associated ApuOnResource
       const newApu = await prisma.apu.create({
         data: {
@@ -103,6 +103,7 @@ export class ApusService {
         },
         select: {
           id: true,
+          unitCost: true,
           apuResource: {
             select: {
               id: true,
@@ -133,10 +134,12 @@ export class ApusService {
       await prisma.audit.createMany({
         data: apusAudits,
       });
+
+      return newApu;
     });
 
     return {
-      data: null,
+      data: newApu,
       message: '',
       statusCode: 200,
     };
