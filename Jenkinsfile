@@ -17,7 +17,7 @@ pipeline {
 		}
 		stage('Validate lint rules') {
 			steps {
-				sh 'DEBUG=eslint:cli-engine npm run lint'
+				sh 'npm run lint'
 			}
 		}
 		stage('Build project') {
