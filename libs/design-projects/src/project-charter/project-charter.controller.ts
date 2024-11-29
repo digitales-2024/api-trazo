@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Patch } from '@nestjs/common';
 import { ProjectCharterService } from './project-charter.service';
 import {
   ApiBadRequestResponse,
@@ -7,8 +7,9 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { Auth } from '@login/login/admin/auth/decorators';
+import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import { ProjectCharterData } from '../interfaces';
+import { HttpResponse, UserData } from '@login/login/interfaces';
 
 @Controller({
   path: 'project-charter',
@@ -34,5 +35,14 @@ export class ProjectCharterController {
   })
   findAll(): Promise<ProjectCharterData[]> {
     return this.projectCharterService.findAll();
+  }
+
+  @ApiOkResponse({ description: 'Pre-project approval toggle approved' })
+  @Patch('toggleapproved/:id')
+  toggleApproved(
+    @Param('id') id: string,
+    @GetUser() user: UserData,
+  ): Promise<HttpResponse<ProjectCharterData>> {
+    return this.projectCharterService.toggleApproved(id, user);
   }
 }
