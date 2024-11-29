@@ -53,6 +53,12 @@ export class CategoryController {
     return this.categoryService.findOne(id);
   }
 
+  @ApiOkResponse({ description: 'Get full data of category' })
+  @Get('all/:id')
+  findAllCategoryData(@Param('id') id: string): Promise<CategoryData> {
+    return this.categoryService.findAllCategoryData(id);
+  }
+
   @ApiOkResponse({ description: 'Category successfully updated' })
   @Patch(':id')
   update(
