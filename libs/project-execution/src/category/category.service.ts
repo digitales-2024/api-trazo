@@ -11,7 +11,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { PrismaService } from '@prisma/prisma';
 import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
-import { CategoryData } from '../interfaces';
+import { CategoryData, FullCategoryData } from '../interfaces';
 import { handleException } from '@login/login/utils';
 import { AuditActionType } from '@prisma/client';
 import { DeleteCategoriesDto } from './dto/delete-category.dto';
@@ -130,6 +130,70 @@ export class CategoryService {
     } catch (error) {
       this.logger.error('Error getting all categories');
       handleException(error, 'Error getting all categories');
+    }
+  }
+
+  /**
+   * Obtiene todos los datos de una categoría
+   * @param id Identificador de la categoría
+   * @returns Datos de la categoría
+   */
+  async findAllCategoryData(id: string): Promise<FullCategoryData> {
+    try {
+      const category = await this.prisma.category.findFirst({
+        where: { id },
+        include: {
+          category: {
+            include: {
+              workItem: {
+                include: {
+                  subWorkItem: true, // Incluir subWorkItems si existen
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!category) {
+        throw new NotFoundException('Category not found');
+      }
+
+      return {
+        id: category.id,
+        name: category.name,
+        isActive: category.isActive,
+        subcategories: category.category.map((subcategory) => ({
+          id: subcategory.id,
+          name: subcategory.name,
+          isActive: subcategory.isActive,
+          workItems: subcategory.workItem.map((workItem) => ({
+            id: workItem.id,
+            name: workItem.name,
+            unit: workItem.unit,
+            unitCost: workItem.unitCost,
+            apuId: workItem.apuId,
+            isActive: workItem.isActive,
+            subWorkItem: workItem.subWorkItem.map((subWorkItem) => ({
+              id: subWorkItem.id,
+              name: subWorkItem.name,
+              unit: subWorkItem.unit,
+              unitCost: subWorkItem.unitCost,
+              apuId: subWorkItem.apuId,
+              isActive: subWorkItem.isActive,
+            })),
+          })),
+        })),
+      };
+    } catch (error) {
+      this.logger.error('Error getting all category data');
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      handleException(error, 'Error getting all category data');
     }
   }
 
