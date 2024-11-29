@@ -610,9 +610,9 @@ model WorkItem {
 }
 
 model SubWorkItem {
-  id       String  @id @unique @default(uuid())
+  id       String @id @unique @default(uuid())
   // nombre de la partida
-  name     String  @unique
+  name     String @unique
   // unidad de la partida
   unit     String
   // costo por unidad de la partida.

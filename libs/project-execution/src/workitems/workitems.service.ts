@@ -6,7 +6,6 @@ import { UserData } from '@login/login/interfaces';
 import { CreateApusDto } from '../apus/dto/create-apus.dto';
 import { AuditActionType } from '@prisma/client';
 import { ApusService } from '../apus/apus.service';
-import { create } from 'domain';
 
 @Injectable()
 export class WorkitemsService {
@@ -154,7 +153,7 @@ export class WorkitemsService {
   }
 
   update(id: number, updateWorkitemDto: UpdateWorkitemDto) {
-    return `This action updates a #${id} workitem`;
+    return `This action updates a #${id} workitem ${updateWorkitemDto}`;
   }
 
   remove(id: number) {
