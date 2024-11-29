@@ -54,9 +54,9 @@ export class CategoryController {
   }
 
   @ApiOkResponse({ description: 'Get full data of category' })
-  @Get('all/:id')
-  findAllCategoryData(@Param('id') id: string): Promise<CategoryData> {
-    return this.categoryService.findAllCategoryData(id);
+  @Get('category/all')
+  findAllCategoryData(@GetUser() user: UserPayload): Promise<CategoryData[]> {
+    return this.categoryService.findAllCategoryData(user);
   }
 
   @ApiOkResponse({ description: 'Category successfully updated' })

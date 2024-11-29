@@ -1,6 +1,9 @@
 import { DesignProjectStatus, ProjectCharter } from '@prisma/client';
 
-export type ProjectCharterData = Pick<ProjectCharter, 'id'> & {
+export type ProjectCharterData = Pick<
+  ProjectCharter,
+  'id' | 'preProjectApproval'
+> & {
   designProject: {
     id: string;
     code: string;

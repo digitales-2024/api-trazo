@@ -134,16 +134,19 @@ export class CategoryService {
   }
 
   /**
-   * Obtiene todos los datos de una categoría
-   * @param id Identificador de la categoría
-   * @returns Datos de la categoría
+   * Obtiene todos los datos de las categorías
+   * @param user Usuario que realiza la acción
+   * @returns Categorías con todos sus datos
    */
-  async findAllCategoryData(id: string): Promise<FullCategoryData> {
+  async findAllCategoryData(user: UserPayload): Promise<FullCategoryData[]> {
     try {
-      const category = await this.prisma.category.findFirst({
-        where: { id },
+      const categories = await this.prisma.category.findMany({
+        where: {
+          ...(user.isSuperAdmin ? {} : { isActive: true }), // Filtrar por isActive solo si no es super admin
+        },
         include: {
           category: {
+            // Asegúrate de que esta relación sea correcta en tu modelo de Prisma
             include: {
               workItem: {
                 include: {
@@ -155,11 +158,8 @@ export class CategoryService {
         },
       });
 
-      if (!category) {
-        throw new NotFoundException('Category not found');
-      }
-
-      return {
+      // Mapea los resultados al tipo FullCategoryData
+      return categories.map((category) => ({
         id: category.id,
         name: category.name,
         isActive: category.isActive,
@@ -174,7 +174,7 @@ export class CategoryService {
             unitCost: workItem.unitCost,
             apuId: workItem.apuId,
             isActive: workItem.isActive,
-            subWorkItem: workItem.subWorkItem.map((subWorkItem) => ({
+            subWorkItems: workItem.subWorkItem.map((subWorkItem) => ({
               id: subWorkItem.id,
               name: subWorkItem.name,
               unit: subWorkItem.unit,
@@ -184,15 +184,9 @@ export class CategoryService {
             })),
           })),
         })),
-      };
+      })) as FullCategoryData[];
     } catch (error) {
       this.logger.error('Error getting all category data');
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
-        throw error;
-      }
       handleException(error, 'Error getting all category data');
     }
   }

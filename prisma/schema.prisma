@@ -335,6 +335,8 @@ model ProjectCharter {
   // Relación con Observations
   observations Observation[] @relation("ChartObservations")
 
+  preProjectApproval Boolean @default(false)
+
   // Timestamps
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt

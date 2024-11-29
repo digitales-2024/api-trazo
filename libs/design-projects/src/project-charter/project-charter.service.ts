@@ -1,9 +1,16 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService, PrismaTransaction } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
 import { handleException } from '@login/login/utils';
 import { ProjectCharterAllData, ProjectCharterData } from '../interfaces';
-import { UserData } from '@login/login/interfaces';
+import { HttpResponse, UserData } from '@login/login/interfaces';
+import { AuditActionType } from '@prisma/client';
 
 @Injectable()
 export class ProjectCharterService {
@@ -75,6 +82,7 @@ export class ProjectCharterService {
       where: { id },
       select: {
         id: true,
+        preProjectApproval: true,
         designProject: {
           select: {
             id: true,
@@ -139,6 +147,7 @@ export class ProjectCharterService {
       const projectsCharters = await this.prisma.projectCharter.findMany({
         select: {
           id: true,
+          preProjectApproval: true,
           designProject: {
             select: {
               id: true,
@@ -168,6 +177,7 @@ export class ProjectCharterService {
       const projectsChartersWithObservations = await Promise.all(
         projectsCharters.map(async (projectCharter) => ({
           id: projectCharter.id,
+          preProjectApproval: projectCharter.preProjectApproval,
           amountOfObservations:
             await this.getAmountOfObservationsByProjectCharterId(
               projectCharter.id,
@@ -191,6 +201,110 @@ export class ProjectCharterService {
     } catch (error) {
       this.logger.error('Error getting all clients');
       handleException(error, 'Error getting all clients');
+    }
+  }
+
+  /**
+   * Cambia el estado de aprobación previa de un acta de proyecto
+   * @param id ID del acta de proyecto
+   * @param user Usuario que realiza la acción
+   * @returns Respuesta HTTP con el acta de proyecto actualizada
+   */
+  async toggleApproved(
+    id: string,
+    user: UserData,
+  ): Promise<HttpResponse<ProjectCharterData>> {
+    try {
+      const toggledProjectCharter = await this.prisma.$transaction(
+        async (prisma) => {
+          // Obtener la acta de proyecto actual, incluyendo todas las propiedades necesarias
+          const projectCharterDB = await prisma.projectCharter.findUnique({
+            where: { id },
+            select: {
+              id: true,
+              preProjectApproval: true,
+              designProject: {
+                select: {
+                  id: true,
+                  code: true,
+                  status: true,
+                  client: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                  designer: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          });
+
+          if (!projectCharterDB) {
+            throw new BadRequestException('Project Charter not found');
+          }
+
+          // Determinar la nueva acción basada en el estado actual de preProjectApproval
+          const newStatus = !projectCharterDB.preProjectApproval;
+          const action = newStatus ? 'approved' : 'disapproved';
+
+          // Actualizar el estado de preProjectApproval del acta de proyecto
+          await prisma.projectCharter.update({
+            where: { id },
+            data: {
+              preProjectApproval: newStatus,
+            },
+          });
+
+          // Crear un registro de auditoría
+          await prisma.audit.create({
+            data: {
+              entityId: projectCharterDB.id,
+              action: AuditActionType.UPDATE,
+              performedById: user.id,
+              entityType: 'projectCharter',
+            },
+          });
+
+          // Retornar la estructura de ProductData incluyendo variaciones
+          const projectCharterData: ProjectCharterData = {
+            id: projectCharterDB.id,
+            preProjectApproval: newStatus,
+            designProject: {
+              id: projectCharterDB.designProject.id,
+              code: projectCharterDB.designProject.code,
+              status: projectCharterDB.designProject.status,
+              client: {
+                id: projectCharterDB.designProject.client.id,
+                name: projectCharterDB.designProject.client.name,
+              },
+              designer: {
+                id: projectCharterDB.designProject.designer.id,
+                name: projectCharterDB.designProject.designer.name,
+              },
+            },
+          };
+
+          return { projectCharterData, action };
+        },
+      );
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: `Pre-project approval successfully ${toggledProjectCharter.action}`,
+        data: toggledProjectCharter.projectCharterData,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error toggling approved for project charter with id: ${id}`,
+        error.stack,
+      );
+      handleException(error, 'Error toggling project charter approved');
     }
   }
 }
