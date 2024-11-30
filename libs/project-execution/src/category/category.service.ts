@@ -163,9 +163,11 @@ export class CategoryService {
         id: category.id,
         name: category.name,
         isActive: category.isActive,
+        type: 'category',
         subcategories: category.category.map((subcategory) => ({
           id: subcategory.id,
           name: subcategory.name,
+          type: 'subcategory',
           isActive: subcategory.isActive,
           workItems: subcategory.workItem.map((workItem) => ({
             id: workItem.id,
@@ -173,12 +175,14 @@ export class CategoryService {
             unit: workItem.unit,
             unitCost: workItem.unitCost,
             apuId: workItem.apuId,
+            type: 'workItem',
             isActive: workItem.isActive,
             subWorkItems: workItem.subWorkItem.map((subWorkItem) => ({
               id: subWorkItem.id,
               name: subWorkItem.name,
               unit: subWorkItem.unit,
               unitCost: subWorkItem.unitCost,
+              type: 'subWorkItem',
               apuId: subWorkItem.apuId,
               isActive: subWorkItem.isActive,
             })),
