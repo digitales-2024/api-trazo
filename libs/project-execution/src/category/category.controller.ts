@@ -54,7 +54,7 @@ export class CategoryController {
   }
 
   @ApiOkResponse({ description: 'Get full data of category' })
-  @Get('category/all')
+  @Get('full/category')
   findAllCategoryData(@GetUser() user: UserPayload): Promise<CategoryData[]> {
     return this.categoryService.findAllCategoryData(user);
   }
