@@ -6,7 +6,6 @@ import { UserData } from '@login/login/interfaces';
 import { CreateApusDto } from '../apus/dto/create-apus.dto';
 import { AuditActionType } from '@prisma/client';
 import { ApusService } from '../apus/apus.service';
-import { create } from 'domain';
 
 @Injectable()
 export class WorkitemsService {
@@ -19,15 +18,15 @@ export class WorkitemsService {
   async create(createWorkitemDto: CreateWorkitemDto, user: UserData) {
     // check if APU is present. if so, assign values and link to an APU
     // otherwise, mark this work item as having subworkitems
-    const { name, unit, apu } = createWorkitemDto;
+    const { name, unit, apu, subcategoryId } = createWorkitemDto;
 
     // If unit & apu exist, this is a regular work item
     if (!!unit && !!apu) {
-      return await this.createRegular(name, unit, apu, user);
+      return await this.createRegular(name, unit, subcategoryId, apu, user);
     }
     // If those 2 dont exist, this is a work item with subitems
     else if (!unit && !apu) {
-      return await this.createWithSubitems(name, user);
+      return await this.createWithSubitems(name, user, subcategoryId);
     }
     // Otherwise, we have invalid state. The frontend should only send the 2 states above
     else {
@@ -44,6 +43,7 @@ export class WorkitemsService {
   async createRegular(
     name: string,
     unit: string,
+    subcategoryId: string,
     apu: CreateApusDto,
     user: UserData,
   ) {
@@ -61,7 +61,7 @@ export class WorkitemsService {
 
         subcategory: {
           connect: {
-            id: '11119324-5081-4443-8f01-25837d5c2daa',
+            id: subcategoryId,
           },
         },
       },
@@ -85,15 +85,18 @@ export class WorkitemsService {
   /**
    * Creates a workitem that will have subitems associated to it.
    */
-  async createWithSubitems(name: string, user: UserData) {
+  async createWithSubitems(
+    name: string,
+    user: UserData,
+    subcategoryId: string,
+  ) {
     // just create
     const workItem = await this.prisma.workItem.create({
       data: {
         name,
-        // TODO: Do not hardcode v:<
         subcategory: {
           connect: {
-            id: '11119324-5081-4443-8f01-25837d5c2daa',
+            id: subcategoryId,
           },
         },
       },
@@ -154,7 +157,7 @@ export class WorkitemsService {
   }
 
   update(id: number, updateWorkitemDto: UpdateWorkitemDto) {
-    return `This action updates a #${id} workitem`;
+    return `This action updates a #${id} workitem ${updateWorkitemDto}`;
   }
 
   remove(id: number) {

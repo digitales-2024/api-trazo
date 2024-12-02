@@ -236,6 +236,7 @@ export class ApusService {
   }
 
   async update(id: string, updateApusDto: UpdateApusDto, user: UserData) {
+    console.log(user);
     // if there is nothing to update, exit early
     const keys = Object.keys(updateApusDto);
     if (keys.length === 0) {

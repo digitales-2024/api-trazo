@@ -10,6 +10,14 @@ import {
 
 export class CreateWorkitemDto {
   @ApiProperty({
+    description: 'ID of the parent subcategory',
+    example: '0000-ffff-00cb',
+  })
+  @IsString()
+  @IsNotEmpty()
+  subcategoryId: string;
+
+  @ApiProperty({
     description: 'Name of the workitem',
     example: 'Limpieza de terreno',
   })
