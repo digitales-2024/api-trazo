@@ -6,3 +6,4 @@ export {
   CategoryBudgetDetails,
   SummaryBudgetData,
 } from './budget.interfaces';
+export { WorkItemData } from './workitem.interfaces';
