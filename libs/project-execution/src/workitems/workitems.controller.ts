@@ -18,6 +18,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { UserData } from '@login/login/interfaces';
+import { WorkItemData } from '../interfaces';
 
 @ApiTags('WorkItem')
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -50,9 +51,12 @@ export class WorkitemsController {
     return await this.workitemsService.findAll(user);
   }
 
+  @ApiOkResponse({
+    description: 'Get WorkItem by id',
+  })
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.workitemsService.findOne(+id);
+  findOne(@Param('id') id: string): Promise<WorkItemData> {
+    return this.workitemsService.findOne(id);
   }
 
   @Patch(':id')
