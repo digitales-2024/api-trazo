@@ -20,6 +20,20 @@ export class WorkitemsService {
     // otherwise, mark this work item as having subworkitems
     const { name, unit, apu, subcategoryId } = createWorkitemDto;
 
+    // check if the parent subcategory exists and is active
+    const subcategory = await this.prisma.subcategory.findUnique({
+      where: {
+        id: subcategoryId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+      },
+    });
+    if (!subcategory) {
+      throw new BadRequestException('Parent Subcategory not found');
+    }
+
     // If unit & apu exist, this is a regular work item
     if (!!unit && !!apu) {
       return await this.createRegular(name, unit, subcategoryId, apu, user);
@@ -52,31 +66,33 @@ export class WorkitemsService {
     const { id: apuId, unitCost } = createdApu.data;
 
     // Use the APU created to create
-    const workItem = await this.prisma.workItem.create({
-      data: {
-        name,
-        unit,
-        apuId,
-        unitCost,
+    await this.prisma.$transaction(async (prisma) => {
+      const workItem = await prisma.workItem.create({
+        data: {
+          name,
+          unit,
+          apuId,
+          unitCost,
 
-        subcategory: {
-          connect: {
-            id: subcategoryId,
+          subcategory: {
+            connect: {
+              id: subcategoryId,
+            },
           },
         },
-      },
-    });
+      });
 
-    // Audit
-    const now = new Date();
-    await this.prisma.audit.create({
-      data: {
-        entityId: workItem.id,
-        entityType: 'WorkItem',
-        action: AuditActionType.CREATE,
-        performedById: user.id,
-        createdAt: now,
-      },
+      // Audit
+      const now = new Date();
+      await prisma.audit.create({
+        data: {
+          entityId: workItem.id,
+          entityType: 'WorkItem',
+          action: AuditActionType.CREATE,
+          performedById: user.id,
+          createdAt: now,
+        },
+      });
     });
 
     // success :D
