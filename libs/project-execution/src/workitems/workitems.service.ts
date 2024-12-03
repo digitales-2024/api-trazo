@@ -6,6 +6,8 @@ import { UserData } from '@login/login/interfaces';
 import { CreateApusDto } from '../apus/dto/create-apus.dto';
 import { AuditActionType } from '@prisma/client';
 import { ApusService } from '../apus/apus.service';
+import { WorkItemData } from '../interfaces';
+import { handleException } from '@login/login/utils';
 
 @Injectable()
 export class WorkitemsService {
@@ -152,8 +154,93 @@ export class WorkitemsService {
     return workitems;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} workitem`;
+  async findOne(id: string): Promise<WorkItemData> {
+    try {
+      return await this.findById(id);
+    } catch (error) {
+      this.logger.error('Error get workItem');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      handleException(error, 'Error get workItem');
+    }
+  }
+
+  async findById(id: string): Promise<WorkItemData> {
+    // Consulta para Obtener el WorkItem
+    const workItemDb = await this.prisma.workItem.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        unit: true,
+        unitCost: true,
+        isActive: true,
+        apuId: true, // Necesitamos apuId para la segunda consulta
+      },
+    });
+
+    // Verificación de Existencia y Estado del WorkItem
+    if (!workItemDb) {
+      throw new BadRequestException('This WorkItem does not exist');
+    }
+
+    if (!workItemDb.isActive) {
+      throw new BadRequestException('This workItem exist but is not active');
+    }
+
+    if (!workItemDb.apuId) {
+      throw new BadRequestException(
+        'This workItem does not have an APU associated',
+      );
+    }
+
+    // Consulta para Obtener el Apu Relacionado
+    const apuDb = await this.prisma.apu.findUnique({
+      where: { id: workItemDb.apuId },
+      include: {
+        apuResource: {
+          // Incluir ApuOnResource
+          include: {
+            resource: true, // Incluir Resource dentro de ApuOnResource
+          },
+        },
+      },
+    });
+
+    if (!apuDb) {
+      throw new BadRequestException('APU does not exist');
+    }
+
+    // Mapeo de Datos a WorkItemData
+    const workItemData: WorkItemData = {
+      id: workItemDb.id,
+      name: workItemDb.name,
+      unit: workItemDb.unit || '',
+      unitCost: workItemDb.unitCost || 0,
+      apu: {
+        id: apuDb.id,
+        unitCost: apuDb.unitCost,
+        performance: apuDb.performance,
+        workHours: apuDb.workHours,
+        apuOnResource: apuDb.apuResource.map((ar) => ({
+          id: ar.id,
+          quantity: ar.quantity,
+          subtotal: ar.subtotal,
+          group: ar.group,
+          resource: {
+            id: ar.resource.id,
+            type: ar.resource.type,
+            name: ar.resource.name,
+            unit: ar.resource.unit,
+            unitCost: ar.resource.unitCost,
+            isActive: ar.resource.isActive,
+          },
+        })),
+      },
+    };
+
+    return workItemData;
   }
 
   update(id: number, updateWorkitemDto: UpdateWorkitemDto) {
