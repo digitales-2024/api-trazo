@@ -28,6 +28,18 @@ export class WorkitemsService {
     // otherwise, mark this work item as having subworkitems
     const { name, unit, apu, subcategoryId } = createWorkitemDto;
 
+    // Check there isnt a workitem with the same name
+    if (!!createWorkitemDto.name) {
+      const other = await this.prisma.workItem.findUnique({
+        where: {
+          name: createWorkitemDto.name,
+        },
+      });
+      if (!!other) {
+        throw new BadRequestException('Used name');
+      }
+    }
+
     // check if the parent subcategory exists and is active
     const subcategory = await this.prisma.subcategory.findUnique({
       where: {
@@ -283,6 +295,18 @@ export class WorkitemsService {
     // exit early if there is nothing to do
     if (Object.keys(editDto).length === 0) {
       return;
+    }
+
+    // check that the given name is not being used by any other work item
+    if (!!editDto.name) {
+      const other = await this.prisma.workItem.findUnique({
+        where: {
+          name: editDto.name,
+        },
+      });
+      if (!!other) {
+        throw new BadRequestException('Used name');
+      }
     }
 
     // check: if the DTO has a unit value, assert that the workitem pointed by `id`

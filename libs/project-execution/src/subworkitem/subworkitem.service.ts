@@ -26,6 +26,18 @@ export class SubworkitemService {
   async create(createDto: CreateSubworkitemDto, user: UserData) {
     const { name, unit, apu, parentId } = createDto;
 
+    // Check there isnt a workitem with the same name
+    if (!!createDto.name) {
+      const other = await this.prisma.subWorkItem.findUnique({
+        where: {
+          name: createDto.name,
+        },
+      });
+      if (!!other) {
+        throw new BadRequestException('Used workitem name');
+      }
+    }
+
     // check the parent workitem exists and is active
     const parent = await this.prisma.workItem.findUnique({
       where: {
@@ -90,6 +102,18 @@ export class SubworkitemService {
     // exit early if there is nothing to do
     if (Object.keys(editDto).length === 0) {
       return;
+    }
+
+    // Check there isnt a workitem with the same name
+    if (!!editDto.name) {
+      const other = await this.prisma.subWorkItem.findUnique({
+        where: {
+          name: editDto.name,
+        },
+      });
+      if (!!other) {
+        throw new BadRequestException('Used workitem name');
+      }
     }
 
     try {
