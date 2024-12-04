@@ -80,8 +80,33 @@ export class SubworkitemService {
     return `This action returns a #${id} subworkitem`;
   }
 
-  update(id: number, updateSubworkitemDto: UpdateSubworkitemDto) {
-    return `This action updates a #${id} subworkitem ${updateSubworkitemDto}`;
+  async update(id: string, editDto: UpdateSubworkitemDto, user: UserData) {
+    // exit early if there is nothing to do
+    if (Object.keys(editDto).length === 0) {
+      return;
+    }
+
+    await this.prisma.subWorkItem.update({
+      data: editDto,
+      where: {
+        id,
+      },
+    });
+
+    // Audit
+    const now = new Date();
+    this.prisma.audit.create({
+      data: {
+        entityId: id,
+        entityType: 'SubWorkItem',
+        action: AuditActionType.UPDATE,
+        performedById: user.id,
+        createdAt: now,
+      },
+    });
+
+    // OK
+    return;
   }
 
   remove(id: number) {

@@ -45,11 +45,16 @@ export class SubworkitemController {
   }
 
   @Patch(':id')
+  @ApiOperation({
+    summary: 'Edit SubWorkItem',
+    description: 'Edits a subworkitem by id',
+  })
   update(
     @Param('id') id: string,
     @Body() updateSubworkitemDto: UpdateSubworkitemDto,
+    @GetUser() user: UserData,
   ) {
-    return this.subworkitemService.update(+id, updateSubworkitemDto);
+    return this.subworkitemService.update(id, updateSubworkitemDto, user);
   }
 
   @Delete(':id')
