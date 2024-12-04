@@ -13,10 +13,12 @@ import { UpdateSubworkitemDto } from './dto/update-subworkitem.dto';
 import { UserData } from '@login/login/interfaces';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import {
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { DeleteSubWorkItemDto } from './dto/delete-subworkitem.dto';
 
 @ApiTags('SubWorkItem')
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -61,11 +63,25 @@ export class SubworkitemController {
   }
 
   @Delete(':id')
+  @ApiOkResponse({ description: 'Subworkitem deleted' })
   @ApiOperation({
     summary: 'Delete SubWorkItem',
     description: 'Deletes (sets as inactive) a subworkitem by id',
   })
   async remove(@Param('id') id: string, @GetUser() user: UserData) {
     return await this.subworkitemService.remove(id, user);
+  }
+
+  @ApiOkResponse({ description: 'Subworkitems reactivated' })
+  @ApiOperation({
+    summary: 'Reactivate SubWorkItem',
+    description: 'Reactivates a subworkitem by id',
+  })
+  @Patch('reactivate/all')
+  async reactivateAll(
+    @GetUser() user: UserData,
+    @Body() clients: DeleteSubWorkItemDto,
+  ) {
+    return await this.subworkitemService.reactivateAll(user, clients);
   }
 }

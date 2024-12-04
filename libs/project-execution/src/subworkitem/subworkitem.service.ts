@@ -10,6 +10,7 @@ import { PrismaService } from '@prisma/prisma';
 import { ApusService } from '../apus/apus.service';
 import { UserData } from '@login/login/interfaces';
 import { AuditActionType } from '@prisma/client';
+import { DeleteSubWorkItemDto } from './dto/delete-subworkitem.dto';
 
 @Injectable()
 export class SubworkitemService {
@@ -158,8 +159,48 @@ export class SubworkitemService {
         },
       });
     });
+  }
 
-    // OK
-    return;
+  async reactivateAll(user: UserData, ids: DeleteSubWorkItemDto) {
+    // check the ids exist
+    const subworkitem = await this.prisma.subWorkItem.findMany({
+      where: {
+        id: {
+          in: ids.ids,
+        },
+      },
+    });
+
+    if (ids.ids.length !== subworkitem.length) {
+      throw new NotFoundException('Subworkitem not found');
+    }
+
+    // reactivate all
+    await this.prisma.$transaction(async (prisma) => {
+      await prisma.subWorkItem.updateMany({
+        data: {
+          isActive: true,
+        },
+        where: {
+          id: {
+            in: ids.ids,
+          },
+        },
+      });
+
+      // create audit logs
+      const now = new Date();
+      const auditsEls = ids.ids.map((id) => ({
+        entityId: id,
+        entityType: 'SubWorkItem',
+        action: AuditActionType.UPDATE,
+        performedById: user.id,
+        createdAt: now,
+      }));
+
+      await this.prisma.audit.createMany({
+        data: auditsEls,
+      });
+    });
   }
 }
