@@ -392,8 +392,6 @@ export class WorkitemsService {
         data: auditsEls,
       });
     });
-
-    return `This action removes a #${id} workitem`;
   }
 
   async reactivateAll(user: UserData, ids: DeleteWorkItemDto) {
