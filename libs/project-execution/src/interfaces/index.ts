@@ -7,3 +7,4 @@ export {
   SummaryBudgetData,
 } from './budget.interfaces';
 export { WorkItemData } from './workitem.interfaces';
+export { type FullApuBudgetData } from './apuBudget.interfaces';

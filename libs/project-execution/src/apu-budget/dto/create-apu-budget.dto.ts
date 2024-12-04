@@ -39,12 +39,12 @@ export class CreateApuBudgetDto {
   })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CreateApuResourceDto)
-  resources: Array<CreateApuResourceDto>;
+  @Type(() => CreateApuResourceBudgetDto)
+  resources: Array<CreateApuResourceBudgetDto>;
 }
 
 // DTO to validate resources used to create an APU
-export class CreateApuResourceDto {
+export class CreateApuResourceBudgetDto {
   @ApiProperty({
     description: 'ID of the resource to use',
   })
