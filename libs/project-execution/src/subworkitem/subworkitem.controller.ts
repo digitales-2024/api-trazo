@@ -18,7 +18,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
-@ApiTags('WorkItem')
+@ApiTags('SubWorkItem')
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
 @Controller({ path: 'sub-work-item', version: '1' })
 @Auth()

@@ -60,11 +60,16 @@ export class WorkitemsController {
   }
 
   @Patch(':id')
+  @ApiOperation({
+    summary: 'Edit WorkItem',
+    description: 'Edits a workitem by id',
+  })
   update(
     @Param('id') id: string,
     @Body() updateWorkitemDto: UpdateWorkitemDto,
+    @GetUser() user: UserData,
   ) {
-    return this.workitemsService.update(+id, updateWorkitemDto);
+    return this.workitemsService.update(id, updateWorkitemDto, user);
   }
 
   @Delete(':id')

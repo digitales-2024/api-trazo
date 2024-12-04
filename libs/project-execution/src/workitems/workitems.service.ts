@@ -259,8 +259,54 @@ export class WorkitemsService {
     return workItemData;
   }
 
-  update(id: number, updateWorkitemDto: UpdateWorkitemDto) {
-    return `This action updates a #${id} workitem ${updateWorkitemDto}`;
+  async update(id: string, editDto: UpdateWorkitemDto, user: UserData) {
+    // exit early if there is nothing to do
+    if (Object.keys(editDto).length === 0) {
+      return;
+    }
+
+    // check: if the DTO has a unit value, assert that the workitem pointed by `id`
+    // is actually a regular workitem and not a workitem with subworkitems
+
+    try {
+      const shouldBeRegular = !!editDto.unit;
+      await this.prisma.workItem.update({
+        data: editDto,
+        where: {
+          id,
+          ...(shouldBeRegular
+            ? {
+                apuId: {
+                  not: null,
+                },
+              }
+            : {}),
+        },
+      });
+
+      // Audit
+      const now = new Date();
+      this.prisma.audit.create({
+        data: {
+          entityId: id,
+          entityType: 'WorkItem',
+          action: AuditActionType.UPDATE,
+          performedById: user.id,
+          createdAt: now,
+        },
+      });
+
+      // success
+    } catch (e) {
+      this.logger.error(
+        `Attempted to insert a unit into a workitem with subitems. Workitem ${id}, unit ${editDto.unit}`,
+      );
+      this.logger.error(e);
+      throw new BadRequestException('Unexpected data for update: unit');
+    }
+
+    // OK
+    return;
   }
 
   remove(id: number) {
