@@ -29,6 +29,7 @@ export type CategoryBudgetDetails = {
     workitem: {
       id: string;
       name: string;
+      unit: string;
       quantity: number;
       unitCost: number;
       subtotal: number;
