@@ -75,7 +75,7 @@ export class SubworkitemController {
   @ApiOkResponse({ description: 'Subworkitems reactivated' })
   @ApiOperation({
     summary: 'Reactivate SubWorkItem',
-    description: 'Reactivates a subworkitem by id',
+    description: 'Reactivates all subworkitems by id',
   })
   @Patch('reactivate/all')
   async reactivateAll(

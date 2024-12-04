@@ -13,6 +13,7 @@ import { AuditActionType } from '@prisma/client';
 import { ApusService } from '../apus/apus.service';
 import { WorkItemData } from '../interfaces';
 import { handleException } from '@login/login/utils';
+import { DeleteWorkItemDto } from './dto/delete-workitem.dto';
 
 @Injectable()
 export class WorkitemsService {
@@ -383,6 +384,7 @@ export class WorkitemsService {
           entityType: 'SubWorkItem',
           action: AuditActionType.DELETE,
           performedById: user.id,
+          createdAt: now,
         })),
       );
 
@@ -392,5 +394,78 @@ export class WorkitemsService {
     });
 
     return `This action removes a #${id} workitem`;
+  }
+
+  async reactivateAll(user: UserData, ids: DeleteWorkItemDto) {
+    // check the ids exist
+    const workitems = await this.prisma.workItem.findMany({
+      where: {
+        id: {
+          in: ids.ids,
+        },
+      },
+      include: {
+        subWorkItem: true,
+      },
+    });
+    if (ids.ids.length !== workitems.length) {
+      throw new NotFoundException('Workitem not found');
+    }
+
+    // reactivate all
+    await this.prisma.$transaction(async (prisma) => {
+      await prisma.workItem.updateMany({
+        data: {
+          isActive: true,
+        },
+        where: {
+          id: {
+            in: ids.ids,
+          },
+        },
+      });
+
+      // collect nested subcategory ids
+      const subIds = workitems.flatMap((workitem) =>
+        workitem.subWorkItem.map((s) => s.id),
+      );
+      // reactivate all
+      await prisma.subWorkItem.updateMany({
+        data: {
+          isActive: true,
+        },
+        where: {
+          id: {
+            in: subIds,
+          },
+        },
+      });
+
+      // log audit
+      const now = new Date();
+      const auditsEls = [];
+      auditsEls.push(
+        ...ids.ids.map((id) => ({
+          entityId: id,
+          entityType: 'WorkItem',
+          action: AuditActionType.DELETE,
+          performedById: user.id,
+          createdAt: now,
+        })),
+      );
+      auditsEls.push(
+        ...subIds.map((id) => ({
+          entityId: id,
+          entityType: 'WorkItem',
+          action: AuditActionType.DELETE,
+          performedById: user.id,
+          createdAt: now,
+        })),
+      );
+
+      await prisma.audit.createMany({
+        data: auditsEls,
+      });
+    });
   }
 }

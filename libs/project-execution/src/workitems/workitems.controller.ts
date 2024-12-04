@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { UserData } from '@login/login/interfaces';
 import { WorkItemData } from '../interfaces';
+import { DeleteWorkItemDto } from './dto/delete-workitem.dto';
 
 @ApiTags('WorkItem')
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -80,5 +81,18 @@ export class WorkitemsController {
   })
   async remove(@Param('id') id: string, @GetUser() user: UserData) {
     return await this.workitemsService.remove(id, user);
+  }
+
+  @ApiOkResponse({ description: 'Workitems reactivated' })
+  @ApiOperation({
+    summary: 'Reactivate WorkItem',
+    description: 'Reactivates all workitems by id',
+  })
+  @Patch('reactivate/all')
+  async reactivateAll(
+    @GetUser() user: UserData,
+    @Body() clients: DeleteWorkItemDto,
+  ) {
+    return await this.workitemsService.reactivateAll(user, clients);
   }
 }
