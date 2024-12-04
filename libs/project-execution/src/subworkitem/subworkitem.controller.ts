@@ -30,8 +30,11 @@ export class SubworkitemController {
     summary: 'Create WorkItem',
     description: 'Creates a WorkItem and its APU, if present',
   })
-  create(@Body() createDto: CreateSubworkitemDto, @GetUser() user: UserData) {
-    return this.subworkitemService.create(createDto, user);
+  async create(
+    @Body() createDto: CreateSubworkitemDto,
+    @GetUser() user: UserData,
+  ) {
+    return await this.subworkitemService.create(createDto, user);
   }
 
   @Get()
@@ -49,12 +52,12 @@ export class SubworkitemController {
     summary: 'Edit SubWorkItem',
     description: 'Edits a subworkitem by id',
   })
-  update(
+  async update(
     @Param('id') id: string,
     @Body() updateSubworkitemDto: UpdateSubworkitemDto,
     @GetUser() user: UserData,
   ) {
-    return this.subworkitemService.update(id, updateSubworkitemDto, user);
+    return await this.subworkitemService.update(id, updateSubworkitemDto, user);
   }
 
   @Delete(':id')
@@ -62,7 +65,7 @@ export class SubworkitemController {
     summary: 'Delete SubWorkItem',
     description: 'Deletes (sets as inactive) a subworkitem by id',
   })
-  remove(@Param('id') id: string, @GetUser() user: UserData) {
-    this.subworkitemService.remove(id, user);
+  async remove(@Param('id') id: string, @GetUser() user: UserData) {
+    return await this.subworkitemService.remove(id, user);
   }
 }

@@ -32,11 +32,11 @@ export class WorkitemsController {
     summary: 'Create WorkItem',
     description: 'Creates a WorkItem and its APU, if present',
   })
-  create(
+  async create(
     @Body() createWorkitemDto: CreateWorkitemDto,
     @GetUser() user: UserData,
   ) {
-    this.workitemsService.create(createWorkitemDto, user);
+    return await this.workitemsService.create(createWorkitemDto, user);
   }
 
   @Get()
@@ -64,12 +64,12 @@ export class WorkitemsController {
     summary: 'Edit WorkItem',
     description: 'Edits a workitem by id',
   })
-  update(
+  async update(
     @Param('id') id: string,
     @Body() updateWorkitemDto: UpdateWorkitemDto,
     @GetUser() user: UserData,
   ) {
-    return this.workitemsService.update(id, updateWorkitemDto, user);
+    return await this.workitemsService.update(id, updateWorkitemDto, user);
   }
 
   @Delete(':id')
@@ -78,7 +78,7 @@ export class WorkitemsController {
     description:
       'Deletes (sets as inactive) a workitem by id, and all its descendants',
   })
-  remove(@Param('id') id: string, @GetUser() user: UserData) {
-    this.workitemsService.remove(id, user);
+  async remove(@Param('id') id: string, @GetUser() user: UserData) {
+    return await this.workitemsService.remove(id, user);
   }
 }
