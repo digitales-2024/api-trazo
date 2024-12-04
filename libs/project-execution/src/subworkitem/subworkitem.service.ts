@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateSubworkitemDto } from './dto/create-subworkitem.dto';
 import { UpdateSubworkitemDto } from './dto/update-subworkitem.dto';
 import { PrismaService } from '@prisma/prisma';
@@ -118,7 +123,43 @@ export class SubworkitemService {
     return;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} subworkitem`;
+  async remove(id: string, user: UserData) {
+    // check the sent id exists and is active
+    const subworkitem = await this.prisma.subWorkItem.findUnique({
+      where: {
+        id,
+        isActive: true,
+      },
+    });
+    if (!subworkitem) {
+      throw new NotFoundException('Subworkitem not found');
+    }
+
+    await this.prisma.$transaction(async (prisma) => {
+      // mark this subitem as inactive
+      await prisma.subWorkItem.update({
+        data: {
+          isActive: false,
+        },
+        where: {
+          id,
+        },
+      });
+
+      // log audit
+      const now = new Date();
+      this.prisma.audit.create({
+        data: {
+          entityId: id,
+          entityType: 'SubWorkItem',
+          action: AuditActionType.DELETE,
+          performedById: user.id,
+          createdAt: now,
+        },
+      });
+    });
+
+    // OK
+    return;
   }
 }

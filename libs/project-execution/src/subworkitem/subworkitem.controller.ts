@@ -58,7 +58,11 @@ export class SubworkitemController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.subworkitemService.remove(+id);
+  @ApiOperation({
+    summary: 'Delete SubWorkItem',
+    description: 'Deletes (sets as inactive) a subworkitem by id',
+  })
+  remove(@Param('id') id: string, @GetUser() user: UserData) {
+    return this.subworkitemService.remove(id, user);
   }
 }
