@@ -154,6 +154,11 @@ export class WorkitemsService {
     return workitems;
   }
 
+  /**
+   * Mostrar un WorkItem con sus datos completos incluyendo el APU relacionado por id
+   * @param id id del WorkItem
+   * @returns WorkItemData con datos completos
+   */
   async findOne(id: string): Promise<WorkItemData> {
     try {
       return await this.findById(id);
@@ -166,6 +171,11 @@ export class WorkitemsService {
     }
   }
 
+  /**
+   * Mostrar un WorkItem con sus datos completos incluyendo el APU relacionado por id
+   * @param id id del WorkItem
+   * @returns WorkItemData con datos completos
+   */
   async findById(id: string): Promise<WorkItemData> {
     // Consulta para Obtener el WorkItem
     const workItemDb = await this.prisma.workItem.findUnique({
@@ -189,27 +199,50 @@ export class WorkitemsService {
       throw new BadRequestException('This workItem exist but is not active');
     }
 
-    if (!workItemDb.apuId) {
-      throw new BadRequestException(
-        'This workItem does not have an APU associated',
-      );
-    }
+    let apuData = {
+      id: '',
+      unitCost: 0,
+      performance: 0,
+      workHours: 0,
+      apuOnResource: [],
+    };
 
-    // Consulta para Obtener el Apu Relacionado
-    const apuDb = await this.prisma.apu.findUnique({
-      where: { id: workItemDb.apuId },
-      include: {
-        apuResource: {
-          // Incluir ApuOnResource
-          include: {
-            resource: true, // Incluir Resource dentro de ApuOnResource
+    // Consulta para Obtener el Apu Relacionado si existe apuId
+    if (workItemDb.apuId) {
+      const apuDb = await this.prisma.apu.findUnique({
+        where: { id: workItemDb.apuId },
+        include: {
+          apuResource: {
+            // Incluir ApuOnResource
+            include: {
+              resource: true, // Incluir Resource dentro de ApuOnResource
+            },
           },
         },
-      },
-    });
+      });
 
-    if (!apuDb) {
-      throw new BadRequestException('APU does not exist');
+      if (apuDb) {
+        apuData = {
+          id: apuDb.id,
+          unitCost: apuDb.unitCost,
+          performance: apuDb.performance,
+          workHours: apuDb.workHours,
+          apuOnResource: apuDb.apuResource.map((ar) => ({
+            id: ar.id,
+            quantity: ar.quantity,
+            subtotal: ar.subtotal,
+            group: ar.group,
+            resource: {
+              id: ar.resource.id,
+              type: ar.resource.type,
+              name: ar.resource.name,
+              unit: ar.resource.unit,
+              unitCost: ar.resource.unitCost,
+              isActive: ar.resource.isActive,
+            },
+          })),
+        };
+      }
     }
 
     // Mapeo de Datos a WorkItemData
@@ -218,26 +251,7 @@ export class WorkitemsService {
       name: workItemDb.name,
       unit: workItemDb.unit || '',
       unitCost: workItemDb.unitCost || 0,
-      apu: {
-        id: apuDb.id,
-        unitCost: apuDb.unitCost,
-        performance: apuDb.performance,
-        workHours: apuDb.workHours,
-        apuOnResource: apuDb.apuResource.map((ar) => ({
-          id: ar.id,
-          quantity: ar.quantity,
-          subtotal: ar.subtotal,
-          group: ar.group,
-          resource: {
-            id: ar.resource.id,
-            type: ar.resource.type,
-            name: ar.resource.name,
-            unit: ar.resource.unit,
-            unitCost: ar.resource.unitCost,
-            isActive: ar.resource.isActive,
-          },
-        })),
-      },
+      apu: apuData,
     };
 
     return workItemData;
