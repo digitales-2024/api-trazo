@@ -648,7 +648,7 @@ export class BudgetService {
                       const workItemName =
                         await this.prisma.workItem.findUnique({
                           where: { id: workItem.workItemId },
-                          select: { name: true },
+                          select: { name: true, unit: true },
                         });
 
                       const subWorkItems = await Promise.all(
@@ -661,12 +661,13 @@ export class BudgetService {
                             const subWorkItemName =
                               await this.prisma.subWorkItem.findUnique({
                                 where: { id: subWorkItem.subWorkItemId },
-                                select: { name: true },
+                                select: { name: true, unit: true },
                               });
 
                             return {
                               id: subWorkItem.id,
                               name: subWorkItemName?.name || '',
+                              unit: subWorkItemName?.unit || '',
                               quantity: subWorkItem.quantity,
                               unitCost: subWorkItem.unitCost,
                               subtotal: subWorkItem.subtotal,
@@ -677,12 +678,14 @@ export class BudgetService {
                       return {
                         id: workItem.id,
                         name: workItemName?.name || '',
+                        unit: workItemName?.unit || '',
                         quantity: workItem.quantity,
                         unitCost: workItem.unitCost,
                         subtotal: workItem.subtotal,
                         subWorkItems: subWorkItems.map((subWorkItem) => ({
                           id: subWorkItem.id,
                           name: subWorkItem.name,
+                          unit: subWorkItem.unit,
                           quantity: subWorkItem.quantity,
                           unitCost: subWorkItem.unitCost,
                           subtotal: subWorkItem.subtotal,
