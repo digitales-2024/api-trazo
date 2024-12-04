@@ -73,7 +73,12 @@ export class WorkitemsController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.workitemsService.remove(+id);
+  @ApiOperation({
+    summary: 'Delete WorkItem',
+    description:
+      'Deletes (sets as inactive) a workitem by id, and all its descendants',
+  })
+  remove(@Param('id') id: string, @GetUser() user: UserData) {
+    this.workitemsService.remove(id, user);
   }
 }

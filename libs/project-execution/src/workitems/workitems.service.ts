@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateWorkitemDto } from './dto/create-workitem.dto';
 import { UpdateWorkitemDto } from './dto/update-workitem.dto';
 import { PrismaService } from '@prisma/prisma';
@@ -324,7 +329,68 @@ export class WorkitemsService {
     return;
   }
 
-  remove(id: number) {
+  async remove(id: string, user: UserData) {
+    // check the sent id exists and is active
+    const workitem = await this.prisma.workItem.findUnique({
+      where: {
+        id,
+        isActive: true,
+      },
+      include: {
+        subWorkItem: true,
+      },
+    });
+    if (!workitem) {
+      throw new NotFoundException('Subworkitem not found');
+    }
+
+    await this.prisma.$transaction(async (prisma) => {
+      // mark this workitem as inactive
+      await prisma.workItem.update({
+        data: {
+          isActive: false,
+        },
+        where: {
+          id,
+        },
+      });
+
+      // set all subworkitems as inactive
+      await prisma.subWorkItem.updateMany({
+        data: {
+          isActive: false,
+        },
+        where: {
+          id: {
+            in: workitem.subWorkItem.map((s) => s.id),
+          },
+        },
+      });
+
+      // create audit logs
+      const now = new Date();
+      const auditsEls = [];
+      auditsEls.push({
+        entityId: id,
+        entityType: 'WorkItem',
+        action: AuditActionType.DELETE,
+        performedById: user.id,
+        createdAt: now,
+      });
+      auditsEls.push(
+        ...workitem.subWorkItem.map((s) => ({
+          entityId: s.id,
+          entityType: 'SubWorkItem',
+          action: AuditActionType.DELETE,
+          performedById: user.id,
+        })),
+      );
+
+      await prisma.audit.createMany({
+        data: auditsEls,
+      });
+    });
+
     return `This action removes a #${id} workitem`;
   }
 }

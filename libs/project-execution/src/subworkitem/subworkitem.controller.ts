@@ -63,6 +63,6 @@ export class SubworkitemController {
     description: 'Deletes (sets as inactive) a subworkitem by id',
   })
   remove(@Param('id') id: string, @GetUser() user: UserData) {
-    return this.subworkitemService.remove(id, user);
+    this.subworkitemService.remove(id, user);
   }
 }
