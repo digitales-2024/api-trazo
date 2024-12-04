@@ -274,6 +274,7 @@ export class WorkitemsService {
         data: editDto,
         where: {
           id,
+          isActive: true,
           ...(shouldBeRegular
             ? {
                 apuId: {
@@ -302,7 +303,7 @@ export class WorkitemsService {
         `Attempted to insert a unit into a workitem with subitems. Workitem ${id}, unit ${editDto.unit}`,
       );
       this.logger.error(e);
-      throw new BadRequestException('Unexpected data for update: unit');
+      throw new BadRequestException('Bad workitem update');
     }
 
     // OK

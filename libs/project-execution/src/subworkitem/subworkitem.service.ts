@@ -86,24 +86,33 @@ export class SubworkitemService {
       return;
     }
 
-    await this.prisma.subWorkItem.update({
-      data: editDto,
-      where: {
-        id,
-      },
-    });
+    try {
+      await this.prisma.subWorkItem.update({
+        data: editDto,
+        where: {
+          id,
+          isActive: true,
+        },
+      });
 
-    // Audit
-    const now = new Date();
-    this.prisma.audit.create({
-      data: {
-        entityId: id,
-        entityType: 'SubWorkItem',
-        action: AuditActionType.UPDATE,
-        performedById: user.id,
-        createdAt: now,
-      },
-    });
+      // Audit
+      const now = new Date();
+      this.prisma.audit.create({
+        data: {
+          entityId: id,
+          entityType: 'SubWorkItem',
+          action: AuditActionType.UPDATE,
+          performedById: user.id,
+          createdAt: now,
+        },
+      });
+    } catch (e) {
+      this.logger.error(
+        `Attempted to insert a unit into a workitem with subitems. Workitem ${id}, unit ${editDto.unit}`,
+      );
+      this.logger.error(e);
+      throw new BadRequestException('Bad workitem update');
+    }
 
     // OK
     return;
