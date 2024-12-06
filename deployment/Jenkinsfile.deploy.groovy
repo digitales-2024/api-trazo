@@ -21,6 +21,7 @@ pipeline {
     stages {
         stage("Build & push image") {
             steps {
+                sh "cp deployment/Dockerfile ."
                 script {
                     withDockerRegistry(credentialsId: "${REGISTRY_CREDENTIALS}") {
                         // build docker image
@@ -28,6 +29,7 @@ pipeline {
                         image.push()
                     }
                 }
+                sh "rm Dockerfile || true"
             }
         }
         stage("Restart backend service") {
