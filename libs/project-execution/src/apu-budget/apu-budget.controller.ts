@@ -1,10 +1,11 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { ApuBudgetService } from './apu-budget.service';
 import { CreateApuBudgetDto } from './dto/create-apu-budget.dto';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -28,5 +29,11 @@ export class ApuBudgetController {
     @GetUser() user: UserData,
   ): Promise<HttpResponse<FullApuBudgetData>> {
     return this.apuBudgetService.create(createApuBudgetDto, user);
+  }
+
+  @ApiOkResponse({ description: 'Get APU Budget by id' })
+  @Get(':id')
+  findOne(@Param('id') id: string): Promise<FullApuBudgetData> {
+    return this.apuBudgetService.findOne(id);
   }
 }

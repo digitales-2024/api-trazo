@@ -13,6 +13,7 @@ import { HttpResponse, UserData } from '@login/login/interfaces';
 import { FullApuBudgetData } from '../interfaces';
 import { AuditActionType } from '@prisma/client';
 import { roundToFourDecimals, roundToTwoDecimals } from '../utils';
+import { handleException } from '@login/login/utils';
 
 @Injectable()
 export class ApuBudgetService {
@@ -139,7 +140,7 @@ export class ApuBudgetService {
             create: resourcesWithCost.map((r) => ({
               quantity: r.quantity,
               subtotal: r.cost,
-              group: r.group?.toString(),
+              group: r.group,
               resourceId: r.resourceId,
             })),
           },
@@ -209,5 +210,102 @@ export class ApuBudgetService {
       message: 'Client created successfully',
       data: fullApuBudgetData,
     };
+  }
+
+  /**
+   * Buscar un APU por ID.
+   * @param id ID del APU
+   * @returns APU encontrado
+   */
+  async findOne(id: string): Promise<FullApuBudgetData> {
+    try {
+      return await this.findById(id);
+    } catch (error) {
+      this.logger.error('Error get APU Budget');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      handleException(error, 'Error get APU Budget');
+    }
+  }
+
+  /**
+   * Buscar un APU por ID.
+   * @param id ID del APU
+   * @returns APU encontrado
+   */
+  async findById(id: string): Promise<FullApuBudgetData> {
+    // Buscar el APU por ID
+    const apuDb = await this.prisma.apuBudget.findFirst({
+      where: { id },
+      select: {
+        id: true,
+        unitCost: true,
+        workHours: true,
+        performance: true,
+        apuResource: {
+          select: {
+            id: true,
+            group: true,
+            quantity: true,
+            resourceId: true,
+          },
+        },
+      },
+    });
+
+    // Verificar si el APU existe
+    if (!apuDb) {
+      throw new BadRequestException('This APU does not exist');
+    }
+
+    // Recopilar los IDs de los recursos asociados al APU
+    const resourceIds = apuDb.apuResource.map((r) => r.resourceId);
+
+    // Buscar los recursos asociados en la base de datos
+    const resourcesOnDb = await this.prisma.resource.findMany({
+      where: {
+        id: { in: resourceIds },
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        unitCost: true,
+        type: true,
+        unit: true,
+      },
+    });
+
+    if (resourcesOnDb.length !== resourceIds.length) {
+      this.logger.error(
+        `Resources not found while fetching APU. Expected [${resourceIds.join(', ')}], got [${resourcesOnDb.map((r) => r.id).join(', ')}]`,
+      );
+      throw new BadRequestException('Some resources not found');
+    }
+
+    // Mapear los recursos con sus detalles
+    const fullApuResources = apuDb.apuResource.map((r) => {
+      const resourceData = resourcesOnDb.find(
+        (resource) => resource.id === r.resourceId,
+      )!;
+      return {
+        id: r.id,
+        group: r.group,
+        quantity: r.quantity,
+        resource: resourceData,
+      };
+    });
+
+    // Construir la respuesta completa
+    const fullApuBudgetData: FullApuBudgetData = {
+      id: apuDb.id,
+      unitCost: apuDb.unitCost,
+      workHours: apuDb.workHours,
+      performance: apuDb.performance,
+      apuResource: fullApuResources,
+    };
+
+    return fullApuBudgetData;
   }
 }

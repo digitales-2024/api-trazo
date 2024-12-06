@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  ArrayNotEmpty,
   IsArray,
   IsNotEmpty,
   IsNumber,
@@ -38,6 +39,7 @@ export class CreateApuBudgetDto {
     ],
   })
   @IsArray()
+  @ArrayNotEmpty()
   @ValidateNested({ each: true })
   @Type(() => CreateApuResourceBudgetDto)
   resources: Array<CreateApuResourceBudgetDto>;
