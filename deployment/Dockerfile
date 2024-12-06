@@ -9,7 +9,7 @@ RUN npm i
 
 COPY . .
 
-RUN npm run tailwind
+RUN npm run tailwind:build
 RUN npm run build
 
 
