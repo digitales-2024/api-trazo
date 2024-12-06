@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch } from '@nestjs/common';
 import { ApuBudgetService } from './apu-budget.service';
 import { CreateApuBudgetDto } from './dto/create-apu-budget.dto';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
@@ -11,6 +11,7 @@ import {
 } from '@nestjs/swagger';
 import { HttpResponse, UserData } from '@login/login/interfaces';
 import { FullApuBudgetData } from '../interfaces';
+import { UpdateApuBudgetDto } from './dto/update-apu-budget.dto';
 
 @ApiTags('Apu Budget')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -35,5 +36,15 @@ export class ApuBudgetController {
   @Get(':id')
   findOne(@Param('id') id: string): Promise<FullApuBudgetData> {
     return this.apuBudgetService.findOne(id);
+  }
+
+  @ApiOkResponse({ description: 'APU Budget successfully updated' })
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body() updateClientDto: UpdateApuBudgetDto,
+    @GetUser() user: UserData,
+  ): Promise<HttpResponse<FullApuBudgetData>> {
+    return this.apuBudgetService.update(id, updateClientDto, user);
   }
 }
