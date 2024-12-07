@@ -209,7 +209,7 @@ export class ApuBudgetService {
 
     return {
       statusCode: HttpStatus.CREATED,
-      message: 'Client created successfully',
+      message: 'APU Budget created successfully',
       data: fullApuBudgetData,
     };
   }
