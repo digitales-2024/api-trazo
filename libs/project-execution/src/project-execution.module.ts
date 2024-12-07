@@ -7,6 +7,7 @@ import { SubcategoryModule } from './subcategory/subcategory.module';
 import { ApusModule } from './apus/apus.module';
 import { WorkitemsModule } from './workitems/workitems.module';
 import { SubworkitemModule } from './subworkitem/subworkitem.module';
+import { ApuBudgetModule } from './apu-budget/apu-budget.module';
 
 @Module({
   providers: [ProjectExecutionService],
@@ -19,6 +20,7 @@ import { SubworkitemModule } from './subworkitem/subworkitem.module';
     ApusModule,
     WorkitemsModule,
     SubworkitemModule,
+    ApuBudgetModule,
   ],
 })
 export class ProjectExecutionModule {}
