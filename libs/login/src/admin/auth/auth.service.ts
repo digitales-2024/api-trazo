@@ -64,6 +64,7 @@ export class AuthService {
         sameSite: 'strict',
         path: '/',
         maxAge: this.configService.get('COOKIE_EXPIRES_IN'),
+        domain: process.env.WEB_DOMAIN,
         expires: new Date(
           Date.now() + this.configService.get('COOKIE_EXPIRES_IN'),
         ),
@@ -72,6 +73,7 @@ export class AuthService {
       res.cookie('logged_in', true, {
         httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
+        domain: process.env.WEB_DOMAIN,
         sameSite: 'strict',
         maxAge: this.configService.get('COOKIE_EXPIRES_IN'),
         expires: new Date(
@@ -86,6 +88,7 @@ export class AuthService {
       res.cookie('refresh_token', refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
+        domain: process.env.WEB_DOMAIN,
         sameSite: 'strict',
         path: '/',
         maxAge: this.configService.get('COOKIE_REFRESH_EXPIRES_IN'), // Asegúrate de que esta configuración exista
@@ -127,18 +130,21 @@ export class AuthService {
     // Borra la cookie que contiene el token JWT
     res.cookie('access_token', '', {
       httpOnly: true,
+      domain: process.env.WEB_DOMAIN,
       expires: new Date(0), // Establece la fecha de expiración a una fecha pasada para eliminar la cookie
     });
 
     // Borra la cookie que contiene el refresh token
     res.cookie('refresh_token', '', {
       httpOnly: true,
+      domain: process.env.WEB_DOMAIN,
       expires: new Date(0), // Establece la fecha de expiración a una fecha pasada para eliminar la cookie
     });
 
     // Borra la cookie que indica que el usuario está logueado
     res.cookie('logged_in', '', {
       httpOnly: false,
+      domain: process.env.WEB_DOMAIN,
       expires: new Date(0), // Establece la fecha de expiración a una fecha pasada para eliminar la cookie
     });
 
@@ -189,6 +195,7 @@ export class AuthService {
       res.cookie('access_token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
+        domain: process.env.WEB_DOMAIN,
         sameSite: 'strict',
         path: '/',
         maxAge: this.configService.get('COOKIE_EXPIRES_IN'),
@@ -204,6 +211,7 @@ export class AuthService {
       res.cookie('refresh_token', refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
+        domain: process.env.WEB_DOMAIN,
         sameSite: 'strict',
         path: '/',
         maxAge: this.configService.get('COOKIE_REFRESH_EXPIRES_IN'),
@@ -303,6 +311,7 @@ export class AuthService {
       res.cookie('access_token', newAccessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
+        domain: process.env.WEB_DOMAIN,
         sameSite: 'strict',
         path: '/',
         maxAge: this.configService.get<number>('COOKIE_EXPIRES_IN'), // tiempo corto para el access_token
@@ -316,6 +325,7 @@ export class AuthService {
       res.cookie('refresh_token', newRefreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
+        domain: process.env.WEB_DOMAIN,
         sameSite: 'strict',
         path: '/',
         maxAge: this.configService.get<number>('COOKIE_REFRESH_EXPIRES_IN'), // tiempo largo para el refresh_token
@@ -327,6 +337,7 @@ export class AuthService {
       res.cookie('logged_in', true, {
         httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
+        domain: process.env.WEB_DOMAIN,
         sameSite: 'strict',
         maxAge: this.configService.get('COOKIE_EXPIRES_IN'),
         expires: new Date(

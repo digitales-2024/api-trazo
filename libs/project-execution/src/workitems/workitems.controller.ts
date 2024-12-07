@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { UserData } from '@login/login/interfaces';
 import { WorkItemData } from '../interfaces';
+import { DeleteWorkItemDto } from './dto/delete-workitem.dto';
 
 @ApiTags('WorkItem')
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -32,11 +33,11 @@ export class WorkitemsController {
     summary: 'Create WorkItem',
     description: 'Creates a WorkItem and its APU, if present',
   })
-  create(
+  async create(
     @Body() createWorkitemDto: CreateWorkitemDto,
     @GetUser() user: UserData,
   ) {
-    this.workitemsService.create(createWorkitemDto, user);
+    return await this.workitemsService.create(createWorkitemDto, user);
   }
 
   @Get()
@@ -60,15 +61,38 @@ export class WorkitemsController {
   }
 
   @Patch(':id')
-  update(
+  @ApiOperation({
+    summary: 'Edit WorkItem',
+    description: 'Edits a workitem by id',
+  })
+  async update(
     @Param('id') id: string,
     @Body() updateWorkitemDto: UpdateWorkitemDto,
+    @GetUser() user: UserData,
   ) {
-    return this.workitemsService.update(+id, updateWorkitemDto);
+    return await this.workitemsService.update(id, updateWorkitemDto, user);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.workitemsService.remove(+id);
+  @ApiOperation({
+    summary: 'Delete WorkItem',
+    description:
+      'Deletes (sets as inactive) a workitem by id, and all its descendants',
+  })
+  async remove(@Param('id') id: string, @GetUser() user: UserData) {
+    return await this.workitemsService.remove(id, user);
+  }
+
+  @ApiOkResponse({ description: 'Workitems reactivated' })
+  @ApiOperation({
+    summary: 'Reactivate WorkItem',
+    description: 'Reactivates all workitems by id',
+  })
+  @Patch('reactivate/all')
+  async reactivateAll(
+    @GetUser() user: UserData,
+    @Body() clients: DeleteWorkItemDto,
+  ) {
+    return await this.workitemsService.reactivateAll(user, clients);
   }
 }
