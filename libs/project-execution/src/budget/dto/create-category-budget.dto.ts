@@ -137,6 +137,17 @@ export class CreateWorkitemBudgetDto {
   workItemId: string;
 
   @ApiProperty({
+    name: 'apuBudgetId',
+    description: 'Id of the apuBudget',
+    example: 'Id del presupuesto de apu',
+  })
+  @IsString()
+  @IsUUID()
+  @IsNotEmpty()
+  @IsOptional()
+  apuBugdetId?: string;
+
+  @ApiProperty({
     name: 'subworkitem',
     description: 'Array of subworkitems that belong to this workitem',
     required: false,
@@ -191,4 +202,14 @@ export class CreateSubworkitemBudgetDto {
   @IsUUID()
   @IsNotEmpty()
   subWorkItemId: string;
+
+  @ApiProperty({
+    name: 'apuBudgetId',
+    description: 'Id of the apuBudget',
+    example: 'Id del presupuesto de apu',
+  })
+  @IsString()
+  @IsUUID()
+  @IsNotEmpty()
+  apuBugdetId: string;
 }
