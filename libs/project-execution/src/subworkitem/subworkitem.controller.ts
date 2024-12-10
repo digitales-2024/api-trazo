@@ -19,6 +19,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { DeleteSubWorkItemDto } from './dto/delete-subworkitem.dto';
+import { SubWorkItemData } from '../interfaces';
 
 @ApiTags('SubWorkItem')
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -44,9 +45,12 @@ export class SubworkitemController {
     return this.subworkitemService.findAll();
   }
 
+  @ApiOkResponse({
+    description: 'Get WorkItem by id',
+  })
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.subworkitemService.findOne(+id);
+  findOne(@Param('id') id: string): Promise<SubWorkItemData> {
+    return this.subworkitemService.findOne(id);
   }
 
   @Patch(':id')

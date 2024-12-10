@@ -11,6 +11,8 @@ import { ApusService } from '../apus/apus.service';
 import { UserData } from '@login/login/interfaces';
 import { AuditActionType } from '@prisma/client';
 import { DeleteSubWorkItemDto } from './dto/delete-subworkitem.dto';
+import { SubWorkItemData } from '../interfaces';
+import { handleException } from '@login/login/utils';
 
 @Injectable()
 export class SubworkitemService {
@@ -94,8 +96,107 @@ export class SubworkitemService {
     return `This action returns all subworkitem`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} subworkitem`;
+  /**
+   * Mostrar un SubWorkItem por ID
+   * @param id ID del SubWorkItem
+   * @returns Data completa del SubWorkItem
+   */
+  async findOne(id: string): Promise<SubWorkItemData> {
+    try {
+      return await this.findById(id);
+    } catch (error) {
+      this.logger.error('Error get subWorkItem');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      handleException(error, 'Error get subWorkItem');
+    }
+  }
+
+  /**
+   * Mostrar un SubWorkItem por ID
+   * @param id ID del SubWorkItem
+   * @returns Data completa del SubWorkItem
+   */
+  async findById(id: string): Promise<SubWorkItemData> {
+    // Consulta para Obtener el WorkItem
+    const subWorkItemDb = await this.prisma.subWorkItem.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        unit: true,
+        unitCost: true,
+        isActive: true,
+        apuId: true, // Necesitamos apuId para la segunda consulta
+      },
+    });
+
+    // Verificación de Existencia y Estado del SubWorkItem
+    if (!subWorkItemDb) {
+      throw new BadRequestException('This SubWorkItem does not exist');
+    }
+
+    if (!subWorkItemDb.isActive) {
+      throw new BadRequestException('This SubWorkItem exist but is not active');
+    }
+
+    let apuData = {
+      id: '',
+      unitCost: 0,
+      performance: 0,
+      workHours: 0,
+      apuOnResource: [],
+    };
+
+    // Consulta para Obtener el Apu Relacionado si existe apuId
+    if (subWorkItemDb.apuId) {
+      const apuDb = await this.prisma.apu.findUnique({
+        where: { id: subWorkItemDb.apuId },
+        include: {
+          apuResource: {
+            // Incluir ApuOnResource
+            include: {
+              resource: true, // Incluir Resource dentro de ApuOnResource
+            },
+          },
+        },
+      });
+
+      if (apuDb) {
+        apuData = {
+          id: apuDb.id,
+          unitCost: apuDb.unitCost,
+          performance: apuDb.performance,
+          workHours: apuDb.workHours,
+          apuOnResource: apuDb.apuResource.map((ar) => ({
+            id: ar.id,
+            quantity: ar.quantity,
+            subtotal: ar.subtotal,
+            group: ar.group,
+            resource: {
+              id: ar.resource.id,
+              type: ar.resource.type,
+              name: ar.resource.name,
+              unit: ar.resource.unit,
+              unitCost: ar.resource.unitCost,
+              isActive: ar.resource.isActive,
+            },
+          })),
+        };
+      }
+    }
+
+    // Mapeo de Datos a subWorkItemData
+    const workItemData: SubWorkItemData = {
+      id: subWorkItemDb.id,
+      name: subWorkItemDb.name,
+      unit: subWorkItemDb.unit || '',
+      unitCost: subWorkItemDb.unitCost || 0,
+      apu: apuData,
+    };
+
+    return workItemData;
   }
 
   async update(id: string, editDto: UpdateSubworkitemDto, user: UserData) {
