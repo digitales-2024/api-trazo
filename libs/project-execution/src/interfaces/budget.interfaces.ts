@@ -27,13 +27,14 @@ export type CategoryBudgetDetails = {
   subcategory: {
     id: string;
     name: string;
-    workitem: {
+    workItem: {
       id: string;
       name: string;
       unit: string;
       quantity: number;
       unitCost: number;
       subtotal: number;
+      apuId: string;
     }[];
   }[];
 };

@@ -133,7 +133,7 @@ export class CreateBudgetDto {
   @IsNotEmpty()
   totalCost: number;
 
-  // levels
+  // categories
   @ApiProperty({
     name: 'category',
     description:

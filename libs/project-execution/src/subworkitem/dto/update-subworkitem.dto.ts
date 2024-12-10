@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
-export class UpdateWorkitemDto {
+export class UpdateSubworkitemDto {
   @ApiProperty({
     description: 'Name of the workitem',
     example: 'Limpieza de terreno',
@@ -9,15 +9,14 @@ export class UpdateWorkitemDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  name?: string;
+  name: string;
 
   @ApiProperty({
     description: 'Unit of measure of the workitem',
-    required: false,
     example: 'm2',
   })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  unit?: string;
+  unit: string;
 }

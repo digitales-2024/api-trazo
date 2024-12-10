@@ -49,6 +49,7 @@ async function bootstrap() {
       { name: 'Levels', description: 'Operations about levels' },
       { name: 'Apus', description: 'Operations about APUs' },
       { name: 'WorkItem', description: 'Operations about WorkItems' },
+      { name: 'SubWorkItem', description: 'Operations about SubWorkItems' },
     ];
 
     SwaggerModule.setup('api', app, document);

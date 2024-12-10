@@ -530,7 +530,7 @@ model ApuOnResourceBudget {
 
   quantity Float
   subtotal Float
-  group    String?
+  group    Float?
 
   // Relación con Resource
   resourceId String

@@ -152,9 +152,18 @@ export class CategoryService {
                 include: {
                   subWorkItem: true, // Incluir subWorkItems si existen
                 },
+                orderBy: {
+                  createdAt: 'desc',
+                },
               },
             },
+            orderBy: {
+              createdAt: 'desc',
+            },
           },
+        },
+        orderBy: {
+          createdAt: 'desc',
         },
       });
 
