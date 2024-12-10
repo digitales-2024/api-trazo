@@ -412,6 +412,7 @@ model BudgetDetail {
   overhead   Float
   utility    Float
   igv        Float
+  discount   Float
 
   percentageOverhead Float
   percentageUtility  Float

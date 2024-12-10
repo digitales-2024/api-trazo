@@ -12,6 +12,7 @@ export type BudgetData = Pick<
     overhead: number;
     utility: number;
     igv: number;
+    discount: number;
     percentageOverhead: number;
     percentageUtility: number;
     totalCost: number;
