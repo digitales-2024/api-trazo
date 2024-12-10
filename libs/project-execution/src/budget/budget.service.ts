@@ -603,6 +603,7 @@ export class BudgetService {
           quantity: true,
           unitCost: true,
           subtotal: true,
+          apuBudgetId: true,
         },
       });
 
@@ -619,6 +620,7 @@ export class BudgetService {
           quantity: true,
           unitCost: true,
           subtotal: true,
+          apuBudgetId: true,
         },
       });
 
@@ -641,7 +643,7 @@ export class BudgetService {
                     select: { name: true },
                   });
 
-                const workitems = await Promise.all(
+                const workItems = await Promise.all(
                   workItemBudgets
                     .filter(
                       (workItem) =>
@@ -651,7 +653,7 @@ export class BudgetService {
                       const workItemName =
                         await this.prisma.workItem.findUnique({
                           where: { id: workItem.workItemId },
-                          select: { name: true, unit: true },
+                          select: { id: true, name: true, unit: true },
                         });
 
                       const subWorkItems = await Promise.all(
@@ -668,23 +670,25 @@ export class BudgetService {
                               });
 
                             return {
-                              id: subWorkItem.id,
+                              id: subWorkItem.subWorkItemId,
                               name: subWorkItemName?.name || '',
                               unit: subWorkItemName?.unit || '',
                               quantity: subWorkItem.quantity,
                               unitCost: subWorkItem.unitCost,
                               subtotal: subWorkItem.subtotal,
+                              apuId: subWorkItem.apuBudgetId,
                             };
                           }),
                       );
 
                       return {
-                        id: workItem.id,
+                        id: workItem.workItemId,
                         name: workItemName?.name || '',
                         unit: workItemName?.unit || '',
                         quantity: workItem.quantity,
                         unitCost: workItem.unitCost,
                         subtotal: workItem.subtotal,
+                        apuId: workItem.apuBudgetId,
                         subWorkItems: subWorkItems.map((subWorkItem) => ({
                           id: subWorkItem.id,
                           name: subWorkItem.name,
@@ -692,21 +696,22 @@ export class BudgetService {
                           quantity: subWorkItem.quantity,
                           unitCost: subWorkItem.unitCost,
                           subtotal: subWorkItem.subtotal,
+                          apuId: subWorkItem.apuId,
                         })),
                       };
                     }),
                 );
 
                 return {
-                  id: subcategory.id,
+                  id: subcategory.subcategoryId,
                   name: subcategoryName?.name || '',
-                  workitem: workitems,
+                  workItem: workItems,
                 };
               }),
           );
 
           return {
-            id: category.id,
+            id: category.categoryId,
             name: categoryName?.name || '',
             budgetDetailId: category.budgetDetailId,
             subcategory: subcategories,
@@ -789,8 +794,8 @@ export class BudgetService {
       if (designProjectId) {
         designProjectDB =
           await this.designProjectService.findById(designProjectId);
-        if (designProjectDB.status !== 'APPROVED') {
-          throw new BadRequestException('The design project must be approved');
+        if (designProjectDB.status !== 'COMPLETED') {
+          throw new BadRequestException('The design project must be completed');
         }
       }
 
@@ -1023,6 +1028,7 @@ export class BudgetService {
                     quantity: updatedWorkItem.quantity,
                     unitCost: updatedWorkItem.unitCost,
                     subtotal: updatedWorkItem.subtotal,
+                    apuBudgetId: updatedWorkItem.apuBugdetId,
                   },
                 });
                 workItemBudgetId = existingWorkItem.id;
@@ -1035,6 +1041,7 @@ export class BudgetService {
                     quantity: updatedWorkItem.quantity,
                     unitCost: updatedWorkItem.unitCost,
                     subtotal: updatedWorkItem.subtotal,
+                    apuBudgetId: updatedWorkItem.apuBugdetId,
                   },
                 });
                 workItemBudgetId = newWorkItem.id;
@@ -1061,7 +1068,6 @@ export class BudgetService {
                 await prisma.subWorkItemBudget.delete({
                   where: { id: subWorkItem.id },
                 });
-                console.log('Deleted subWorkItem', subWorkItem.id);
               }
 
               // Procesar subWorkItems actualizados o nuevos
@@ -1079,6 +1085,7 @@ export class BudgetService {
                       quantity: updatedSubWorkItem.quantity,
                       unitCost: updatedSubWorkItem.unitCost,
                       subtotal: updatedSubWorkItem.subtotal,
+                      apuBudgetId: updatedSubWorkItem.apuBugdetId,
                     },
                   });
                 } else {
@@ -1090,6 +1097,7 @@ export class BudgetService {
                       quantity: updatedSubWorkItem.quantity,
                       unitCost: updatedSubWorkItem.unitCost,
                       subtotal: updatedSubWorkItem.subtotal,
+                      apuBudgetId: updatedSubWorkItem.apuBugdetId,
                     },
                   });
                 }
