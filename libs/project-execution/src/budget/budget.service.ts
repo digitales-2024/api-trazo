@@ -36,7 +36,7 @@ export class BudgetService {
   private async generateCodeBudget(): Promise<string> {
     // Generar el siguiente código incremental
     const lastProject = await this.prisma.budget.findFirst({
-      where: { code: { startsWith: 'PRS-DIS-' } },
+      where: { code: { startsWith: 'PRS-EJE-' } },
       orderBy: { code: 'desc' }, // Orden descendente
     });
 
@@ -84,8 +84,8 @@ export class BudgetService {
       if (designProjectId) {
         designProjectDB =
           await this.designProjectService.findById(designProjectId);
-        if (designProjectDB.status !== 'APPROVED') {
-          throw new BadRequestException('The design project must be approved');
+        if (designProjectDB.status !== 'COMPLETED') {
+          throw new BadRequestException('The design project must be completed');
         }
       }
       // Crear el presupuesto y registrar la auditoría
@@ -213,6 +213,7 @@ export class BudgetService {
                                 quantity: workElement.quantity,
                                 unitCost: workElement.unitCost,
                                 subtotal: workElement.subtotal,
+                                apuBudgetId: workElement.apuBugdetId,
                               },
                               select: {
                                 id: true,
@@ -243,6 +244,8 @@ export class BudgetService {
                                             quantity: subWorkElement.quantity,
                                             unitCost: subWorkElement.unitCost,
                                             subtotal: subWorkElement.subtotal,
+                                            apuBudgetId:
+                                              subWorkElement.apuBugdetId,
                                           },
                                           select: {
                                             id: true,
