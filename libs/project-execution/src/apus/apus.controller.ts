@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
 import { ApusService } from './apus.service';
 import { CreateApusDto } from './dto/create-apus.dto';
 import { UpdateApusDto } from './dto/update-apus.dto';
@@ -94,10 +86,5 @@ export class ApusController {
     @GetUser() user: UserData,
   ) {
     return await this.apusService.update(id, updateApusDto, user);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.apusService.remove(+id);
   }
 }

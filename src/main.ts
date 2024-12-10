@@ -48,6 +48,8 @@ async function bootstrap() {
       { name: 'Quotation', description: 'Operations about quotations' },
       { name: 'Levels', description: 'Operations about levels' },
       { name: 'Apus', description: 'Operations about APUs' },
+      { name: 'Category', description: 'Operations about Category' },
+      { name: 'Subcategory', description: 'Operations about subcategories' },
       { name: 'WorkItem', description: 'Operations about WorkItems' },
       { name: 'SubWorkItem', description: 'Operations about SubWorkItems' },
     ];
