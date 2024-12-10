@@ -100,6 +100,14 @@ export class UpdateBudgetDto extends PartialType(CreateBudgetDto) {
   igv?: number;
 
   @ApiProperty({
+    name: 'discount',
+    description: 'Discount of the project',
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  discount?: number;
+
+  @ApiProperty({
     name: 'percentageOverhead',
     description: 'Percentage of overhead',
   })

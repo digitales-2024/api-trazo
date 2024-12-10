@@ -66,6 +66,7 @@ export class BudgetService {
       directCost,
       overhead,
       igv,
+      discount,
       utility,
       percentageOverhead,
       percentageUtility,
@@ -139,6 +140,7 @@ export class BudgetService {
             directCost,
             overhead,
             igv,
+            discount,
             utility,
             percentageOverhead,
             percentageUtility,
@@ -150,6 +152,7 @@ export class BudgetService {
             directCost: true,
             overhead: true,
             igv: true,
+            discount: true,
             utility: true,
             percentageOverhead: true,
             percentageUtility: true,
@@ -455,6 +458,7 @@ export class BudgetService {
             overhead: true,
             utility: true,
             igv: true,
+            discount: true,
             percentageOverhead: true,
             percentageUtility: true,
             totalCost: true,
@@ -747,6 +751,7 @@ export class BudgetService {
       directCost,
       overhead,
       igv,
+      discount,
       utility,
       percentageOverhead,
       percentageUtility,
@@ -838,6 +843,7 @@ export class BudgetService {
             directCost,
             overhead,
             igv,
+            discount,
             utility,
             percentageOverhead,
             percentageUtility,
@@ -848,6 +854,7 @@ export class BudgetService {
             directCost: true,
             overhead: true,
             igv: true,
+            discount: true,
             utility: true,
             percentageOverhead: true,
             percentageUtility: true,
@@ -930,9 +937,7 @@ export class BudgetService {
           const updatedSubcategories = updatedCategory.subcategory;
           const updatedSubcategoryIds = updatedSubcategories.map(
             (subcat) => subcat.subcategoryId,
-          );
-
-          // Identificar subcategorías a eliminar
+          ); // Identificar subcategorías a eliminar
           const subcategoriesToDelete = existingSubcategories.filter(
             (subcat) => !updatedSubcategoryIds.includes(subcat.subcategoryId),
           );
