@@ -12,6 +12,7 @@ export type BudgetData = Pick<
     overhead: number;
     utility: number;
     igv: number;
+    discount: number;
     percentageOverhead: number;
     percentageUtility: number;
     totalCost: number;
@@ -26,13 +27,14 @@ export type CategoryBudgetDetails = {
   subcategory: {
     id: string;
     name: string;
-    workitem: {
+    workItem: {
       id: string;
       name: string;
       unit: string;
       quantity: number;
       unitCost: number;
       subtotal: number;
+      apuId: string;
     }[];
   }[];
 };
