@@ -24,9 +24,11 @@ export type CategoryBudgetDetails = {
   id: string;
   budgetDetailId?: string;
   name: string;
+  subtotal: number;
   subcategory: {
     id: string;
     name: string;
+    subtotal: number;
     workItem: {
       id: string;
       name: string;

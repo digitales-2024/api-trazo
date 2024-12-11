@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  StreamableFile,
 } from '@nestjs/common';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
@@ -21,6 +22,8 @@ import { handleException } from '@login/login/utils';
 import { CategoryService } from '../category/category.service';
 import { SubcategoryService } from '../subcategory/subcategory.service';
 import { UpdateBudgetStatusDto } from './dto/update-status-budget.dto';
+import { BudgetTemplate } from './budgets.template';
+import * as Puppeteer from 'puppeteer';
 
 @Injectable()
 export class BudgetService {
@@ -31,6 +34,7 @@ export class BudgetService {
     private readonly designProjectService: ProjectService,
     private readonly categoryService: CategoryService,
     private readonly subcategoryService: SubcategoryService,
+    private readonly template: BudgetTemplate,
   ) {}
 
   private async generateCodeBudget(): Promise<string> {
@@ -709,6 +713,7 @@ export class BudgetService {
                 return {
                   id: subcategory.subcategoryId,
                   name: subcategoryName?.name || '',
+                  subtotal: subcategory.subtotal,
                   workItem: workItems,
                 };
               }),
@@ -717,6 +722,7 @@ export class BudgetService {
           return {
             id: category.categoryId,
             name: categoryName?.name || '',
+            subtotal: category.subtotal,
             budgetDetailId: category.budgetDetailId,
             subcategory: subcategories,
           };
@@ -1236,5 +1242,60 @@ export class BudgetService {
         designProjectBudget: budgetDB.designProjectBudget,
       },
     };
+  }
+
+  /**
+   * Generar pdf de un presupuesto
+   * @param id Id del presupuesto
+   * @param user Usuario que realiza la petición
+   * @returns Archivo pdf del presupuesto
+   */
+  async genPdf(id: string): Promise<StreamableFile> {
+    // Get the quotation
+    const budget = await this.findOne(id);
+
+    const editCount = await this.prisma.audit.count({
+      where: {
+        entityId: budget.id,
+      },
+    });
+
+    // Render the quotation into HTML
+    const pdfHtml = await this.template.renderPdf(budget, editCount);
+
+    // Generar el PDF usando Puppeteer
+    const browser = await Puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(pdfHtml);
+
+    // The size of the page in px, before accounting for the pdf margin
+    const pageBody = await page.$('body');
+    const boundingBox = await pageBody.boundingBox();
+    const pageHeight = boundingBox.height;
+    const pageHeightMilli = pageHeight * 0.2645833333;
+
+    // A4 paper is 297mm in heigth. The PDF has 5mm margin top & bottom.
+    // So we count the number of pages as its height / 287mm
+    const numberOfPages = Math.ceil(pageHeightMilli / 287);
+
+    // Replace this value in the html
+    const newPageHtml = pdfHtml.replace(
+      '{{pageCount}}',
+      numberOfPages.toString(),
+    );
+    // Set the page with the number of pages
+    await page.setContent(newPageHtml);
+
+    const pdfBufferUint8Array = await page.pdf({
+      format: 'A4',
+      preferCSSPageSize: true,
+      margin: { top: '50px', bottom: '50px' },
+    });
+    await browser.close();
+
+    return new StreamableFile(pdfBufferUint8Array, {
+      type: 'application/pdf',
+      disposition: 'attachment; filename="cotizacion-gen.pdf"',
+    });
   }
 }
