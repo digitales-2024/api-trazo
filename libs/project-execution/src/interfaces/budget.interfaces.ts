@@ -37,8 +37,18 @@ export type CategoryBudgetDetails = {
       unitCost: number;
       subtotal: number;
       apuId: string;
+      subWorkItems?: WorkItem[];
     }[];
   }[];
+};
+
+type WorkItem = {
+  id: string;
+  name: string;
+  unit: string;
+  quantity: number;
+  unitCost: number;
+  subtotal: number;
 };
 
 export type SummaryBudgetData = Pick<

@@ -8,6 +8,7 @@ import { ProjectModule } from '@design-projects/design-projects/project/project.
 import { CategoryModule } from '../category/category.module';
 import { SubcategoryModule } from '../subcategory/subcategory.module';
 import { BudgetTemplate } from './budgets.template';
+import { BusinessModule } from '@business/business';
 
 @Module({
   controllers: [BudgetController],
@@ -19,6 +20,7 @@ import { BudgetTemplate } from './budgets.template';
     ProjectModule,
     CategoryModule,
     SubcategoryModule,
+    BusinessModule,
   ],
 })
 export class BudgetModule {}

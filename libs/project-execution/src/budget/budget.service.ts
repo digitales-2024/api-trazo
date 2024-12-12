@@ -24,6 +24,7 @@ import { SubcategoryService } from '../subcategory/subcategory.service';
 import { UpdateBudgetStatusDto } from './dto/update-status-budget.dto';
 import { BudgetTemplate } from './budgets.template';
 import * as Puppeteer from 'puppeteer';
+import { BusinessService } from '@business/business';
 
 @Injectable()
 export class BudgetService {
@@ -35,6 +36,7 @@ export class BudgetService {
     private readonly categoryService: CategoryService,
     private readonly subcategoryService: SubcategoryService,
     private readonly template: BudgetTemplate,
+    private readonly businessService: BusinessService,
   ) {}
 
   private async generateCodeBudget(): Promise<string> {
@@ -1253,6 +1255,7 @@ export class BudgetService {
   async genPdf(id: string): Promise<StreamableFile> {
     // Get the quotation
     const budget = await this.findOne(id);
+    const business = await this.businessService.findAll();
 
     const editCount = await this.prisma.audit.count({
       where: {
@@ -1261,7 +1264,11 @@ export class BudgetService {
     });
 
     // Render the quotation into HTML
-    const pdfHtml = await this.template.renderPdf(budget, editCount);
+    const pdfHtml = await this.template.renderPdf(
+      budget,
+      editCount,
+      business[0],
+    );
 
     // Generar el PDF usando Puppeteer
     const browser = await Puppeteer.launch();
@@ -1295,7 +1302,21 @@ export class BudgetService {
 
     return new StreamableFile(pdfBufferUint8Array, {
       type: 'application/pdf',
-      disposition: 'attachment; filename="cotizacion-gen.pdf"',
+      disposition: 'attachment; filename="budget-gen.pdf"',
     });
+  }
+
+  async genPdfTemplate(id: string): Promise<string> {
+    // Get the quotation
+    const budget = await this.findOne(id);
+    const business = await this.businessService.findAll();
+
+    const editCount = await this.prisma.audit.count({
+      where: {
+        entityId: budget.id,
+      },
+    });
+
+    return this.template.renderPdf(budget, editCount, business[0]);
   }
 }

@@ -78,4 +78,9 @@ export class BudgetController {
   genPdf(@Param('id') id: string): Promise<StreamableFile> {
     return this.budgetService.genPdf(id);
   }
+
+  @Get(':id/pdflayout')
+  async pdfTemplate(@Param('id') id: string): Promise<string> {
+    return await this.budgetService.genPdfTemplate(id);
+  }
 }
