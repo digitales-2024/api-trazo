@@ -10,9 +10,9 @@ import { AuditService } from '@login/login/admin/audit/audit.service';
 import { ClientsService } from '@clients/clients';
 import { UsersService } from '@login/login/admin/users/users.service';
 import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
-import { CreateProjectDto } from './dto/create-execution-project.dto';
-import { UpdateProjectDto } from './dto/update-execution-project.dto';
-import { UpdateProjectStatusDto } from './dto/update-execution-project-status.dto';
+import { CreateExecutionProjectDto } from './dto/create-execution-project.dto';
+import { UpdateExecutionProjectDto } from './dto/update-execution-project.dto';
+import { UpdateExecutionProjectStatusDto } from './dto/update-execution-project-status.dto';
 import {
   ExecutionProjectData,
   ExecutionProjectSummaryData,
@@ -96,7 +96,7 @@ export class ExecutionProjectService {
    * @returns Proyecto creado
    */
   async create(
-    createExecutionProjectDto: CreateProjectDto,
+    createExecutionProjectDto: CreateExecutionProjectDto,
     user: UserData,
   ): Promise<HttpResponse> {
     const {
@@ -265,7 +265,7 @@ export class ExecutionProjectService {
    */
   async update(
     id: string,
-    updateProjectDto: UpdateProjectDto,
+    updateProjectDto: UpdateExecutionProjectDto,
     user: UserData,
   ): Promise<HttpResponse<ExecutionProjectData>> {
     const {
@@ -284,7 +284,7 @@ export class ExecutionProjectService {
         const project = await this.findById(id);
 
         if (budgetId && budgetId !== project.budget?.id) {
-          await this.budgetService.validateApprovedBudget(budgetId);
+          /* await this.budgetService.validateApprovedBudget(budgetId); */
         }
 
         if (clientId) {
@@ -356,7 +356,7 @@ export class ExecutionProjectService {
    */
   async updateStatus(
     id: string,
-    updateProjectStatusDto: UpdateProjectStatusDto,
+    updateProjectStatusDto: UpdateExecutionProjectStatusDto,
     user: UserData,
   ): Promise<HttpResponse<ExecutionProjectStatusUpdateData>> {
     const { newStatus } = updateProjectStatusDto;
