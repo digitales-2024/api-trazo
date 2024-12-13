@@ -10,14 +10,14 @@ import { AuditService } from '@login/login/admin/audit/audit.service';
 import { ClientsService } from '@clients/clients';
 import { UsersService } from '@login/login/admin/users/users.service';
 import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
-import { CreateProjectDto } from './dto/create-execution-project.dto';
-import { UpdateProjectDto } from './dto/update-execution-project.dto';
-import { UpdateProjectStatusDto } from './dto/update-execution-project-status.dto';
+import { CreateExecutionProjectDto } from './dto/create-execution-project.dto';
+import { UpdateExecutionProjectDto } from './dto/update-execution-project.dto';
+import { UpdateExecutionProjectStatusDto } from './dto/update-execution-project-status.dto';
 import {
   ExecutionProjectData,
   ExecutionProjectSummaryData,
   ExecutionProjectStatusUpdateData,
-} from '../interfaces/project.interface';
+} from '../interfaces/executionProject.interface';
 import { ExecutionProjectStatus } from '@prisma/client';
 import { handleException } from '@login/login/utils';
 import { BudgetService } from '../budget/budget.service';
@@ -96,7 +96,7 @@ export class ExecutionProjectService {
    * @returns Proyecto creado
    */
   async create(
-    createExecutionProjectDto: CreateProjectDto,
+    createExecutionProjectDto: CreateExecutionProjectDto,
     user: UserData,
   ): Promise<HttpResponse> {
     const {
@@ -109,6 +109,15 @@ export class ExecutionProjectService {
       province,
       startProjectDate,
     } = createExecutionProjectDto;
+
+    const budget = await this.prisma.budget.findUnique({
+      where: { id: budgetId },
+      select: { status: true },
+    });
+
+    if (budget.status !== 'APPROVED') {
+      throw new BadRequestException('the budget is not approved');
+    }
 
     try {
       await this.prisma.$transaction(async (prisma) => {
@@ -265,7 +274,7 @@ export class ExecutionProjectService {
    */
   async update(
     id: string,
-    updateProjectDto: UpdateProjectDto,
+    updateProjectDto: UpdateExecutionProjectDto,
     user: UserData,
   ): Promise<HttpResponse<ExecutionProjectData>> {
     const {
@@ -281,20 +290,27 @@ export class ExecutionProjectService {
 
     try {
       const updatedProject = await this.prisma.$transaction(async (prisma) => {
+        // Verificar que el proyecto existe
         const project = await this.findById(id);
+        if (!project) {
+          throw new NotFoundException('Execution project with id id not found');
+        }
 
-        if (budgetId && budgetId !== project.budget?.id) {
+        if (budgetId && budgetId !== project.budget?.[0]?.id) {
           await this.budgetService.validateApprovedBudget(budgetId);
         }
 
+        // Verificar si el cliente existe
         if (clientId) {
           await this.client.findById(clientId);
         }
 
+        // Verificar si el residente existe
         if (residentId) {
           await this.user.findById(residentId);
         }
 
+        // Actualizar el proyecto de ejecución
         const updated = await prisma.executionProject.update({
           where: { id },
           data: {
@@ -318,7 +334,7 @@ export class ExecutionProjectService {
             province: true,
             client: { select: { id: true, name: true } },
             resident: { select: { id: true, name: true } },
-            /* budget: { select: { id: true, name: true } }, */
+            budget: { select: { id: true, name: true } },
           },
         });
 
@@ -356,7 +372,7 @@ export class ExecutionProjectService {
    */
   async updateStatus(
     id: string,
-    updateProjectStatusDto: UpdateProjectStatusDto,
+    updateProjectStatusDto: UpdateExecutionProjectStatusDto,
     user: UserData,
   ): Promise<HttpResponse<ExecutionProjectStatusUpdateData>> {
     const { newStatus } = updateProjectStatusDto;
