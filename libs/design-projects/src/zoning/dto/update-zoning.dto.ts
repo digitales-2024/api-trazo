@@ -1,6 +1,7 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { CreateZoningDto } from './create-zoning.dto';
 import { IsNotEmpty, IsNumber, IsString, Max, Min } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class UpdateZoningDto extends PartialType(CreateZoningDto) {
   @ApiProperty({
@@ -9,6 +10,7 @@ export class UpdateZoningDto extends PartialType(CreateZoningDto) {
   })
   @IsNotEmpty()
   @IsString()
+  @Transform(({ value }) => value.toUpperCase())
   zoneCode?: string;
 
   @ApiProperty({

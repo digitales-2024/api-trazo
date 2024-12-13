@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsNotEmpty,
   IsNumber,
@@ -15,6 +16,7 @@ export class CreateZoningDto {
   })
   @IsNotEmpty()
   @IsString()
+  @Transform(({ value }) => value.toUpperCase())
   zoneCode: string;
 
   @ApiProperty({
