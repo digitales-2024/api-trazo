@@ -1273,6 +1273,7 @@ export class BudgetService {
     // Generar el PDF usando Puppeteer
     const browser = await Puppeteer.launch();
     const page = await browser.newPage();
+    await page.setDefaultTimeout(180000);
     await page.setContent(pdfHtml);
 
     // The size of the page in px, before accounting for the pdf margin
