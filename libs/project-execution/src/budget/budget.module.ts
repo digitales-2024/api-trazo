@@ -22,5 +22,6 @@ import { BusinessModule } from '@business/business';
     SubcategoryModule,
     BusinessModule,
   ],
+  exports: [BudgetService],
 })
 export class BudgetModule {}

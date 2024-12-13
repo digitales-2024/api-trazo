@@ -8,6 +8,7 @@ import { ApusModule } from './apus/apus.module';
 import { WorkitemsModule } from './workitems/workitems.module';
 import { SubworkitemModule } from './subworkitem/subworkitem.module';
 import { ApuBudgetModule } from './apu-budget/apu-budget.module';
+import { ExecutionProjectModule } from './project/project.module';
 
 @Module({
   providers: [ProjectExecutionService],
@@ -17,6 +18,7 @@ import { ApuBudgetModule } from './apu-budget/apu-budget.module';
     BudgetModule,
     CategoryModule,
     SubcategoryModule,
+    ExecutionProjectModule,
     ApusModule,
     WorkitemsModule,
     SubworkitemModule,
