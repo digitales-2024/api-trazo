@@ -1,0 +1,127 @@
+{
+  "name": "api-trazo",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "nest build",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"libs/**/*.ts\"",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:debug": "nest start --debug --watch",
+    "start:prod": "node dist/main",
+    "start:migrate:prod": "prisma migrate deploy && npm run start:prod",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.{ts,tsx}\" --fix",
+    "tailwind": "npm run tailwind:dev",
+    "tailwind:build": "tailwindcss -i ./static/tailwind-input.css -o ./static/tailwind-output.css --minify",
+    "tailwind:dev": "tailwindcss -i ./static/tailwind-input.css -o ./static/tailwind-output.css --watch --minify",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "prepare": "husky install",
+    "seed": "ts-node prisma/seed.ts"
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
+  "dependencies": {
+    "@faker-js/faker": "^9.2.0",
+    "@kitajs/html": "^4.2.4",
+    "@kitajs/ts-html-plugin": "^4.1.0",
+    "@nestjs-modules/mailer": "^2.0.2",
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/config": "^3.2.3",
+    "@nestjs/core": "^10.0.0",
+    "@nestjs/event-emitter": "^2.0.4",
+    "@nestjs/jwt": "^10.2.0",
+    "@nestjs/mapped-types": "^2.0.5",
+    "@nestjs/passport": "^10.0.3",
+    "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/serve-static": "^4.0.2",
+    "@nestjs/swagger": "^7.4.2",
+    "@prisma/client": "^5.21.1",
+    "@scalar/nestjs-api-reference": "^0.3.167",
+    "axios": "^1.7.7",
+    "bcrypt": "^5.1.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "commitlint": "^19.5.0",
+    "cookie-parser": "^1.4.7",
+    "ejs": "^3.1.10",
+    "generate-password": "^1.7.1",
+    "moment-timezone": "^0.5.46",
+    "node-cron": "^3.0.3",
+    "passport-jwt": "^4.0.1",
+    "puppeteer": "^23.5.0",
+    "reflect-metadata": "^0.2.0",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@commitlint/config-conventional": "^19.5.0",
+    "@nestjs/cli": "^10.0.0",
+    "@nestjs/schematics": "^10.0.0",
+    "@nestjs/testing": "^10.0.0",
+    "@types/bcrypt": "^5.0.2",
+    "@types/cookie-parser": "^1.4.7",
+    "@types/express": "^5.0.0",
+    "@types/jest": "^29.5.2",
+    "@types/node": "^20.3.1",
+    "@types/pdfkit": "^0.13.5",
+    "@types/supertest": "^6.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "husky": "^8.0.3",
+    "jest": "^29.5.0",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.0.0",
+    "prisma": "^5.21.1",
+    "source-map-support": "^0.5.21",
+    "supertest": "^7.0.0",
+    "tailwindcss": "^3.4.14",
+    "ts-jest": "^29.1.0",
+    "ts-loader": "^9.4.3",
+    "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.1.3"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": ".",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "**/*.(t|j)s"
+    ],
+    "coverageDirectory": "./coverage",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/src/",
+      "<rootDir>/libs/"
+    ],
+    "moduleNameMapper": {
+      "^@login/login(|/.*)$": "<rootDir>/libs/login/src/$1",
+      "^@prisma/prisma(|/.*)$": "<rootDir>/libs/prisma/src/$1",
+      "^@clients/clients(|/.*)$": "<rootDir>/libs/clients/src/$1",
+      "^@business/business(|/.*)$": "<rootDir>/libs/business/src/$1",
+      "^@design-projects/design-projects(|/.*)$": "<rootDir>/libs/design-projects/src/$1",
+      "^@sunat-change/sunat-change(|/.*)$": "<rootDir>/libs/sunat-change/src/$1",
+      "^@project-execution/project-execution(|/.*)$": "<rootDir>/libs/project-execution/src/$1"
+    }
+  }
+}

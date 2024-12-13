@@ -1,0 +1,72 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2021",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "forceConsistentCasingInFileNames": false,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "noFallthroughCasesInSwitch": false,
+    "jsx": "react-jsx",
+    "jsxImportSource": "@kitajs/html",
+    "plugins": [
+      {
+        "name": "@kitajs/ts-html-plugin"
+      }
+    ],
+    "paths": {
+      "@login/login": [
+        "libs/login/src"
+      ],
+      "@login/login/*": [
+        "libs/login/src/*"
+      ],
+      "@prisma/prisma": [
+        "libs/prisma/src"
+      ],
+      "@prisma/prisma/*": [
+        "libs/prisma/src/*"
+      ],
+      "@clients/clients": [
+        "libs/clients/src"
+      ],
+      "@clients/clients/*": [
+        "libs/clients/src/*"
+      ],
+      "@business/business": [
+        "libs/business/src"
+      ],
+      "@business/business/*": [
+        "libs/business/src/*"
+      ],
+      "@design-projects/design-projects": [
+        "libs/design-projects/src"
+      ],
+      "@design-projects/design-projects/*": [
+        "libs/design-projects/src/*"
+      ],
+      "@sunat-change/sunat-change": [
+        "libs/sunat-change/src"
+      ],
+      "@sunat-change/sunat-change/*": [
+        "libs/sunat-change/src/*"
+      ],
+      "@project-execution/project-execution": [
+        "libs/project-execution/src"
+      ],
+      "@project-execution/project-execution/*": [
+        "libs/project-execution/src/*"
+      ]
+    }
+  }
+}

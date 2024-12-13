@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "webpack": true,
+    "assets": [
+      "libs/login/src/email/templates/**/*"
+    ]
+  },
+  "projects": {
+    "login": {
+      "type": "library",
+      "root": "libs/login",
+      "entryFile": "index",
+      "sourceRoot": "libs/login/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/login/tsconfig.lib.json"
+      }
+    },
+    "prisma": {
+      "type": "library",
+      "root": "libs/prisma",
+      "entryFile": "index",
+      "sourceRoot": "libs/prisma/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/prisma/tsconfig.lib.json"
+      }
+    },
+    "clients": {
+      "type": "library",
+      "root": "libs/clients",
+      "entryFile": "index",
+      "sourceRoot": "libs/clients/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/clients/tsconfig.lib.json"
+      }
+    },
+    "business": {
+      "type": "library",
+      "root": "libs/business",
+      "entryFile": "index",
+      "sourceRoot": "libs/business/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/business/tsconfig.lib.json"
+      }
+    },
+    "design-projects": {
+      "type": "library",
+      "root": "libs/design-projects",
+      "entryFile": "index",
+      "sourceRoot": "libs/design-projects/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/design-projects/tsconfig.lib.json"
+      }
+    },
+    "sunat-change": {
+      "type": "library",
+      "root": "libs/sunat-change",
+      "entryFile": "index",
+      "sourceRoot": "libs/sunat-change/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/sunat-change/tsconfig.lib.json"
+      }
+    },
+    "project-execution": {
+      "type": "library",
+      "root": "libs/project-execution",
+      "entryFile": "index",
+      "sourceRoot": "libs/project-execution/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/project-execution/tsconfig.lib.json"
+      }
+    }
+  }
+}

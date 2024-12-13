@@ -1,0 +1,711 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String   @id @unique @default(uuid())
+  name               String
+  email              String
+  password           String
+  phone              String?
+  isSuperAdmin       Boolean  @default(false)
+  lastLogin          DateTime @default(now()) @db.Timestamptz(6)
+  isActive           Boolean  @default(true)
+  mustChangePassword Boolean  @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  // Relación con auditorías (acciones realizadas por este usuario)
+  auditsPerformed Audit[] @relation("AuditPerformedBy")
+
+  // Relación con UserRol
+  userRols            UserRol[]       @relation("UserId")
+  designProjects      DesignProject[] @relation("DesignerDesignProjects")
+  executionProjects   ExecutionProject[] @relation("ResidentExecutionProjects")
+
+  @@unique([email, isActive])
+}
+
+model Rol {
+  id          String  @id @unique @default(uuid())
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  // Relación con UserRol
+  rolUsers UserRol[] @relation("RolId")
+
+  // Relación con RolModulePermissions
+  rolModulePermissions RolModulePermissions[] @relation("RolId")
+
+  @@unique([name, isActive])
+}
+
+model UserRol {
+  id       String  @id @unique @default(uuid())
+  user     User    @relation("UserId", fields: [userId], references: [id])
+  userId   String
+  isActive Boolean @default(true)
+  rol      Rol     @relation("RolId", fields: [rolId], references: [id])
+  rolId    String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, rolId])
+}
+
+model Permission {
+  id          String  @id @unique @default(uuid())
+  cod         String
+  name        String
+  description String?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  // Relación con ModulePermissions
+  permissionModule ModulePermissions[] @relation("PermissionId")
+
+  @@unique([cod, name])
+}
+
+model Module {
+  id          String  @id @unique @default(uuid())
+  cod         String
+  name        String
+  description String?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  // Relación con ModulePermissions
+  modulePermissions ModulePermissions[] @relation("ModuleId")
+
+  @@unique([cod, name])
+}
+
+model ModulePermissions {
+  id           String     @id @unique @default(uuid())
+  module       Module     @relation("ModuleId", fields: [moduleId], references: [id], onDelete: Cascade)
+  moduleId     String
+  permission   Permission @relation("PermissionId", fields: [permissionId], references: [id], onDelete: Cascade)
+  permissionId String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  // Relación con RolModulePermissions
+  rolModulePermissions RolModulePermissions[] @relation("ModulePermissionsId")
+
+  @@unique([moduleId, permissionId])
+}
+
+model RolModulePermissions {
+  id                  String            @id @unique @default(uuid())
+  rol                 Rol               @relation("RolId", fields: [rolId], references: [id], onDelete: Cascade)
+  rolId               String
+  modulePermissions   ModulePermissions @relation("ModulePermissionsId", fields: [modulePermissionsId], references: [id], onDelete: Cascade)
+  modulePermissionsId String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  @@unique([rolId, modulePermissionsId])
+}
+
+model Audit {
+  id            String          @id @unique @default(uuid())
+  entityId      String
+  entityType    String // Representa el nombre del modelo (ej: User, Rol, etc.)
+  action        AuditActionType // Representa la acción (CREATE, UPDATE, DELETE)
+  performedBy   User            @relation("AuditPerformedBy", fields: [performedById], references: [id])
+  performedById String
+  createdAt     DateTime        @default(now()) @db.Timestamptz(6)
+}
+
+enum AuditActionType {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+model Client {
+  id         String  @id @unique @default(uuid())
+  name       String
+  rucDni     String  @unique
+  address    String
+  province   String
+  department String
+  phone      String?
+  isActive   Boolean @default(true)
+
+  // Relacion con Quotation
+  clientQuotations Quotation[] @relation("client")
+
+  // Relacion con Budget
+  clientBudget Budget[] @relation("client")
+
+  designProjects DesignProject[] @relation("ClientDesignProjects")
+  executionProjects ExecutionProject[] @relation("ClientExecutionProjects")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+// tabla ambientes
+model Spaces {
+  id          String  @id @unique @default(uuid())
+  name        String  @unique
+  description String?
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  // relacion muchos-a-muchos con Level
+  LevelsOnSpaces LevelsOnSpaces[]
+}
+
+model BusinessConfig {
+  id           String @id @unique @default(uuid())
+  name         String
+  ruc          String
+  address      String
+  legalRepName String
+  legalRepDni  String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+// Tabla de cotizaciones (Quotation)
+model Quotation {
+  id String @id @unique @default(uuid()) // Clave primaria
+
+  // Un número autoincrementable que se muestra en el PDF de la cotizacion
+  // TRAZ-140
+  publicCode Int @default(autoincrement())
+
+  name        String // Nombre del proyecto. Ejm: "Proyecto de vivienda multifamiliar"
+  description String @default("") // Descripcion del proyecto. Ejm: "Se planifica diseño de una vivienda multifamiliar..."
+  code        String // Código de la cotizacion. Ejm: "COT-001"
+
+  status       QuotationStatusType @default(PENDING) // Estado de la cotización
+  discount     Float // Descuento aplicado
+  totalAmount  Float               @default(0) // Monto total de la cotización
+  deliveryTime Int // Tiempo de entrega en meses
+  exchangeRate Float // Tasa de cambio
+  landArea     Float // Área del terreno en m²
+
+  paymentSchedule Json // Cronograma de pagos (30%, 50%, 20%)
+
+  // Proyecto integral: Planos y detalles de cada área
+  integratedProjectDetails Json // JSON con detalles del proyecto integral (descripción, unidad, metraje, costo por m²)
+
+  architecturalCost Float
+  structuralCost    Float
+  electricCost      Float
+  sanitaryCost      Float
+  metering          Float // Metrado total del proyecto
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  // Relacion con Level
+  levels         Level[]         @relation("level")
+  designProjects DesignProject[] @relation("QuotationDesignProjects")
+  // Relacion con Client
+  client         Client          @relation("client", fields: [clientId], references: [id])
+  clientId       String // Llave foránea a la tabla de clientes
+  // Relación con Zoning
+  zoning         Zoning          @relation(fields: [zoningId], references: [id])
+  zoningId       String
+}
+
+// Estado de una cotizacion
+enum QuotationStatusType {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Nivel (piso) de una cotizacion
+model Level {
+  id   String @id @unique @default(uuid()) // Clave primaria
+  name String // Nombre del nivel. Ejm: "Primer nivel"
+
+  quotation   Quotation @relation("level", fields: [quotationId], references: [id])
+  quotationId String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  // Relacion muchos-a-muchos con Spaces
+  LevelsOnSpaces LevelsOnSpaces[]
+}
+
+model LevelsOnSpaces {
+  id String @id @unique @default(uuid()) // Clave primaria
+
+  amount Int // cantidad de ambientes
+  area   Float // area del ambiente en m2
+
+  level   Level  @relation(fields: [levelId], references: [id])
+  levelId String
+
+  space   Spaces @relation(fields: [spaceId], references: [id])
+  spaceId String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model DesignProject {
+  id   String @id @unique @default(uuid())
+  code String @unique
+  name String
+
+  status DesignProjectStatus @default(APPROVED)
+
+  ubicationProject String
+  province         String
+  department       String
+
+  dateArchitectural String?
+  dateStructural    String?
+  dateElectrical    String?
+  dateSanitary      String?
+
+  //Relaciones
+  client   Client @relation("ClientDesignProjects", fields: [clientId], references: [id])
+  clientId String
+
+  quotation   Quotation @relation("QuotationDesignProjects", fields: [quotationId], references: [id])
+  quotationId String    @unique
+
+  designer   User   @relation("DesignerDesignProjects", fields: [designerId], references: [id])
+  designerId String
+
+  projectCharters ProjectCharter[] @relation("DesignProjectCharters")
+
+  // Relacion con Budget
+  budget Budget[] @relation("budget")
+
+  startProjectDate String
+  createdAt        DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt
+}
+
+enum DesignProjectStatus {
+  APPROVED
+  ENGINEERING
+  CONFIRMATION
+  PRESENTATION
+  COMPLETED
+}
+
+model Zoning {
+  id            String  @id @unique @default(uuid())
+  zoneCode      String  @unique
+  description   String?
+  buildableArea Float
+  openArea      Float
+  isActive      Boolean @default(true)
+
+  createdAt DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime    @updatedAt
+  Quotation Quotation[]
+}
+
+model ProjectCharter {
+  id String @id @unique @default(uuid())
+
+  // Relación con DesignProject
+  designProject   DesignProject @relation("DesignProjectCharters", fields: [designProjectId], references: [id])
+  designProjectId String
+
+  // Relación con Observations
+  observations Observation[] @relation("ChartObservations")
+
+  preProjectApproval Boolean @default(false)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+// New model for observations
+model Observation {
+  id String @id @unique @default(uuid())
+
+  observation String
+  meetingDate String
+
+  // Relación con ProjectCharter
+  projectCharter   ProjectCharter @relation("ChartObservations", fields: [projectCharterId], references: [id])
+  projectCharterId String
+
+  // Timestamps
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+model Resource {
+  id       String       @id @unique @default(uuid())
+  type     ResourceType
+  name     String
+  unit     String
+  unitCost Float
+  isActive Boolean      @default(true)
+
+  // Relación con ApuOnResource
+  resource ApuOnResource[] @relation("resource")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+enum ResourceType {
+  TOOLS
+  LABOR
+  SUPPLIES
+  SERVICES
+}
+
+model Budget {
+  id          String @id @unique @default(uuid())
+  name        String
+  code        String @unique
+  codeBudget  String @default("SGC-P-04-F3")
+  ubication   String
+  dateProject String
+
+  status BudgetStatusType @default(PENDING) // Estado de la cotización
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  // Relación con Client
+  clientBudget Client @relation("client", fields: [clientId], references: [id])
+  clientId     String // Llave foránea a la tabla de clientes
+
+  // Relación con DesignProject
+  budget          DesignProject? @relation("budget", fields: [designProjectId], references: [id])
+  designProjectId String?
+
+  // Relacion con ExecutionProject
+  executionBudget          ExecutionProject? @relation("budget", fields: [executionProjectId], references: [id])
+  executionProjectId String?
+
+  // Relación con BudgetDetail
+  budgetDetail BudgetDetail[] @relation("budgetDetail")
+}
+
+model BudgetDetail {
+  id String @id @unique @default(uuid())
+
+  directCost Float
+  overhead   Float
+  utility    Float
+  igv        Float
+  discount   Float
+
+  percentageOverhead Float
+  percentageUtility  Float
+
+  totalCost Float
+
+  // Relación con Budget
+  budgetDetail Budget @relation("budgetDetail", fields: [budgetId], references: [id])
+  budgetId     String
+
+  // Relación con CategoryOnBudgetDetail
+  budgetCategory CategoryBudget[] @relation("budgetCategory")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+model CategoryBudget {
+  id String @id @unique @default(uuid())
+
+  subtotal Float
+
+  // Relación con Category
+  categoryId String
+
+  // Relación con BudgetDetail
+  budgetCategory BudgetDetail @relation("budgetCategory", fields: [budgetDetailId], references: [id])
+  budgetDetailId String
+
+  // Relación con SubcategoryBudget
+  subcategoryBudget SubcategoryBudget[] @relation("budgetCategory")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+model SubcategoryBudget {
+  id String @id @unique @default(uuid())
+
+  subtotal Float
+
+  subcategoryId String
+
+  // Relación con CategoryBudget
+  categoryBudget   CategoryBudget @relation("budgetCategory", fields: [categoryBudgetId], references: [id])
+  categoryBudgetId String
+
+  // Relación con WorkItemBudget
+  workItemBudget WorkItemBudget[] @relation("workItemBudget")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+model WorkItemBudget {
+  id String @id @unique @default(uuid())
+
+  quantity Float?
+  unitCost Float?
+  subtotal Float?
+
+  // Relación con WorkItem
+  workItemId String
+
+  // Relación con APU Budget
+  apuBudgetId String?
+
+  // Relación con SubcategoryBudget
+  subcategoryBudget   SubcategoryBudget @relation("workItemBudget", fields: [subcategoryBudgetId], references: [id])
+  subcategoryBudgetId String
+
+  // Relación con subWorkItemBudget
+  subWorkItemBudget SubWorkItemBudget[] @relation("subWorkItemBudget")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+model SubWorkItemBudget {
+  id String @id @unique @default(uuid())
+
+  quantity Float
+  unitCost Float
+  subtotal Float
+
+  // Relación con SubWorkItem
+  subWorkItemId String
+
+  // Relación con APU Budget
+  apuBudgetId String?
+
+  // Relación con WorkItemBudget
+  workItemBudget   WorkItemBudget @relation("subWorkItemBudget", fields: [workItemBudgetId], references: [id])
+  workItemBudgetId String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+model ApuBudget {
+  id          String @id @unique @default(uuid())
+  unitCost    Float
+  performance Int
+  workHours   Int    @default(8)
+
+  // Relación con ApuOnResource
+  apuResource ApuOnResourceBudget[] @relation("apu")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+model ApuOnResourceBudget {
+  id String @id @unique @default(uuid())
+
+  quantity Float
+  subtotal Float
+  group    Float?
+
+  // Relación con Resource
+  resourceId String
+
+  apu   ApuBudget @relation("apu", fields: [apuId], references: [id])
+  apuId String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+// Estado de una cotizacion
+enum BudgetStatusType {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Category {
+  id       String  @id @unique @default(uuid())
+  name     String  @unique
+  isActive Boolean @default(true)
+
+  // Relacion con Budget
+  category Subcategory[] @relation("category")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+model Subcategory {
+  id       String  @id @unique @default(uuid())
+  name     String  @unique
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  // Relación con Category
+  category   Category @relation("category", fields: [categoryId], references: [id])
+  categoryId String
+
+  // Relación con WorkItem
+  workItem WorkItem[] @relation("subcategoryWorkItem")
+}
+
+// partida
+model WorkItem {
+  id       String  @id @unique @default(uuid())
+  // nombre de la partida
+  name     String  @unique
+  // unidad de la partida
+  // Si esto es nulo significa que esta partida contiene
+  // subpartidas.
+  unit     String?
+  // costo por unidad de la partida.
+  // este costo es el mismo que el costo unitario del APU al que
+  // se vincula
+  // Si esto es nulo significa que esta partida contiene
+  // subpartidas.
+  unitCost Float?
+
+  isActive Boolean @default(true)
+
+  // Relación con Subcategory
+  subcategory   Subcategory @relation("subcategoryWorkItem", fields: [subcategoryId], references: [id])
+  subcategoryId String
+
+  // Relación con APU
+  // Si esto es nulo significa que esta partida contiene
+  // subpartidas.
+  apuId String?
+
+  // Relación con SubWorkItem (subpartidas)
+  // Si esta relacion existe significa que esta partida tiene subpartidas
+  subWorkItem SubWorkItem[] @relation("workItem")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+model SubWorkItem {
+  id       String @id @unique @default(uuid())
+  // nombre de la partida
+  name     String @unique
+  // unidad de la partida
+  unit     String
+  // costo por unidad de la partida.
+  // este costo es el mismo que el costo unitario del APU al que se vincula
+  unitCost Float
+
+  isActive Boolean @default(true)
+
+  // Relación con APU
+  apuId String?
+
+  // Relación con WorkItem
+  workItem   WorkItem? @relation("workItem", fields: [workItemId], references: [id])
+  workItemId String?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+model Apu {
+  id          String @id @unique @default(uuid())
+  // costo por cada unidad del APU, calculado de los
+  // costos de los recursos
+  unitCost    Float
+  performance Int
+  // numero de horas trabajas en mano de obra. solo
+  // es referencial
+  workHours   Int
+
+  // Relación con ApuOnResource
+  apuResource ApuOnResource[] @relation("apu")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+model ApuOnResource {
+  id String @id @unique @default(uuid())
+
+  quantity Float
+  subtotal Float
+  // cuadrilla
+  group    Float?
+
+  resource   Resource @relation("resource", fields: [resourceId], references: [id])
+  resourceId String
+
+  apu   Apu    @relation("apu", fields: [apuId], references: [id])
+  apuId String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+// Tabla de Proyecto de Ejecución
+model ExecutionProject {
+  id                        String @id @unique @default(uuid())
+  code                      String @unique
+  name                      String
+  status                    ExecutionProjectStatus @default(APPROVED)
+  ubicationProject          String
+  province                  String
+  department                String
+
+  startProjectDate          String
+  createdAt                 DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt                 DateTime @updatedAt
+  
+  // Relaciones
+  client                    Client @relation("ClientExecutionProjects", fields: [clientId], references: [id])
+  clientId                  String
+
+  resident                  User   @relation("ResidentExecutionProjects", fields: [residentId], references: [id])
+  residentId                String
+  
+  budget                    Budget[] @relation("budget")
+  budgetId                  String?
+}
+
+// Estados de un proyecto de Ejecución
+enum ExecutionProjectStatus {
+  APPROVED
+  CANCELLED
+  STARTED
+  EXECUTION
+  COMPLETED
+}
