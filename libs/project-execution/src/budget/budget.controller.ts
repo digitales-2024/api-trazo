@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  StreamableFile,
+} from '@nestjs/common';
 import { BudgetService } from './budget.service';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
@@ -63,5 +71,16 @@ export class BudgetController {
     @GetUser() user: UserData,
   ): Promise<HttpResponse<SummaryBudgetData>> {
     return await this.budgetService.updateStatus(id, newStatus, user);
+  }
+
+  @ApiOkResponse({ description: 'Pdf of Budget successfully generated' })
+  @Get(':id/pdf')
+  genPdf(@Param('id') id: string): Promise<StreamableFile> {
+    return this.budgetService.genPdf(id);
+  }
+
+  @Get(':id/pdflayout')
+  async pdfTemplate(@Param('id') id: string): Promise<string> {
+    return await this.budgetService.genPdfTemplate(id);
   }
 }
