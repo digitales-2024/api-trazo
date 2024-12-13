@@ -19,5 +19,6 @@ import { SubcategoryModule } from '../subcategory/subcategory.module';
     CategoryModule,
     SubcategoryModule,
   ],
+  exports: [BudgetService],
 })
 export class BudgetModule {}
