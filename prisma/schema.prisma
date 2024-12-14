@@ -697,7 +697,7 @@ model ExecutionProject {
   residentId                String
   
   budget                    Budget   @relation("BudgetExecutionProjects", fields: [budgetId], references: [id])
-  budgetId                  String
+  budgetId                  String   @unique  
 }
 
 // Estados de un proyecto de Ejecución
