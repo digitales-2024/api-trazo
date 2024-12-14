@@ -404,8 +404,7 @@ model Budget {
   designProjectId String?
 
   // Relacion con ExecutionProject
-  executionBudget          ExecutionProject? @relation("budget", fields: [executionProjectId], references: [id])
-  executionProjectId String?
+  executionBudget          ExecutionProject[] @relation("BudgetExecutionProjects")
 
   // Relación con BudgetDetail
   budgetDetail BudgetDetail[] @relation("budgetDetail")
@@ -690,15 +689,15 @@ model ExecutionProject {
   createdAt                 DateTime @default(now()) @db.Timestamptz(6)
   updatedAt                 DateTime @updatedAt
   
-  // Relaciones
+  //Relaciones
   client                    Client @relation("ClientExecutionProjects", fields: [clientId], references: [id])
   clientId                  String
 
   resident                  User   @relation("ResidentExecutionProjects", fields: [residentId], references: [id])
   residentId                String
   
-  budget                    Budget[] @relation("budget")
-  budgetId                  String?
+  budget                    Budget   @relation("BudgetExecutionProjects", fields: [budgetId], references: [id])
+  budgetId                  String   @unique  
 }
 
 // Estados de un proyecto de Ejecución

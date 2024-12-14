@@ -16,7 +16,7 @@ import {
   ExecutionProjectSummaryData,
   ExecutionProjectData,
   ExecutionProjectStatusUpdateData,
-} from '../interfaces/project.interface';
+} from '../interfaces/executionProject.interface';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import {
