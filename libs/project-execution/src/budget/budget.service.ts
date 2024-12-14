@@ -1320,4 +1320,16 @@ export class BudgetService {
 
     return this.template.renderPdf(budget, editCount, business[0]);
   }
+
+  async validateApprovedBudget(budgetId: string): Promise<void> {
+    const budget = await this.findById(budgetId);
+
+    if (!budget) {
+      throw new NotFoundException(`Budget with id ${budgetId} not found`);
+    }
+
+    if (budget.status !== 'APPROVED') {
+      throw new BadRequestException('Budget is not approved');
+    }
+  }
 }
