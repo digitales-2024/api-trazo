@@ -29,7 +29,7 @@ export type ExecutionProjectData = BaseExecutionProject & {
   budget: {
     id: string;
     name: string;
-  }[];
+  };
 };
 
 // Listados (findAll)

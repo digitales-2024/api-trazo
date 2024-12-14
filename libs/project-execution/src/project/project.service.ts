@@ -1,3 +1,4 @@
+import { BudgetService } from './../budget/budget.service';
 import {
   BadRequestException,
   HttpStatus,
@@ -20,7 +21,6 @@ import {
 } from '../interfaces/executionProject.interface';
 import { ExecutionProjectStatus } from '@prisma/client';
 import { handleException } from '@login/login/utils';
-import { BudgetService } from '../budget/budget.service';
 
 @Injectable()
 export class ExecutionProjectService {
@@ -110,17 +110,38 @@ export class ExecutionProjectService {
       startProjectDate,
     } = createExecutionProjectDto;
 
+    // Verificar si el presupuesto ya esta asociado a otro proyecto
+    const existingBudget = await this.prisma.executionProject.findUnique({
+      where: { budgetId },
+    });
+
+    if (existingBudget) {
+      throw new BadRequestException(
+        'This budget is alredy assocciated with the another execution project',
+      );
+    }
+
     const budget = await this.prisma.budget.findUnique({
       where: { id: budgetId },
       select: { status: true },
     });
 
-    if (budget.status !== 'APPROVED') {
-      throw new BadRequestException('the budget is not approved');
-    }
-
     try {
       await this.prisma.$transaction(async (prisma) => {
+        // Validando que el cliente existe
+        await this.client.findById(clientId);
+
+        // Validando que el residente existe
+        await this.user.findById(residentId);
+
+        // Validando que el presupuesto existe
+        await this.budgetService.findById(budgetId);
+
+        // Verificando que el estado del Presupuesto sea "Aprobado"
+        if (budget.status !== 'APPROVED') {
+          throw new BadRequestException('This budget is not approved');
+        }
+
         const projectCode = await this.generateCodeProjectExecution();
 
         await this.client.findById(clientId);
@@ -140,6 +161,7 @@ export class ExecutionProjectService {
           },
         });
 
+        // Registrar la auditoría de la creación del proyecto
         await this.audit.create({
           entityId: newProject.id,
           entityType: 'executionProject',
@@ -206,7 +228,23 @@ export class ExecutionProjectService {
    * @throws {NotFoundException} Si el proyecto no existe
    */
   async findOne(id: string): Promise<ExecutionProjectData> {
-    return this.findById(id);
+    try {
+      return this.findById(id);
+    } catch (error) {
+      this.logger.error(
+        `Error retrieving project: ${error.message}`,
+        error.stack,
+      );
+
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      handleException(error, 'Error retrieving project');
+    }
   }
   /* async findOne(id: string): Promise<ExecutionProjectData> {
     const project = await this.prisma.executionProject.findUnique({
@@ -252,9 +290,7 @@ export class ExecutionProjectService {
         province: true,
         client: { select: { id: true, name: true } },
         resident: { select: { id: true, name: true } },
-        /* budget: {
-          select: { id: true, name: true },
-        }, */
+        budget: { select: { id: true, name: true } },
       },
     });
 
@@ -262,7 +298,7 @@ export class ExecutionProjectService {
       throw new NotFoundException('Execution project not found');
     }
 
-    return project as ExecutionProjectData;
+    return project as unknown as ExecutionProjectData;
   }
 
   /**
@@ -288,16 +324,17 @@ export class ExecutionProjectService {
       startProjectDate,
     } = updateProjectDto;
 
+    const budget = await this.prisma.budget.findUnique({
+      where: { id: budgetId },
+      select: { status: true },
+    });
+
     try {
       const updatedProject = await this.prisma.$transaction(async (prisma) => {
         // Verificar que el proyecto existe
         const project = await this.findById(id);
         if (!project) {
           throw new NotFoundException('Execution project with id id not found');
-        }
-
-        if (budgetId && budgetId !== project.budget?.[0]?.id) {
-          await this.budgetService.validateApprovedBudget(budgetId);
         }
 
         // Verificar si el cliente existe
@@ -310,19 +347,70 @@ export class ExecutionProjectService {
           await this.user.findById(residentId);
         }
 
+        if (budgetId && budgetId !== project.budget?.[0]?.id) {
+          await this.budgetService.validateApprovedBudget(budgetId);
+        }
+
+        // Verificando que el estado del Presupuesto sea "Aprobado"
+        if (budget && budget.status !== 'APPROVED') {
+          throw new BadRequestException('This budget is not approved');
+        }
+
+        if (budgetId) {
+          await this.budgetService.findById(budgetId);
+        }
+
+        // Validando que el presupuesto existe
+        await this.budgetService.findById(budgetId);
+
+        console.log(JSON.stringify(project.budget.id, null, 2));
+
+        // Validando si hay cambios
+        const changes =
+          (clientId === undefined || clientId === project.client.id) &&
+          (ubicationProject === undefined ||
+            ubicationProject === project.ubicationProject) &&
+          (residentId === undefined || residentId === project.resident.id) &&
+          (budgetId === undefined || budgetId === project.budget.id) &&
+          (department === undefined || department === project.department) &&
+          (province === undefined || province === project.province) &&
+          (name === undefined || name === project.name) &&
+          (startProjectDate === undefined ||
+            startProjectDate === project.startProjectDate);
+
+        if (changes) {
+          return project;
+        }
+
+        // Construyendo el objeto de actualización
+        const updateData: any = {};
+
+        if (clientId !== undefined && clientId !== project.client.id)
+          updateData.clientId = clientId;
+        if (
+          ubicationProject !== undefined &&
+          ubicationProject !== project.ubicationProject
+        )
+          updateData.ubicationProject = ubicationProject;
+        if (residentId !== undefined && residentId !== project.resident.id)
+          updateData.residentId = residentId;
+        if (budgetId !== undefined && budgetId !== project.budget?.[0]?.id)
+          updateData.budgetId = budgetId;
+        if (department !== undefined && department !== project.department)
+          updateData.department = department;
+        if (province !== undefined && province !== project.province)
+          updateData.province = province;
+        if (name !== undefined && name !== project.name) updateData.name = name;
+        if (
+          startProjectDate !== undefined &&
+          startProjectDate !== project.startProjectDate
+        )
+          updateData.startProjectDate = startProjectDate;
+
         // Actualizar el proyecto de ejecución
         const updated = await prisma.executionProject.update({
           where: { id },
-          data: {
-            ubicationProject,
-            clientId,
-            residentId,
-            budgetId,
-            department,
-            province,
-            name,
-            startProjectDate,
-          },
+          data: updateData,
           select: {
             id: true,
             code: true,
@@ -338,6 +426,7 @@ export class ExecutionProjectService {
           },
         });
 
+        // Creando el registro en la auditoria
         await this.audit.create({
           entityId: id,
           entityType: 'executionProject',
@@ -352,7 +441,7 @@ export class ExecutionProjectService {
       return {
         statusCode: HttpStatus.OK,
         message: 'Execution project updated successfully',
-        data: updatedProject as ExecutionProjectData,
+        data: updatedProject as unknown as ExecutionProjectData,
       };
     } catch (error) {
       this.logger.error(
@@ -382,24 +471,23 @@ export class ExecutionProjectService {
         const project = await this.findById(id);
         const previousStatus = project.status;
 
-        const validTransitions = {
-          APPROVED: ['STARTED'],
-          STARTED: ['EXECUTION'],
-          EXECUTION: ['COMPLETED'],
-          COMPLETED: [],
-        };
-
-        const allowedNextStates = validTransitions[project.status];
-
-        if (!allowedNextStates.includes(newStatus)) {
-          throw new BadRequestException(`Invalid status transition.`);
-        }
-
         const updated = await prisma.executionProject.update({
           where: { id },
           data: { status: newStatus },
           select: { id: true, status: true, updatedAt: true },
         });
+
+        const notChanges =
+          newStatus === undefined || newStatus === previousStatus;
+
+        if (notChanges) {
+          return {
+            id: updated.id,
+            previousStatus: previousStatus,
+            currentStatus: updated.status,
+            updatedAt: updated.updatedAt,
+          };
+        }
 
         await this.audit.create({
           entityId: id,
