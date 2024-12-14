@@ -2,11 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DesignProjectsTemplate } from '../design-projects.template';
 import { spellPricing, twoDecimals } from '../utils';
 import { BusinessGet } from '@business/business/business.service';
-import {
-  CostItem,
-  IntegralProjectItem,
-  QuotationTemplate,
-} from '../quotations/quotations.template';
+import { CostItem, QuotationTemplate } from '../quotations/quotations.template';
 import { DesignProjectDataNested } from '../interfaces/project.interfaces';
 import { LevelData } from '../interfaces';
 
@@ -31,18 +27,7 @@ export class ProjectTemplate {
       .reduce((a, b) => a + b, 0);
     const levelsCount = quotation.levels.length;
 
-    const integralProjectDetails =
-      quotation.integratedProjectDetails as unknown as Array<IntegralProjectItem>;
-    // Cost of each m2 of construction, as a sum of all parts (architectural, structural, etc)
-    const pricePerSquareMeter = integralProjectDetails
-      .map((item) => item.cost)
-      .reduce((acc, next) => acc + next, 0);
-    const priceBeforeDiscount = totalArea * pricePerSquareMeter;
-    // Final price in USD after discount
-    const priceAfterDiscount = Math.abs(
-      priceBeforeDiscount - quotation.discount,
-    );
-    const finalPriceSoles = priceAfterDiscount * quotation.exchangeRate;
+    const finalPriceSoles = quotation.totalAmount;
 
     return (
       <DesignProjectsTemplate.skeleton>

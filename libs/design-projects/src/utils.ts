@@ -125,3 +125,10 @@ export function spellPricing(price: number) {
 
   return `${numberToText(whole)} CON ${centimos}/100 NUEVOS SOLES NO INCLUYE IGV`;
 }
+
+export function spellPricingBudget(price: number) {
+  const newprice = twoDecimals(price);
+  const [whole, centimos] = newprice.split('.');
+
+  return `${numberToText(whole)} CON ${centimos}/100 NUEVOS SOLES`;
+}
