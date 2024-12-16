@@ -27,7 +27,10 @@ model User {
   // Relación con UserRol
   userRols            UserRol[]       @relation("UserId")
   designProjects      DesignProject[] @relation("DesignerDesignProjects")
-  executionProjects   ExecutionProject[] @relation("ResidentExecutionProjects")
+  executionProjects   ExecutionProject[] @relation("residentExecutionProjects")
+
+  // Relacion con Requirements
+  requirements       Requirements[] @relation("residentRequirements")
 
   @@unique([email, isActive])
 }
@@ -156,7 +159,7 @@ model Client {
   clientBudget Budget[] @relation("client")
 
   designProjects DesignProject[] @relation("ClientDesignProjects")
-  executionProjects ExecutionProject[] @relation("ClientExecutionProjects")
+  executionProjects ExecutionProject[] @relation("clientExecutionProjects")
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
@@ -371,6 +374,9 @@ model Resource {
   // Relación con ApuOnResource
   resource ApuOnResource[] @relation("resource")
 
+  // Relación muchos a muchos con RequirementsDetail a través de RequirementResource
+  requirements      RequirementResource[] @relation("ResourcesRequirementsDetail")
+  
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
 }
@@ -404,7 +410,7 @@ model Budget {
   designProjectId String?
 
   // Relacion con ExecutionProject
-  executionBudget          ExecutionProject[] @relation("BudgetExecutionProjects")
+  executionBudget          ExecutionProject[] @relation("budgetExecutionProjects")
 
   // Relación con BudgetDetail
   budgetDetail BudgetDetail[] @relation("budgetDetail")
@@ -690,14 +696,16 @@ model ExecutionProject {
   updatedAt                 DateTime @updatedAt
   
   //Relaciones
-  client                    Client @relation("ClientExecutionProjects", fields: [clientId], references: [id])
+  client                    Client @relation("clientExecutionProjects", fields: [clientId], references: [id])
   clientId                  String
 
-  resident                  User   @relation("ResidentExecutionProjects", fields: [residentId], references: [id])
+  resident                  User   @relation("residentExecutionProjects", fields: [residentId], references: [id])
   residentId                String
   
-  budget                    Budget   @relation("BudgetExecutionProjects", fields: [budgetId], references: [id])
+  budget                    Budget   @relation("budgetExecutionProjects", fields: [budgetId], references: [id])
   budgetId                  String   @unique  
+
+  requirements              Requirements[] @relation("executionProjectRequirements")
 }
 
 // Estados de un proyecto de Ejecución
@@ -707,4 +715,63 @@ enum ExecutionProjectStatus {
   STARTED
   EXECUTION
   COMPLETED
+}
+
+model Requirements {
+  id                    String @id @unique @default(uuid())
+  date                  String
+
+  createdAt             DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime @updatedAt
+
+  // Relaciones
+  resident              User @relation("residentRequirements", fields: [residentId], references: [id])
+  residentId            String
+
+  executionProject      ExecutionProject @relation("executionProjectRequirements", fields: [executionProyectId], references: [id])
+  executionProyectId    String
+  
+  requirementsDetail    RequirementsDetail[] @relation("requirementsDetail")
+}
+
+model RequirementsDetail {
+  id                    String @id @unique @default(uuid())
+  status                RequirementDetailStatus
+  quantity              Float
+  date                  String
+  description           String
+  deliveryDate          String
+  deliveryQuantity      Float
+  balance               Float
+
+  createdAt             DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime @updatedAt
+
+  // Relaciones
+  requirementsDetail    Requirements @relation("requirementsDetail", fields: [requirementsId], references: [id])
+  requirementsId        String
+
+  resources             RequirementResource[] @relation("RequirementsDetailResources")
+}
+
+// Estados para el Detalle de Requerimiento
+enum RequirementDetailStatus {
+  REQUIRED
+  PURCHASE
+  COMPLETED
+}
+
+// Tabla intermedia entre RequirementDetail y Resource
+model RequirementResource {
+  id                      String         @id @unique @default(uuid())
+
+  createdAt               DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt               DateTime       @updatedAt
+
+  // Relaciones 
+  requirementDetail       RequirementsDetail @relation("RequirementsDetailResources", fields: [requirementDetailId], references: [id])
+  requirementDetailId     String
+  
+  resource                Resource       @relation("ResourcesRequirementsDetail", fields: [resourceId], references: [id])
+  resourceId              String
 }
