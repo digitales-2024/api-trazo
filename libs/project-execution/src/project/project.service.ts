@@ -14,6 +14,7 @@ import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { CreateExecutionProjectDto } from './dto/create-execution-project.dto';
 import { UpdateExecutionProjectDto } from './dto/update-execution-project.dto';
 import { UpdateExecutionProjectStatusDto } from './dto/update-execution-project-status.dto';
+import { DeleteExecutionProjectDto } from './dto/delete-execution-project.dto';
 import {
   ExecutionProjectData,
   ExecutionProjectSummaryData,
@@ -263,29 +264,6 @@ export class ExecutionProjectService {
       handleException(error, 'Error retrieving project');
     }
   }
-  /* async findOne(id: string): Promise<ExecutionProjectData> {
-    const project = await this.prisma.executionProject.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        code: true,
-        name: true,
-        status: true,
-        startProjectDate: true,
-        ubicationProject: true,
-        department: true,
-        province: true,
-        client: { select: { id: true, name: true } },
-        resident: { select: { id: true, name: true } },
-      },
-    });
-
-    if (!project) {
-      throw new NotFoundException('Execution project not found');
-    }
-
-    return project as ExecutionProjectData;
-  } */
 
   /**
    * Obtiene información básica de un proyecto por ID
@@ -366,7 +344,7 @@ export class ExecutionProjectService {
           await this.user.findById(residentId);
         }
 
-        if (budgetId && budgetId !== project.budget?.[0]?.id) {
+        if (budgetId && budgetId !== project.budget.id) {
           await this.budgetService.validateApprovedBudget(budgetId);
         }
 
@@ -541,6 +519,101 @@ export class ExecutionProjectService {
         error.stack,
       );
       handleException(error, 'Error updating project status');
+    }
+  }
+
+  /**
+   * Elimina uno o más proyectos de ejecución permanentemente de la base de datos.
+   * Si algún proyecto no existe, se lanza una excepción.
+   *
+   * @param deleteProjectsDto - DTO con los IDs de los proyectos a borrar
+   * @param user - Usuario que realiza la acción
+   * @returns Objeto con el resultado de la operación
+   * @throws {NotFoundException} Si no se encuentran proyectos con los IDs proporcionados
+   */
+  async remove(
+    deleteProjectsDto: DeleteExecutionProjectDto,
+    user: UserData,
+  ): Promise<HttpResponse> {
+    try {
+      // Validar que se proporcionen IDs
+      if (deleteProjectsDto.ids.length === 0) {
+        throw new BadRequestException('No project IDs provided to delete');
+      }
+
+      const result = await this.prisma.$transaction(async (prisma) => {
+        // Buscar proyectos que existen
+        const projects = await prisma.executionProject.findMany({
+          where: {
+            id: { in: deleteProjectsDto.ids },
+          },
+          select: {
+            id: true,
+            name: true,
+            status: true,
+          },
+        });
+
+        const invalidProjects = projects.filter(
+          (project) => !['STARTED', 'CANCELLED'].includes(project.status),
+        );
+
+        if (projects.length !== deleteProjectsDto.ids.length) {
+          throw new NotFoundException(
+            'Projects were not found. Ensure all IDs are valid.',
+          );
+        }
+
+        if (invalidProjects.length > 0) {
+          throw new NotFoundException(
+            'You cannot delete projects in execution or completed status',
+          );
+        }
+
+        // Eliminar proyectos
+        await prisma.executionProject.deleteMany({
+          where: {
+            id: { in: deleteProjectsDto.ids },
+          },
+        });
+
+        // Registrar auditoría para cada eliminación
+        const auditPromises = projects.map((project) =>
+          prisma.audit.create({
+            data: {
+              entityId: project.id,
+              entityType: 'executionProject',
+              action: 'DELETE',
+              performedById: user.id,
+              createdAt: new Date(),
+            },
+          }),
+        );
+
+        await Promise.all(auditPromises);
+
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Execution projects deleted successfully',
+          data: null,
+        };
+      });
+
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error deleting execution projects: ${error.message}`,
+        error.stack,
+      );
+
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      handleException(error, 'Error deleting execution projects');
     }
   }
 }

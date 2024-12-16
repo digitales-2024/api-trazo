@@ -7,11 +7,13 @@ import {
   HttpStatus,
   HttpCode,
   Get,
+  Delete,
 } from '@nestjs/common';
 import { ExecutionProjectService } from './project.service';
 import { CreateExecutionProjectDto } from './dto/create-execution-project.dto';
 import { UpdateExecutionProjectDto } from './dto/update-execution-project.dto';
 import { UpdateExecutionProjectStatusDto } from './dto/update-execution-project-status.dto';
+import { DeleteExecutionProjectDto } from './dto/delete-execution-project.dto';
 import {
   ExecutionProjectSummaryData,
   ExecutionProjectData,
@@ -88,5 +90,15 @@ export class ExecutionProjectController {
     @GetUser() user: UserData,
   ): Promise<HttpResponse<ExecutionProjectStatusUpdateData>> {
     return this.projectService.updateStatus(id, updateExecutionStatusDto, user);
+  }
+
+  @ApiOkResponse({ description: 'Execution project deleted successfully' })
+  @Delete('remove')
+  @HttpCode(HttpStatus.OK)
+  async deleteProjects(
+    @Body() deleteProjectsDto: DeleteExecutionProjectDto,
+    @GetUser() user: UserData,
+  ) {
+    return this.projectService.remove(deleteProjectsDto, user);
   }
 }
