@@ -25,9 +25,9 @@ model User {
   auditsPerformed Audit[] @relation("AuditPerformedBy")
 
   // Relación con UserRol
-  userRols            UserRol[]       @relation("UserId")
-  designProjects      DesignProject[] @relation("DesignerDesignProjects")
-  executionProjects   ExecutionProject[] @relation("ResidentExecutionProjects")
+  userRols          UserRol[]          @relation("UserId")
+  designProjects    DesignProject[]    @relation("DesignerDesignProjects")
+  executionProjects ExecutionProject[] @relation("ResidentExecutionProjects")
 
   @@unique([email, isActive])
 }
@@ -155,7 +155,7 @@ model Client {
   // Relacion con Budget
   clientBudget Budget[] @relation("client")
 
-  designProjects DesignProject[] @relation("ClientDesignProjects")
+  designProjects    DesignProject[]    @relation("ClientDesignProjects")
   executionProjects ExecutionProject[] @relation("ClientExecutionProjects")
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
@@ -404,7 +404,7 @@ model Budget {
   designProjectId String?
 
   // Relacion con ExecutionProject
-  executionBudget          ExecutionProject[] @relation("BudgetExecutionProjects")
+  executionBudget ExecutionProject[] @relation("BudgetExecutionProjects")
 
   // Relación con BudgetDetail
   budgetDetail BudgetDetail[] @relation("budgetDetail")
@@ -677,34 +677,37 @@ model ApuOnResource {
 
 // Tabla de Proyecto de Ejecución
 model ExecutionProject {
-  id                        String @id @unique @default(uuid())
-  code                      String @unique
-  name                      String
-  status                    ExecutionProjectStatus @default(APPROVED)
-  ubicationProject          String
-  province                  String
-  department                String
+  id               String                 @id @unique @default(uuid())
+  code             String                 @unique
+  name             String
+  status           ExecutionProjectStatus @default(STARTED)
+  ubicationProject String
+  province         String
+  department       String
 
-  startProjectDate          String
-  createdAt                 DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt                 DateTime @updatedAt
-  
+  startProjectDate String
+  createdAt        DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt
+
+  //Avance del proyecto
+  projectProgress Int    @default(0)
+  //Plazo de ejecución
+  executionTime   String
   //Relaciones
-  client                    Client @relation("ClientExecutionProjects", fields: [clientId], references: [id])
-  clientId                  String
+  client          Client @relation("ClientExecutionProjects", fields: [clientId], references: [id])
+  clientId        String
 
-  resident                  User   @relation("ResidentExecutionProjects", fields: [residentId], references: [id])
-  residentId                String
-  
-  budget                    Budget   @relation("BudgetExecutionProjects", fields: [budgetId], references: [id])
-  budgetId                  String   @unique  
+  resident   User   @relation("ResidentExecutionProjects", fields: [residentId], references: [id])
+  residentId String
+
+  budget   Budget @relation("BudgetExecutionProjects", fields: [budgetId], references: [id])
+  budgetId String @unique
 }
 
 // Estados de un proyecto de Ejecución
 enum ExecutionProjectStatus {
-  APPROVED
-  CANCELLED
   STARTED
+  CANCELLED
   EXECUTION
   COMPLETED
 }

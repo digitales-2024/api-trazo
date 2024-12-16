@@ -44,7 +44,7 @@ export class ExecutionProjectController {
   create(
     @Body() createExecutionProjectDto: CreateExecutionProjectDto,
     @GetUser() user: UserData,
-  ): Promise<HttpResponse> {
+  ): Promise<HttpResponse<ExecutionProjectData>> {
     return this.projectService.create(createExecutionProjectDto, user);
   }
 
