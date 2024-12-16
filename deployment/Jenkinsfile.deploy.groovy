@@ -13,7 +13,7 @@ pipeline {
         REGISTRY_USER = "araozu"
         REGISTRY_CREDENTIALS = "f16149d3-8913-40f9-80ff-9eca92eef798"
         IMAGE_PREFIX = "${REGISTRY_USER}/${SERVICE_PREFIX}"
-        ESCAPED_IMAGE_PREFIX = "${REGISTRY_USER}\\/${SERVICE_PREFIX}"
+        ESCAPED_IMAGE_PREFIX = "${REGISTRY_USER}\\/${SERVICE_PREFIX}-fix"
 
         SSH_COM = "ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_IP}"
     }
