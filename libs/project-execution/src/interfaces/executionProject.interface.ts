@@ -14,6 +14,7 @@ interface BaseExecutionProject {
   province: string;
   department: string;
   startProjectDate: string;
+  executionTime: string;
 }
 
 // Para operaciones (findOne, findById)

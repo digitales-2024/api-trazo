@@ -683,18 +683,22 @@ model ApuOnResource {
 
 // Tabla de Proyecto de Ejecución
 model ExecutionProject {
-  id                        String @id @unique @default(uuid())
-  code                      String @unique
-  name                      String
-  status                    ExecutionProjectStatus @default(APPROVED)
-  ubicationProject          String
-  province                  String
-  department                String
+  id               String                 @id @unique @default(uuid())
+  code             String                 @unique
+  name             String
+  status           ExecutionProjectStatus @default(STARTED)
+  ubicationProject String
+  province         String
+  department       String
 
-  startProjectDate          String
-  createdAt                 DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt                 DateTime @updatedAt
-  
+  startProjectDate String
+  createdAt        DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt
+
+  //Avance del proyecto
+  projectProgress Int    @default(0)
+  //Plazo de ejecución
+  executionTime   String
   //Relaciones
   client                    Client @relation("clientExecutionProjects", fields: [clientId], references: [id])
   clientId                  String
@@ -710,9 +714,8 @@ model ExecutionProject {
 
 // Estados de un proyecto de Ejecución
 enum ExecutionProjectStatus {
-  APPROVED
-  CANCELLED
   STARTED
+  CANCELLED
   EXECUTION
   COMPLETED
 }
