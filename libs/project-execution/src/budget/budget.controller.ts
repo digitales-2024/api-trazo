@@ -83,4 +83,13 @@ export class BudgetController {
   async pdfTemplate(@Param('id') id: string): Promise<string> {
     return await this.budgetService.genPdfTemplate(id);
   }
+
+  @Get('/approved/budgets')
+  @ApiOkResponse({
+    description:
+      'Get all budgets that can be used to create a Project (approved, and not linked to another project)',
+  })
+  findCreatable() {
+    return this.budgetService.findCreatable();
+  }
 }
