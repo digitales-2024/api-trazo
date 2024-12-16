@@ -98,7 +98,7 @@ export class ExecutionProjectService {
   async create(
     createExecutionProjectDto: CreateExecutionProjectDto,
     user: UserData,
-  ): Promise<HttpResponse> {
+  ): Promise<HttpResponse<ExecutionProjectData>> {
     const {
       name,
       ubicationProject,
@@ -108,7 +108,9 @@ export class ExecutionProjectService {
       department,
       province,
       startProjectDate,
+      executionTime,
     } = createExecutionProjectDto;
+    let newProject;
 
     // Verificar si el presupuesto ya esta asociado a otro proyecto
     const existingBudget = await this.prisma.executionProject.findUnique({
@@ -147,7 +149,7 @@ export class ExecutionProjectService {
         await this.client.findById(clientId);
         await this.user.findById(residentId);
 
-        const newProject = await prisma.executionProject.create({
+        newProject = await prisma.executionProject.create({
           data: {
             code: projectCode,
             name,
@@ -155,9 +157,24 @@ export class ExecutionProjectService {
             department,
             province,
             startProjectDate,
+            executionTime,
             client: { connect: { id: clientId } },
             resident: { connect: { id: residentId } },
             budget: { connect: { id: budgetId } },
+          },
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            status: true,
+            startProjectDate: true,
+            ubicationProject: true,
+            department: true,
+            province: true,
+            executionTime: true,
+            client: { select: { id: true, name: true } },
+            resident: { select: { id: true, name: true } },
+            budget: { select: { id: true, name: true } },
           },
         });
 
@@ -174,7 +191,7 @@ export class ExecutionProjectService {
       return {
         statusCode: HttpStatus.CREATED,
         message: 'Execution project created successfully',
-        data: null,
+        data: newProject,
       };
     } catch (error) {
       this.logger.error(
@@ -288,6 +305,7 @@ export class ExecutionProjectService {
         ubicationProject: true,
         department: true,
         province: true,
+        executionTime: true,
         client: { select: { id: true, name: true } },
         resident: { select: { id: true, name: true } },
         budget: { select: { id: true, name: true } },
@@ -322,6 +340,7 @@ export class ExecutionProjectService {
       province,
       name,
       startProjectDate,
+      executionTime,
     } = updateProjectDto;
 
     const budget = await this.prisma.budget.findUnique({
@@ -363,8 +382,6 @@ export class ExecutionProjectService {
         // Validando que el presupuesto existe
         await this.budgetService.findById(budgetId);
 
-        console.log(JSON.stringify(project.budget.id, null, 2));
-
         // Validando si hay cambios
         const changes =
           (clientId === undefined || clientId === project.client.id) &&
@@ -376,7 +393,9 @@ export class ExecutionProjectService {
           (province === undefined || province === project.province) &&
           (name === undefined || name === project.name) &&
           (startProjectDate === undefined ||
-            startProjectDate === project.startProjectDate);
+            startProjectDate === project.startProjectDate) &&
+          (executionTime === undefined ||
+            executionTime === project.executionTime);
 
         if (changes) {
           return project;
@@ -406,6 +425,11 @@ export class ExecutionProjectService {
           startProjectDate !== project.startProjectDate
         )
           updateData.startProjectDate = startProjectDate;
+        if (
+          executionTime !== undefined &&
+          executionTime !== project.executionTime
+        )
+          updateData.executionTime = executionTime;
 
         // Actualizar el proyecto de ejecución
         const updated = await prisma.executionProject.update({
@@ -420,6 +444,7 @@ export class ExecutionProjectService {
             ubicationProject: true,
             department: true,
             province: true,
+            executionTime: true,
             client: { select: { id: true, name: true } },
             resident: { select: { id: true, name: true } },
             budget: { select: { id: true, name: true } },
