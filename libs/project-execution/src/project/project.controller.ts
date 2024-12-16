@@ -89,4 +89,12 @@ export class ExecutionProjectController {
   ): Promise<HttpResponse<ExecutionProjectStatusUpdateData>> {
     return this.projectService.updateStatus(id, updateExecutionStatusDto, user);
   }
+
+  @Get(':id/pdflayout')
+  async pdfTemplate(
+    @Param('id') id: string,
+    @GetUser() user: UserData,
+  ): Promise<string> {
+    return await this.projectService.genPdfTemplate(id, user);
+  }
 }

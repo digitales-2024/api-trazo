@@ -21,6 +21,7 @@ import {
 import { ExecutionProjectStatus } from '@prisma/client';
 import { handleException } from '@login/login/utils';
 import { BudgetService } from '../budget/budget.service';
+import { ExecutionProjectTemplate } from './project.template';
 
 @Injectable()
 export class ExecutionProjectService {
@@ -32,6 +33,7 @@ export class ExecutionProjectService {
     private readonly budgetService: BudgetService,
     private readonly client: ClientsService,
     private readonly user: UsersService,
+    private readonly template: ExecutionProjectTemplate,
   ) {}
 
   /**
@@ -413,5 +415,10 @@ export class ExecutionProjectService {
       );
       handleException(error, 'Error updating project status');
     }
+  }
+
+  async genPdfTemplate(id: string, user: UserData) {
+    console.log(id, user);
+    return this.template.renderContract();
   }
 }
