@@ -1,6 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsUUID, IsString, IsDateString } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsUUID,
+  IsString,
+  IsDateString,
+  IsNumberString,
+} from 'class-validator';
 
 export class CreateExecutionProjectDto {
   @ApiProperty({
@@ -63,4 +69,11 @@ export class CreateExecutionProjectDto {
   })
   @IsDateString()
   startProjectDate: string;
+
+  @ApiProperty({
+    description: 'Plazo de Ejecución del proyecto',
+  })
+  @IsNumberString()
+  @IsNotEmpty()
+  executionTime: string;
 }

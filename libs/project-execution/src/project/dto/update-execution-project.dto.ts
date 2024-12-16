@@ -1,5 +1,12 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsDateString, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsDateString,
+  IsNotEmpty,
+  IsNumberString,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 import { CreateExecutionProjectDto } from './create-execution-project.dto';
 
 export class UpdateExecutionProjectDto extends PartialType(
@@ -50,4 +57,13 @@ export class UpdateExecutionProjectDto extends PartialType(
   @IsOptional()
   @IsDateString()
   startProjectDate?: string;
+
+  @ApiProperty({
+    description: 'Plazo de Ejecución del proyecto',
+    example: 'Días hábiles del plazo de ejecución',
+  })
+  @IsNumberString()
+  @IsOptional()
+  @IsNotEmpty()
+  executionTime?: string;
 }
