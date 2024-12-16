@@ -210,7 +210,6 @@ export class ExecutionProjectService {
    */
   async findAll(user: UserPayload): Promise<ExecutionProjectSummaryData[]> {
     const activeStates: ExecutionProjectStatus[] = [
-      'APPROVED',
       'CANCELLED',
       'STARTED',
       'EXECUTION',
