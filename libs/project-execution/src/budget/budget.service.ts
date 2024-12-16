@@ -391,7 +391,7 @@ export class BudgetService {
         },
       });
 
-      // Mapea los resultados al tipo CategoryData
+      // Mapea los resultados al tipo SummaryBudgetData
       const summaryBudgets = await Promise.all(
         budgets.map(async (budget) => {
           const designProjectDB = budget.designProjectId
@@ -1307,6 +1307,11 @@ export class BudgetService {
     });
   }
 
+  /**
+   * Generar plantilla de pdf de un presupuesto
+   * @param id Id del presupuesto
+   * @returns Plantilla en HTML del presupuesto
+   */
   async genPdfTemplate(id: string): Promise<string> {
     // Get the quotation
     const budget = await this.findOne(id);
@@ -1321,6 +1326,10 @@ export class BudgetService {
     return this.template.renderPdf(budget, editCount, business[0]);
   }
 
+  /**
+   * Validar si un presupuesto está aprobado
+   * @param budgetId Id del presupuesto
+   */
   async validateApprovedBudget(budgetId: string): Promise<void> {
     const budget = await this.findById(budgetId);
 
@@ -1331,5 +1340,64 @@ export class BudgetService {
     if (budget.status !== 'APPROVED') {
       throw new BadRequestException('Budget is not approved');
     }
+  }
+
+  /**
+   * Obtener todos los presupuestos que se pueden crear en estado aprobado
+   * @param budgetId Id del presupuesto
+   */
+  async findCreatable(): Promise<SummaryBudgetData[]> {
+    const budgets = await this.prisma.budget.findMany({
+      where: {
+        status: BudgetStatusType.APPROVED,
+        executionBudget: {
+          none: {},
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        codeBudget: true,
+        code: true,
+        ubication: true,
+        status: true,
+        dateProject: true,
+        clientBudget: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        designProjectId: true,
+      },
+    });
+
+    // Mapea los resultados al tipo SummaryBudgetData
+    const summaryBudgets = await Promise.all(
+      budgets.map(async (budget) => {
+        const designProjectDB = budget.designProjectId
+          ? await this.designProjectService.findById(budget.designProjectId)
+          : null;
+
+        return {
+          id: budget.id,
+          name: budget.name,
+          codeBudget: budget.codeBudget,
+          code: budget.code,
+          ubication: budget.ubication,
+          status: budget.status,
+          dateProject: budget.dateProject,
+          clientBudget: budget.clientBudget,
+          designProjectBudget: designProjectDB
+            ? {
+                id: designProjectDB.id,
+                code: designProjectDB.code,
+              }
+            : null,
+        };
+      }),
+    );
+
+    return summaryBudgets as SummaryBudgetData[];
   }
 }
