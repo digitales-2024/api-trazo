@@ -1,21 +1,27 @@
 FROM node:22-alpine
 
-USER node
+WORKDIR /app
 
-WORKDIR /home/node
 
 COPY package*.json ./
 COPY prisma ./prisma/
 
 RUN npm i
 
-RUN npx puppeteer browsers install chrome
+# Install necessary packages for Puppeteer in runtime image
+RUN apk add --no-cache \
+    udev \
+    ttf-freefont \
+    chromium
+
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 COPY . .
 
 RUN npm run tailwind:build
 RUN npm run build
 
+USER node
 
 # Start the node process
 CMD ["npm", "run", "start:migrate:prod"]
