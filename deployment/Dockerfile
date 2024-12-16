@@ -1,7 +1,8 @@
 FROM node:22-alpine
 
-WORKDIR /app
+USER node
 
+WORKDIR /home/node
 
 COPY package*.json ./
 COPY prisma ./prisma/
@@ -15,7 +16,6 @@ COPY . .
 RUN npm run tailwind:build
 RUN npm run build
 
-USER node
 
 # Start the node process
 CMD ["npm", "run", "start:migrate:prod"]
