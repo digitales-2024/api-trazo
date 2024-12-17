@@ -55,6 +55,7 @@
     "commitlint": "^19.5.0",
     "cookie-parser": "^1.4.7",
     "ejs": "^3.1.10",
+    "express": "4.21.2",
     "generate-password": "^1.7.1",
     "moment-timezone": "^0.5.46",
     "node-cron": "^3.0.3",
@@ -123,5 +124,6 @@
       "^@sunat-change/sunat-change(|/.*)$": "<rootDir>/libs/sunat-change/src/$1",
       "^@project-execution/project-execution(|/.*)$": "<rootDir>/libs/project-execution/src/$1"
     }
-  }
+  },
+  "packageManager": "pnpm@9.15.0+sha512.76e2379760a4328ec4415815bcd6628dee727af3779aaa4c914e3944156c4299921a89f976381ee107d41f12cfa4b66681ca9c718f0668fa0831ed4c6d8ba56c"
 }

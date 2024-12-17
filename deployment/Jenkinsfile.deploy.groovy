@@ -25,7 +25,7 @@ pipeline {
                 script {
                     withDockerRegistry(credentialsId: "${REGISTRY_CREDENTIALS}") {
                         // build docker image
-                        def image = docker.build("${IMAGE_PREFIX}-api:${BUILD_NUMBER}")
+                        def image = docker.build("${IMAGE_PREFIX}-api:${BUILD_NUMBER}-test")
                         image.push()
                     }
                 }
@@ -36,7 +36,7 @@ pipeline {
             steps {
                 sshagent(['ssh-deploy']) {
                     // Replace docker image version
-                    sh "${SSH_COM} 'cd ${REMOTE_FOLDER} && sed -i -E \"s/image: ${ESCAPED_IMAGE_PREFIX}-api:.+\$/image: ${ESCAPED_IMAGE_PREFIX}-api:${BUILD_NUMBER}/\" docker-compose.yml'"
+                    sh "${SSH_COM} 'cd ${REMOTE_FOLDER} && sed -i -E \"s/image: ${ESCAPED_IMAGE_PREFIX}-api:.+\$/image: ${ESCAPED_IMAGE_PREFIX}-api:${BUILD_NUMBER}-test/\" docker-compose.yml'"
                     sh "${SSH_COM} 'cd ${REMOTE_FOLDER} && docker compose up -d --no-deps ${SERVICE_PREFIX}-api'"
                     sh "${SSH_COM} 'cd ${REMOTE_FOLDER} && docker images -q --filter \"dangling=true\" | xargs -r docker rmi'"
                 }
