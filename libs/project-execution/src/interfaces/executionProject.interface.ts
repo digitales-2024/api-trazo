@@ -45,7 +45,7 @@ export type ExecutionProjectSummaryData = BaseExecutionProject & {
   };
   budget: {
     id: string;
-    name: string;
+    code: string;
   };
 };
 

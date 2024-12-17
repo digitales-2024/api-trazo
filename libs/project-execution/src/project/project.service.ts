@@ -72,8 +72,10 @@ export class ExecutionProjectService {
           ubicationProject: true,
           department: true,
           province: true,
+          executionTime: true,
           client: { select: { id: true, name: true } },
           resident: { select: { id: true, name: true } },
+          budget: { select: { id: true, code: true } },
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -229,8 +231,10 @@ export class ExecutionProjectService {
         ubicationProject: true,
         department: true,
         province: true,
+        executionTime: true,
         client: { select: { id: true, name: true } },
         resident: { select: { id: true, name: true } },
+        budget: { select: { id: true, code: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
