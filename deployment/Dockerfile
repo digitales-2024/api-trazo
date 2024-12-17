@@ -44,7 +44,6 @@ RUN pnpm config set store-dir /pnpm/.pnpm-store
 
 WORKDIR /app
 
-COPY --from=prod /app/node_modules ./node_modules
 COPY --from=prod /app/dist ./dist
 COPY --from=prod /app/prisma ./prisma
 COPY --from=prod /app/static ./static
