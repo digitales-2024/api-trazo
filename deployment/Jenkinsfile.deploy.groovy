@@ -38,7 +38,6 @@ pipeline {
                     // Replace docker image version
                     sh "${SSH_COM} 'cd ${REMOTE_FOLDER} && sed -i -E \"s/image: ${ESCAPED_IMAGE_PREFIX}-api:.+\$/image: ${ESCAPED_IMAGE_PREFIX}-api:${BUILD_NUMBER}/\" docker-compose.yml'"
                     sh "${SSH_COM} 'cd ${REMOTE_FOLDER} && docker compose up -d --no-deps ${SERVICE_PREFIX}-api'"
-                    sh "${SSH_COM} 'cd ${REMOTE_FOLDER} && docker images -q --filter \"dangling=true\" | xargs -r docker rmi'"
                 }
             }
         }
