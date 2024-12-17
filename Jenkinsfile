@@ -11,18 +11,19 @@ pipeline {
 	stages {
 		stage('Install') {
 			steps {
-				sh 'npm i'
-				sh 'npx prisma generate dev'
+				sh 'corepack enable'
+				sh 'pnpm i'
+				sh 'pnpm generate'
 			}
 		}
 		stage('Validate lint rules') {
 			steps {
-				sh 'npm run lint'
+				sh 'pnpm run lint'
 			}
 		}
 		stage('Build project') {
 			steps {
-				sh 'npm run build'
+				sh 'pnpm run build'
 			}
 		}
 	}

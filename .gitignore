@@ -61,3 +61,4 @@ static/tailwind-output.css
 config.local.json
 
 history-change.json
+package-lock.json
