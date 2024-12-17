@@ -2,7 +2,6 @@ FROM node:22-alpine AS base
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-ENV PUPPETEER_CHROME_SKIP_DOWNLOAD=true
 RUN corepack enable
 RUN pnpm config set store-dir /pnpm/.pnpm-store
 # error en prisma con alpine
@@ -28,7 +27,6 @@ COPY pnpm-lock.yaml .
 COPY package.json .
 COPY prisma/ .
 
-ENV PUPPETEER_CHROME_SKIP_DOWNLOAD=true
 RUN pnpx prisma generate
 RUN pnpm i --ignore-scripts
 
@@ -62,7 +60,7 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV CHROME_PATH=/usr/lib/chromium/
 
-RUN PUPPETEER_SKIP_DOWNLOAD=true pnpm i --prod --ofline
+RUN PUPPETEER_SKIP_DOWNLOAD=true pnpm i --prod --offline
 USER node
 
 CMD ["pnpm", "run", "start:migrate:prod"]
