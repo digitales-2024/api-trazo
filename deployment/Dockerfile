@@ -42,9 +42,9 @@ RUN pnpm config set store-dir /pnpm/.pnpm-store
 
 WORKDIR /app
 
-COPY --from=prod /app/dist .
-COPY --from=prod /app/prisma .
-COPY --from=prod /app/static .
+COPY --from=prod /app/dist ./dist
+COPY --from=prod /app/prisma ./prisma
+COPY --from=prod /app/static ./static
 COPY --from=prod /app/package.json .
 COPY --from=prod /app/pnpm-lock.yaml .
 
