@@ -25,14 +25,13 @@ RUN pnpm config set store-dir /pnpm/.pnpm-store
 WORKDIR /app
 COPY pnpm-lock.yaml .
 COPY package.json .
-COPY prisma/ .
 
-RUN pnpx prisma generate
 RUN pnpm i --ignore-scripts
 
 # Build binary
 COPY . .
-RUN npm run tailwind:build
+RUN pnpm generate
+RUN pnpm run tailwind:build
 RUN pnpm run build
 
 
@@ -44,7 +43,6 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN pnpm config set store-dir /pnpm/.pnpm-store
 
 WORKDIR /app
-
 
 COPY --from=prod /app/node_modules ./node_modules
 COPY --from=prod /app/dist ./dist
