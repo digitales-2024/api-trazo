@@ -3,10 +3,12 @@ FROM node:22-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
-ENV HUSKY_SKIP_INSTALL=1
+ENV HUSKY=0
 RUN corepack enable
 RUN pnpm config set store-dir /pnpm/.pnpm-store
 
+# openssl 3
+RUN apk add openssl1.1-compat
 
 FROM base AS prod
 
@@ -19,7 +21,7 @@ COPY pnpm-lock.yaml .
 COPY package.json .
 COPY prisma/ .
 
-ENV HUSKY_SKIP_INSTALL=1
+ENV HUSKY=0
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 RUN pnpx prisma generate
 RUN pnpm i --ignore-scripts
@@ -45,6 +47,6 @@ COPY --from=prod /app/static .
 COPY --from=prod /app/package.json .
 COPY --from=prod /app/pnpm-lock.yaml .
 
-RUN PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true HUSKY_SKIP_INSTALL=1 pnpm i --prod
+RUN PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true HUSKY=0 pnpm i --prod
 USER node
 CMD ["pnpm", "run", "start:migrate:prod"]
