@@ -65,6 +65,5 @@ ENV CHROME_PATH=/usr/lib/chromium/
 
 RUN pnpm i --prod
 USER node
-RUN pnpx 
 
 CMD ["pnpm", "run", "start:migrate:prod"]
