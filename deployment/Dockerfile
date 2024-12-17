@@ -17,9 +17,11 @@ RUN pnpm config set store-dir /pnpm/.pnpm-store
 WORKDIR /app
 COPY pnpm-lock.yaml .
 COPY package.json .
+COPY prisma/ .
 
 ENV HUSKY_SKIP_INSTALL=1
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+RUN pnpx prisma generate
 RUN pnpm i --ignore-scripts
 
 # Build binary
