@@ -2,13 +2,23 @@ FROM node:22-alpine AS base
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
-ENV HUSKY=0
+ENV PUPPETEER_CHROME_SKIP_DOWNLOAD=true
 RUN corepack enable
 RUN pnpm config set store-dir /pnpm/.pnpm-store
 # error en prisma con alpine
 # https://github.com/prisma/prisma/issues/25817#issuecomment-2530137579
 RUN ln -s /usr/lib/libssl.so.3 /lib/libssl.so.3
+
+# Chrome for puppeteer
+# Installs latest Chromium package.
+RUN apk upgrade --no-cache --available \
+    && apk add --no-cache \
+      chromium-swiftshader \
+      ttf-freefont \
+      font-noto-emoji \
+    && apk add --no-cache \
+      --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
+      font-wqy-zenhei
 
 
 FROM base AS prod
@@ -22,8 +32,7 @@ COPY pnpm-lock.yaml .
 COPY package.json .
 COPY prisma/ .
 
-ENV HUSKY=0
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_CHROME_SKIP_DOWNLOAD=true
 RUN pnpx prisma generate
 RUN pnpm i --ignore-scripts
 
@@ -48,6 +57,14 @@ COPY --from=prod /app/static ./static
 COPY --from=prod /app/package.json .
 COPY --from=prod /app/pnpm-lock.yaml .
 
-RUN PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true HUSKY=0 pnpm i --prod
+ENV CHROME_BIN="/usr/bin/chromium-browser"
+ENV PUPPETEER_CHROME_SKIP_DOWNLOAD=true
+# Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV CHROME_PATH=/usr/lib/chromium/
+
+RUN pnpm i --prod
 USER node
+RUN pnpx 
+
 CMD ["pnpm", "run", "start:migrate:prod"]
