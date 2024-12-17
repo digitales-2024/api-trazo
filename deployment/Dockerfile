@@ -6,9 +6,10 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
 ENV HUSKY=0
 RUN corepack enable
 RUN pnpm config set store-dir /pnpm/.pnpm-store
+# error en prisma con alpine
+# https://github.com/prisma/prisma/issues/25817#issuecomment-2530137579
+RUN ln -s /usr/lib/libssl.so.3 /lib/libssl.so.3
 
-# openssl 3
-RUN apk add openssl1.1-compat
 
 FROM base AS prod
 
