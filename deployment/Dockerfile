@@ -58,7 +58,7 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV CHROME_PATH=/usr/lib/chromium/
 
-RUN PUPPETEER_SKIP_DOWNLOAD=true pnpm i --prod --offline
+RUN PUPPETEER_SKIP_DOWNLOAD=true pnpm i --prod
 USER node
 
 CMD ["pnpm", "run", "start:migrate:prod"]
