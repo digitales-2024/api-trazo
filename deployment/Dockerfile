@@ -11,14 +11,10 @@ RUN ln -s /usr/lib/libssl.so.3 /lib/libssl.so.3
 
 # Chrome for puppeteer
 # Installs latest Chromium package.
-RUN apk upgrade --no-cache --available \
-    && apk add --no-cache \
-      chromium-swiftshader \
-      ttf-freefont \
-      font-noto-emoji \
-    && apk add --no-cache \
-      --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community \
-      font-wqy-zenhei
+RUN apk upgrade --no-cache --available
+RUN apk add --no-cache chromium-swiftshader
+RUN apk add --no-cache ttf-freefont 
+RUN apk add --no-cache font-noto-emoji 
 
 
 FROM base AS prod
@@ -61,9 +57,10 @@ ENV CHROME_BIN="/usr/bin/chromium-browser"
 ENV PUPPETEER_CHROME_SKIP_DOWNLOAD=true
 # Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV CHROME_PATH=/usr/lib/chromium/
 
-RUN pnpm i --prod
+RUN PUPPETEER_SKIP_DOWNLOAD=true pnpm i --prod
 USER node
 
 CMD ["pnpm", "run", "start:migrate:prod"]
