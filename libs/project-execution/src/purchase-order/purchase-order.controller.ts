@@ -55,7 +55,7 @@ export class PurchaseOrderController {
     return this.purchaseOrderService.update(id, updatePurchaseOrderDto, user);
   }
 
-  @ApiOkResponse({ description: 'Status updated successfully' })
+  @ApiOkResponse({ description: 'Purchase order status updated successfully' })
   @Patch('status/:id')
   async updateStatus(
     @Param('id') id: string,
