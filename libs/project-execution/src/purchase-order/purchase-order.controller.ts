@@ -46,8 +46,9 @@ export class PurchaseOrderController {
     return this.purchaseOrderService.findAll(user);
   }
 
+  @ApiOkResponse({ description: 'Get purchase order by id' })
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string): Promise<PurchaseOrderData> {
     return this.purchaseOrderService.findOne(id);
   }
 
@@ -55,8 +56,9 @@ export class PurchaseOrderController {
   update(
     @Param('id') id: string,
     @Body() updatePurchaseOrderDto: UpdatePurchaseOrderDto,
-  ) {
-    return this.purchaseOrderService.update(id, updatePurchaseOrderDto);
+    @GetUser() user: UserData,
+  ): Promise<HttpResponse<PurchaseOrderData>> {
+    return this.purchaseOrderService.update(id, updatePurchaseOrderDto, user);
   }
 
   @Delete(':id')
