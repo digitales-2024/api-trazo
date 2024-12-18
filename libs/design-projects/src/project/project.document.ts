@@ -9,18 +9,45 @@ import {
   ImageRun,
   HorizontalPositionRelativeFrom,
   VerticalPositionRelativeFrom,
+  Table,
+  TableRow,
+  TableCell,
 } from 'docx';
-import { bold, cm, cmToEmu, p, p2, t } from './utils';
+import { bold, cm, cmToEmu, FONT, p, p2, p3, t } from './utils';
 import * as Fs from 'node:fs';
 import * as Path from 'path';
+import { DesignProjectDataNested } from '../interfaces/project.interfaces';
+import { BusinessGet } from '@business/business/business.service';
+import { spellPricing, twoDecimals } from '../utils';
+import { LevelData } from '../interfaces';
 
-export async function genContractDocx(): Promise<Buffer> {
+export async function genContractDocx(
+  data: DesignProjectDataNested,
+  business: BusinessGet,
+  signingDate: Date,
+): Promise<Buffer> {
   const membretado = Fs.readFileSync(
     Path.join(process.cwd(), 'static', 'MEMBRETADA_t.png'),
   );
   const membretado_b = Fs.readFileSync(
     Path.join(process.cwd(), 'static', 'MEMBRETADA_b.png'),
   );
+
+  const project = data;
+  const quotation = data.quotation;
+  const client = data.client;
+
+  // compute all the neccesary areas
+  const totalArea = quotation.levels
+    .map(
+      (level) =>
+        level.spaces.map((space) => space.area).reduce((a, b) => a + b, 0),
+      0,
+    )
+    .reduce((a, b) => a + b, 0);
+  const levelsCount = quotation.levels.length;
+
+  const finalPriceSoles = quotation.totalAmount;
 
   const doc = new Document({
     sections: [
@@ -93,6 +120,7 @@ export async function genContractDocx(): Promise<Buffer> {
               new TextRun({
                 text: 'CONTRATO DE LOCACIÓN DE SERVICIOS PROFESIONALES',
                 bold: true,
+                font: FONT,
                 underline: {},
                 color: '#000000',
                 size: 22,
@@ -105,7 +133,7 @@ export async function genContractDocx(): Promise<Buffer> {
             ),
             bold(`LOCATARIO `),
             t(
-              `el _____ con D.N.I. ______ con domicilio legal en ______, Provincia de ____, y Departamento de _____.`,
+              ` ${client.name} con D.N.I. ${client.rucDni} con domicilio legal en ${client.address}, Provincia de ${client.province}, y Departamento de ${client.department}.`,
             ),
           ]),
           p({}, [
@@ -114,7 +142,7 @@ export async function genContractDocx(): Promise<Buffer> {
             ),
             bold(`LOCADOR`),
             t(
-              `, cuyo representante legal el Sr. Arq. ____, identificado con D.N.I. ________, en los términos y condiciones siguientes:`,
+              `, cuyo representante legal el Sr. Arq. ${business.legalRepName}, identificado con D.N.I. ${business.legalRepDni}, en los términos y condiciones siguientes:`,
             ),
           ]),
           p({}, [
@@ -130,10 +158,14 @@ export async function genContractDocx(): Promise<Buffer> {
           ]),
           p({}, [
             t(
-              `El proyecto _________, Ubicado en _______, Provincia de _______, Departamento de _____.`,
+              `El proyecto ${quotation.name}, Ubicado en ${project.ubicationProject}, Provincia de ${project.province}, Departamento de ${project.province}.`,
             ),
           ]),
-          p({}, [bold(`El terreno cuenta con un área de ____ m2.`)]),
+          p({}, [
+            bold(
+              `El terreno cuenta con un área de ${twoDecimals(quotation.landArea)} m2.`,
+            ),
+          ]),
           p({ bullet: { level: 0 } }, [bold('Objetivos del servicio')]),
           p({ bullet: { level: 1 } }, [
             bold(
@@ -173,11 +205,12 @@ export async function genContractDocx(): Promise<Buffer> {
               'SE PLANIFICA DISEÑO DE UNA VIVIENDA UNIFAMILIAR CON LAS SIGUIENTES CONDICIONES PROGRAMÁTICAS, ENTREGADAS POR EL LOCATARIO.',
             ),
           ]),
-          p2({}, [bold(`\tÁREA DE DISEÑO: _____ m2`)]),
-          p2({}, [bold(`\tNRO DE PISOS: _ pisos`)]),
-          p2({}, [bold(`\tTIPO DE EDIFICACIÓN: _____`)]),
+          p2({}, [bold(`\tÁREA DE DISEÑO: ${twoDecimals(totalArea)} m2`)]),
+          p2({}, [bold(`\tNRO DE PISOS: ${levelsCount} pisos`)]),
+          p2({}, [bold(`\tTIPO DE EDIFICACIÓN: Vivienda unifamiliar`)]),
           p2({}, [bold(`\tLISTADO DE ESPACIOS:`)]),
-          p({}, [bold('PRIMER PISO ____')]),
+
+          ...levels(quotation.levels),
 
           //
           // Clausula segunda
@@ -387,7 +420,9 @@ export async function genContractDocx(): Promise<Buffer> {
             t(
               ', para que asuma la responsabilidad del desarrollo y cumplimiento de cada una de las etapas de diseño en el plazo establecido por el monto total de ',
             ),
-            bold('______ NUEVOS SOLES. '),
+            bold(
+              `S/. ${twoDecimals(finalPriceSoles)} (${spellPricing(finalPriceSoles)}). `,
+            ),
             t(
               'El pago se hará efecto mediante el cronograma de pagos establecidos en la cláusula siguiente.',
             ),
@@ -428,13 +463,176 @@ export async function genContractDocx(): Promise<Buffer> {
           ]),
           p({ indent: { left: 400 } }, [
             t(
-              'En la celebración del presente contrato no ha mediado simulación ni vicio de voluntad que lo invalide y en señal de conformidad ambas partes lo firmamos en la ciudad de Arequipa el día _________ .',
+              `En la celebración del presente contrato no ha mediado simulación ni vicio de voluntad que lo invalide y en señal de conformidad ambas partes lo firmamos en la ciudad de Arequipa el día ${signingDate.toLocaleDateString(
+                'es-PE',
+                {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  timeZone: 'America/Lima',
+                },
+              )} .`,
             ),
           ]),
+          p({}, [t('')]),
+          p({}, [t('')]),
+          p({}, [t('')]),
+          p({}, [t('')]),
+          signatures(business),
         ],
       },
     ],
   });
 
   return await Packer.toBuffer(doc);
+}
+
+function levels(levels: Array<LevelData>): Array<Paragraph> {
+  return levels.flatMap((level) => [
+    p({}, [bold(level.name.toUpperCase())]),
+    ...level.spaces.map((space) =>
+      p3({ bullet: { level: 0 } }, [
+        bold(space.amount > 1 ? space.amount.toString() : ''),
+        bold(' '),
+        bold(space.name.toUpperCase()),
+      ]),
+    ),
+  ]);
+}
+
+function signatures(business: BusinessGet): Table {
+  return new Table({
+    width: {
+      size: 9638,
+      type: 'dxa', // total page width is 9638 DXA for A4 portrait
+    },
+    borders: {
+      left: {
+        size: 0,
+        color: '#000000',
+        style: 'none',
+      },
+      right: {
+        size: 0,
+        color: '#000000',
+        style: 'none',
+      },
+      top: {
+        size: 0,
+        color: '#000000',
+        style: 'none',
+      },
+      bottom: {
+        size: 0,
+        color: '#000000',
+        style: 'none',
+      },
+    },
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            borders: {
+              left: {
+                size: 0,
+                color: '#000000',
+                style: 'none',
+              },
+              right: {
+                size: 0,
+                color: '#000000',
+                style: 'none',
+              },
+              top: {
+                size: 0,
+                color: '#000000',
+                style: 'none',
+              },
+              bottom: {
+                size: 0,
+                color: '#000000',
+                style: 'none',
+              },
+            },
+            width: {
+              size: 4819,
+              type: 'dxa', // total page width is 9638 DXA for A4 portrait
+            },
+            children: [
+              p(
+                {
+                  alignment: AlignmentType.CENTER,
+                },
+                [
+                  bold('_________________________________'),
+                  new TextRun({
+                    text: 'LOCADOR',
+                    bold: true,
+                    font: FONT,
+                    break: 1,
+                  }),
+                  new TextRun({
+                    text: `ARQ. ${business.legalRepName.toUpperCase()}`,
+                    bold: true,
+                    font: FONT,
+                    break: 1,
+                  }),
+                  new TextRun({
+                    text: `D.N.I. ${business.legalRepDni}`,
+                    bold: true,
+                    font: FONT,
+                    break: 1,
+                  }),
+                ],
+              ),
+            ],
+          }),
+          new TableCell({
+            borders: {
+              left: {
+                size: 0,
+                color: '#000000',
+                style: 'none',
+              },
+              right: {
+                size: 0,
+                color: '#000000',
+                style: 'none',
+              },
+              top: {
+                size: 0,
+                color: '#000000',
+                style: 'none',
+              },
+              bottom: {
+                size: 0,
+                color: '#000000',
+                style: 'none',
+              },
+            },
+            width: {
+              size: 4819,
+              type: 'dxa', // total page width is 9638 DXA for A4 portrait
+            },
+            children: [
+              p(
+                {
+                  alignment: AlignmentType.CENTER,
+                },
+                [
+                  bold('_________________________________'),
+                  new TextRun({
+                    text: 'LOCATARIO',
+                    bold: true,
+                    font: FONT,
+                    break: 1,
+                  }),
+                ],
+              ),
+            ],
+          }),
+        ],
+      }),
+    ],
+  });
 }

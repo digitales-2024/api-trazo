@@ -7,7 +7,7 @@ import {
   convertMillimetersToTwip,
 } from 'docx';
 
-export const FONT = 'Inter';
+export const FONT = 'Arial';
 
 // To define centimeters in a image's size
 export function cm(centimeters: number) {
@@ -70,6 +70,22 @@ export function p2(
     spacing: {
       before: 100,
       after: 100,
+      line: 400,
+    },
+    children,
+    ...args,
+  });
+}
+
+export function p3(
+  args: IParagraphOptions,
+  children: ParagraphChild[],
+): Paragraph {
+  return new Paragraph({
+    alignment: AlignmentType.JUSTIFIED,
+    spacing: {
+      before: 50,
+      after: 50,
       line: 400,
     },
     children,

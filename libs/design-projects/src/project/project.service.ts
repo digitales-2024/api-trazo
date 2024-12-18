@@ -1101,8 +1101,15 @@ export class ProjectService {
   }
 
   async genDocx(id: string, dto: ExportProjectPdfDto): Promise<StreamableFile> {
-    const doc = await genContractDocx();
-    console.log(id, dto);
+    // Get the data
+    const allData = await this.findByIdNested(id);
+    const business = await this.businessService.findAll();
+
+    const doc = await genContractDocx(
+      allData,
+      business[0],
+      new Date(dto.signingDate + 'T12:00:00.000-05:00'),
+    );
 
     return new StreamableFile(doc, {
       type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
