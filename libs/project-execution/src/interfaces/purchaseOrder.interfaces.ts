@@ -17,3 +17,14 @@ export type PurchaseOrderData = Pick<
     resource: { id: string; name: string };
   }[];
 };
+
+export type SummaryPurchaseOrderData = Pick<
+  PurchaseOrder,
+  'id' | 'code' | 'orderDate' | 'estimatedDeliveryDate' | 'status'
+> & {
+  supplierPurchaseOrder: { id: string; name: string };
+  requirementsPurchaseOrder: {
+    id: string;
+    executionProject: { id: string; code: string };
+  };
+};
