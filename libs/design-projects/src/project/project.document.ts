@@ -5,14 +5,86 @@ import {
   Packer,
   Paragraph,
   TextRun,
+  Header,
+  ImageRun,
+  HorizontalPositionRelativeFrom,
+  VerticalPositionRelativeFrom,
 } from 'docx';
-import { bold, p, p2, t } from './utils';
+import { bold, cm, cmToEmu, p, p2, t } from './utils';
+import * as Fs from 'node:fs';
+import * as Path from 'path';
 
 export async function genContractDocx(): Promise<Buffer> {
+  const membretado = Fs.readFileSync(
+    Path.join(process.cwd(), 'static', 'MEMBRETADA_t.png'),
+  );
+  const membretado_b = Fs.readFileSync(
+    Path.join(process.cwd(), 'static', 'MEMBRETADA_b.png'),
+  );
+
   const doc = new Document({
     sections: [
       {
-        properties: {},
+        headers: {
+          default: new Header({
+            children: [
+              new Paragraph({
+                children: [
+                  new ImageRun({
+                    data: membretado,
+                    type: 'png',
+                    transformation: {
+                      width: cm(4),
+                      height: cm(2.7),
+                    },
+                    floating: {
+                      zIndex: 0,
+                      horizontalPosition: {
+                        relative: HorizontalPositionRelativeFrom.LEFT_MARGIN,
+                        offset: cmToEmu(16.5),
+                      },
+                      verticalPosition: {
+                        relative: VerticalPositionRelativeFrom.TOP_MARGIN,
+                        offset: cmToEmu(0.5),
+                      },
+                      behindDocument: true,
+                    },
+                  }),
+                ],
+              }),
+            ],
+          }),
+        },
+        footers: {
+          default: new Header({
+            children: [
+              new Paragraph({
+                children: [
+                  new ImageRun({
+                    data: membretado_b,
+                    type: 'png',
+                    transformation: {
+                      width: cm(20),
+                      height: cm(14),
+                    },
+                    floating: {
+                      zIndex: 0,
+                      horizontalPosition: {
+                        relative: HorizontalPositionRelativeFrom.LEFT_MARGIN,
+                        offset: cmToEmu(0.5),
+                      },
+                      verticalPosition: {
+                        relative: VerticalPositionRelativeFrom.TOP_MARGIN,
+                        offset: cmToEmu(15),
+                      },
+                      behindDocument: true,
+                    },
+                  }),
+                ],
+              }),
+            ],
+          }),
+        },
         children: [
           new Paragraph({
             heading: HeadingLevel.HEADING_1,
