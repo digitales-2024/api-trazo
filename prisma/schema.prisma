@@ -809,8 +809,8 @@ model Supplier {
   name     String  @unique
   ruc      String  @unique
   address  String
-  phone    String
-  email    String
+  phone    String?
+  email    String? @unique
   isActive Boolean @default(true)
 
   // Relación con PurchaseOrderDetail a través de PurchaseOrder
