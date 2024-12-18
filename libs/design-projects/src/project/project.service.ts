@@ -101,7 +101,7 @@ export class ProjectService {
     }
 
     // Validar fechas requeridas
-    await this.validateDatesForConfirmation(project);
+    this.validateDatesForConfirmation(project);
 
     // Aquí podrías agregar más validaciones en el futuro
   }
