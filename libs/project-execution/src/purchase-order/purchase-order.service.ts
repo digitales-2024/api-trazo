@@ -19,6 +19,7 @@ import { SupplierService } from '../supplier/supplier.service';
 import { handleException } from '@login/login/utils';
 import { AuditActionType, PurchaseOrderStatus } from '@prisma/client';
 import { CreatePurchaseOrderDetailDto } from './dto/create-purchase-order-detail.dto';
+import { UpdatePurchaseOrderStatusDto } from './dto/update-status-purchase-order.dto';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -33,7 +34,7 @@ export class PurchaseOrderService {
    * Generar el código de una orden de compra
    * @returns Código de la orden de compra
    */
-  private async generateCodeBudget(): Promise<string> {
+  private async generateCodePurchaseOrder(): Promise<string> {
     // Generar el siguiente código incremental
     const lastProject = await this.prisma.purchaseOrder.findFirst({
       where: { code: { startsWith: 'ORD-CMP-' } },
@@ -68,7 +69,7 @@ export class PurchaseOrderService {
 
     try {
       // Generar el código de la orden de compra
-      const projectCode = await this.generateCodeBudget();
+      const projectCode = await this.generateCodePurchaseOrder();
 
       // Verificar que el proveedor existe
       await this.supplierService.findById(supplierId);
@@ -200,8 +201,12 @@ export class PurchaseOrderService {
         await this.prisma.purchaseOrderDetail.deleteMany({
           where: { id: newPurchaseOrder.id },
         });
-        await this.prisma.budget.delete({ where: { id: newPurchaseOrder.id } });
-        this.logger.error(`Budget has been deleted due to error in creation.`);
+        await this.prisma.purchaseOrder.delete({
+          where: { id: newPurchaseOrder.id },
+        });
+        this.logger.error(
+          `Purchase order has been deleted due to error in creation.`,
+        );
       }
 
       if (
@@ -264,7 +269,7 @@ export class PurchaseOrderService {
         },
       });
 
-      // Mapea los resultados al tipo SummaryBudgetData
+      // Mapea los resultados al tipo SummaryPurchaseOrderData
       const summaryPurchaseOrders = await Promise.all(
         purchaseOrders.map(async (purchaseOrder) => {
           return {
@@ -398,6 +403,75 @@ export class PurchaseOrderService {
     return response;
   }
 
+  /**
+   * Obtener una orden de compra por su id con datos resumidos
+   * @param id Id de la orden de compra
+   * @returns Datos resumidos de la orden de compra
+   */
+  async findByIdSummaryData(id: string): Promise<SummaryPurchaseOrderData> {
+    // Buscar la orden de compra con sus relaciones
+    const purchaseOrder = await this.prisma.purchaseOrder.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        code: true,
+        orderDate: true,
+        estimatedDeliveryDate: true,
+        status: true,
+        supplier: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        requirements: {
+          select: {
+            id: true,
+            executionProject: {
+              select: {
+                id: true,
+                code: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!purchaseOrder) {
+      throw new NotFoundException(`This purchase order doesnt exist`);
+    }
+
+    // Formatear la respuesta en el tipo esperado
+    const response: SummaryPurchaseOrderData = {
+      id: purchaseOrder.id,
+      code: purchaseOrder.code,
+      orderDate: purchaseOrder.orderDate,
+      estimatedDeliveryDate: purchaseOrder.estimatedDeliveryDate,
+      status: purchaseOrder.status,
+      supplierPurchaseOrder: {
+        id: purchaseOrder.supplier.id,
+        name: purchaseOrder.supplier.name,
+      },
+      requirementsPurchaseOrder: {
+        id: purchaseOrder.requirements.id,
+        executionProject: {
+          id: purchaseOrder.requirements.executionProject.id,
+          code: purchaseOrder.requirements.executionProject.code,
+        },
+      },
+    };
+
+    return response;
+  }
+
+  /**
+   * Actualizar una orden de compra
+   * @param id Id de la orden de compra
+   * @param updatePurchaseOrderDto Datos de la orden de compra a actualizar
+   * @param user Usuario que realiza la acción
+   * @returns Datos de la orden de compra actualizada
+   */
   async update(
     id: string,
     updatePurchaseOrderDto: UpdatePurchaseOrderDto,
@@ -611,7 +685,68 @@ export class PurchaseOrderService {
     }
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} purchaseOrder`;
+  async updateStatus(
+    id: string,
+    updatePurchaseOrderStatusDto: UpdatePurchaseOrderStatusDto,
+    user: UserData,
+  ): Promise<HttpResponse<SummaryPurchaseOrderData>> {
+    const newStatus = updatePurchaseOrderStatusDto.newStatus;
+
+    let purchaseOrderDB;
+
+    await this.prisma.$transaction(async (prisma) => {
+      purchaseOrderDB = await this.findByIdSummaryData(id);
+
+      if (purchaseOrderDB.status === newStatus) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Purchase order status updated successfully',
+          data: {
+            id: purchaseOrderDB.id,
+            code: purchaseOrderDB.code,
+            orderDate: purchaseOrderDB.orderDate,
+            estimatedDeliveryDate: purchaseOrderDB.estimatedDeliveryDate,
+            status: newStatus,
+            supplierPurchaseOrder: purchaseOrderDB.supplierPurchaseOrder,
+            requirementsPurchaseOrder:
+              purchaseOrderDB.requirementsPurchaseOrder,
+          },
+        };
+      }
+
+      // update the status
+      await prisma.purchaseOrder.update({
+        where: {
+          id,
+        },
+        data: {
+          status: newStatus,
+        },
+      });
+
+      // store the action in audit
+      await this.prisma.audit.create({
+        data: {
+          action: AuditActionType.UPDATE,
+          entityId: purchaseOrderDB.id,
+          entityType: 'purchaseOrder',
+          performedById: user.id,
+        },
+      });
+    });
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Purchase order status updated successfully',
+      data: {
+        id: purchaseOrderDB.id,
+        code: purchaseOrderDB.code,
+        orderDate: purchaseOrderDB.orderDate,
+        estimatedDeliveryDate: purchaseOrderDB.estimatedDeliveryDate,
+        status: newStatus,
+        supplierPurchaseOrder: purchaseOrderDB.supplierPurchaseOrder,
+        requirementsPurchaseOrder: purchaseOrderDB.requirementsPurchaseOrder,
+      },
+    };
   }
 }

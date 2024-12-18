@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
 import { PurchaseOrderService } from './purchase-order.service';
 import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
 import { UpdatePurchaseOrderDto } from './dto/update-purchase-order.dto';
@@ -20,6 +12,7 @@ import {
 } from '@nestjs/swagger';
 import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
 import { PurchaseOrderData, SummaryPurchaseOrderData } from '../interfaces';
+import { UpdatePurchaseOrderStatusDto } from './dto/update-status-purchase-order.dto';
 
 @ApiTags('Purchase Order')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -52,6 +45,7 @@ export class PurchaseOrderController {
     return this.purchaseOrderService.findOne(id);
   }
 
+  @ApiOkResponse({ description: 'Purchase order successfully updated' })
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -61,8 +55,13 @@ export class PurchaseOrderController {
     return this.purchaseOrderService.update(id, updatePurchaseOrderDto, user);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.purchaseOrderService.remove(id);
+  @ApiOkResponse({ description: 'Status updated successfully' })
+  @Patch('status/:id')
+  async updateStatus(
+    @Param('id') id: string,
+    @Body() newStatus: UpdatePurchaseOrderStatusDto,
+    @GetUser() user: UserData,
+  ): Promise<HttpResponse<SummaryPurchaseOrderData>> {
+    return await this.purchaseOrderService.updateStatus(id, newStatus, user);
   }
 }
