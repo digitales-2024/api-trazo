@@ -12,5 +12,6 @@ export type { SubWorkItemData } from './subWorkItem.interfaces';
 export {
   PurchaseOrderData,
   SummaryPurchaseOrderData,
+  PurchaseOrderDetailData,
 } from './purchaseOrder.interfaces';
 export { SupplierData, SupplierDescriptionData } from './supplier.interfaces';

@@ -9,13 +9,15 @@ export type PurchaseOrderData = Pick<
     id: string;
     executionProject: { id: string; code: string };
   };
-  purchaseOrderDetail: {
-    id: string;
-    quantity: number;
-    unitCost: number;
-    subtotal: number;
-    resource: { id: string; name: string };
-  }[];
+  purchaseOrderDetail: PurchaseOrderDetailData[];
+};
+
+export type PurchaseOrderDetailData = {
+  id: string;
+  quantity: number;
+  unitCost: number;
+  subtotal: number;
+  resource: { id: string; name: string };
 };
 
 export type SummaryPurchaseOrderData = Pick<
