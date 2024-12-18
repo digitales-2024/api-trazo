@@ -7,13 +7,13 @@ import {
 } from '@nestjs/common';
 import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
 import { UpdatePurchaseOrderDto } from './dto/update-purchase-order.dto';
-import { HttpResponse, UserData } from '@login/login/interfaces';
-import { PurchaseOrderData } from '../interfaces';
+import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
+import { PurchaseOrderData, SummaryPurchaseOrderData } from '../interfaces';
 import { PrismaService } from '@prisma/prisma';
 import { ResourceService } from '../resource/resource.service';
 import { SupplierService } from '../supplier/supplier.service';
 import { handleException } from '@login/login/utils';
-import { AuditActionType } from '@prisma/client';
+import { AuditActionType, PurchaseOrderStatus } from '@prisma/client';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -200,8 +200,84 @@ export class PurchaseOrderService {
     }
   }
 
-  findAll() {
-    return `This action returns all purchaseOrder`;
+  /**
+   * Obtener todas las órdenes de compra
+   * @param user Usuario que realiza la acción
+   * @returns Lista de órdenes de compra
+   */
+  async findAll(user: UserPayload): Promise<SummaryPurchaseOrderData[]> {
+    try {
+      const purchaseOrders = await this.prisma.purchaseOrder.findMany({
+        where: {
+          ...(user.isSuperAdmin
+            ? {}
+            : {
+                status: {
+                  in: [
+                    PurchaseOrderStatus.PENDING,
+                    PurchaseOrderStatus.DELIVERED,
+                  ],
+                },
+              }), // Filtrar por status solo si no es super admin
+        },
+        select: {
+          id: true,
+          code: true,
+          orderDate: true,
+          estimatedDeliveryDate: true,
+          status: true,
+          supplier: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          requirements: {
+            select: {
+              id: true,
+              executionProject: {
+                select: {
+                  id: true,
+                  code: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+
+      // Mapea los resultados al tipo SummaryBudgetData
+      const summaryPurchaseOrders = await Promise.all(
+        purchaseOrders.map(async (purchaseOrder) => {
+          return {
+            id: purchaseOrder.id,
+            code: purchaseOrder.code,
+            orderDate: purchaseOrder.orderDate,
+            estimatedDeliveryDate: purchaseOrder.estimatedDeliveryDate,
+            status: purchaseOrder.status,
+            supplierPurchaseOrder: {
+              id: purchaseOrder.supplier.id,
+              name: purchaseOrder.supplier.name,
+            },
+            requirementsPurchaseOrder: {
+              id: purchaseOrder.requirements.id,
+              executionProject: {
+                id: purchaseOrder.requirements.executionProject.id,
+                code: purchaseOrder.requirements.executionProject.code,
+              },
+            },
+          };
+        }),
+      );
+
+      return summaryPurchaseOrders as SummaryPurchaseOrderData[];
+    } catch (error) {
+      this.logger.error('Error getting all purchase orders');
+      handleException(error, 'Error getting all purchase orders');
+    }
   }
 
   findOne(id: string) {

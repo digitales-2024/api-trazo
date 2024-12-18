@@ -14,11 +14,12 @@ import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { HttpResponse, UserData } from '@login/login/interfaces';
-import { PurchaseOrderData } from '../interfaces';
+import { HttpResponse, UserData, UserPayload } from '@login/login/interfaces';
+import { PurchaseOrderData, SummaryPurchaseOrderData } from '../interfaces';
 
 @ApiTags('Purchase Order')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -39,9 +40,10 @@ export class PurchaseOrderController {
     return this.purchaseOrderService.create(createPurchaseOrderDto, user);
   }
 
+  @ApiOkResponse({ description: 'Get all purchase orders' })
   @Get()
-  findAll() {
-    return this.purchaseOrderService.findAll();
+  findAll(@GetUser() user: UserPayload): Promise<SummaryPurchaseOrderData[]> {
+    return this.purchaseOrderService.findAll(user);
   }
 
   @Get(':id')
