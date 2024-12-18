@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { PurchaseOrderStatus } from '@prisma/client';
+import { Transform } from 'class-transformer';
 import { IsIn, IsNotEmpty, IsString } from 'class-validator';
 
 export class UpdatePurchaseOrderStatusDto {
@@ -11,6 +12,7 @@ export class UpdatePurchaseOrderStatusDto {
   })
   @IsString()
   @IsNotEmpty()
+  @Transform(({ value }) => value.toUpperCase())
   @IsIn(['PENDING', 'DELIVERED', 'REJECTED'], {
     message: "newStatus must be either 'PENDING', 'DELIVERED' or 'REJECTED'",
   })
