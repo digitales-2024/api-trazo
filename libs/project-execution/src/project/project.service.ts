@@ -22,6 +22,7 @@ import {
 } from '../interfaces/executionProject.interface';
 import { ExecutionProjectStatus } from '@prisma/client';
 import { handleException } from '@login/login/utils';
+import { WarehouseService } from '../warehouse/warehouse.service';
 
 @Injectable()
 export class ExecutionProjectService {
@@ -33,6 +34,7 @@ export class ExecutionProjectService {
     private readonly budgetService: BudgetService,
     private readonly client: ClientsService,
     private readonly user: UsersService,
+    private readonly warehouse: WarehouseService,
   ) {}
 
   /**
@@ -181,6 +183,10 @@ export class ExecutionProjectService {
             budget: { select: { id: true, name: true } },
           },
         });
+
+        if (newProject) {
+          await this.warehouse.create(newProject.id, user);
+        }
 
         // Registrar la auditoría de la creación del proyecto
         await this.audit.create({
