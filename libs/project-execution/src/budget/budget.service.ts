@@ -37,7 +37,7 @@ export class BudgetService {
     private readonly subcategoryService: SubcategoryService,
     private readonly template: BudgetTemplate,
     private readonly businessService: BusinessService,
-  ) { }
+  ) {}
 
   private async generateCodeBudget(): Promise<string> {
     // Generar el siguiente código incremental
@@ -234,40 +234,40 @@ export class BudgetService {
 
                           const createdSubWorkItems = workElement.subWorkItem
                             ? await Promise.all(
-                              workElement.subWorkItem.map(
-                                async (subWorkElement) => {
-                                  const subworkitemDB =
-                                    await this.prisma.subWorkItem.findUnique({
-                                      where: {
-                                        id: subWorkElement.subWorkItemId,
-                                      },
-                                    });
-                                  if (subworkitemDB) {
-                                    return await this.prisma.subWorkItemBudget.create(
-                                      {
-                                        data: {
-                                          workItemBudgetId:
-                                            workItemBudgetCreated.id,
-                                          subWorkItemId:
-                                            subWorkElement.subWorkItemId,
-                                          quantity: subWorkElement.quantity,
-                                          unitCost: subWorkElement.unitCost,
-                                          subtotal: subWorkElement.subtotal,
-                                          apuBudgetId:
-                                            subWorkElement.apuBugdetId,
+                                workElement.subWorkItem.map(
+                                  async (subWorkElement) => {
+                                    const subworkitemDB =
+                                      await this.prisma.subWorkItem.findUnique({
+                                        where: {
+                                          id: subWorkElement.subWorkItemId,
                                         },
-                                        select: {
-                                          id: true,
-                                          quantity: true,
-                                          unitCost: true,
-                                          subtotal: true,
+                                      });
+                                    if (subworkitemDB) {
+                                      return await this.prisma.subWorkItemBudget.create(
+                                        {
+                                          data: {
+                                            workItemBudgetId:
+                                              workItemBudgetCreated.id,
+                                            subWorkItemId:
+                                              subWorkElement.subWorkItemId,
+                                            quantity: subWorkElement.quantity,
+                                            unitCost: subWorkElement.unitCost,
+                                            subtotal: subWorkElement.subtotal,
+                                            apuBudgetId:
+                                              subWorkElement.apuBugdetId,
+                                          },
+                                          select: {
+                                            id: true,
+                                            quantity: true,
+                                            unitCost: true,
+                                            subtotal: true,
+                                          },
                                         },
-                                      },
-                                    );
-                                  }
-                                },
-                              ),
-                            )
+                                      );
+                                    }
+                                  },
+                                ),
+                              )
                             : [];
 
                           return {
@@ -323,9 +323,9 @@ export class BudgetService {
           clientBudget: newBudget.clientBudget,
           designProjectBudget: designProjectDB
             ? {
-              id: designProjectDB.id,
-              code: designProjectDB.code,
-            }
+                id: designProjectDB.id,
+                code: designProjectDB.code,
+              }
             : null,
           budgetDetail: newBudgetDetail,
           category: newCategory,
@@ -365,10 +365,10 @@ export class BudgetService {
           ...(user.isSuperAdmin
             ? {}
             : {
-              status: {
-                in: [BudgetStatusType.PENDING, BudgetStatusType.APPROVED],
-              },
-            }), // Filtrar por status solo si no es super admin
+                status: {
+                  in: [BudgetStatusType.PENDING, BudgetStatusType.APPROVED],
+                },
+              }), // Filtrar por status solo si no es super admin
         },
         select: {
           id: true,
@@ -409,9 +409,9 @@ export class BudgetService {
             clientBudget: budget.clientBudget,
             designProjectBudget: designProjectDB
               ? {
-                id: designProjectDB.id,
-                code: designProjectDB.code,
-              }
+                  id: designProjectDB.id,
+                  code: designProjectDB.code,
+                }
               : null,
           };
         }),
@@ -500,9 +500,9 @@ export class BudgetService {
       clientBudget: budget.clientBudget,
       designProjectBudget: designProjectDB
         ? {
-          id: designProjectDB.id,
-          code: designProjectDB.code,
-        }
+            id: designProjectDB.id,
+            code: designProjectDB.code,
+          }
         : null,
       budgetDetail: budget.budgetDetail,
       category: categoriesDB,
@@ -558,9 +558,9 @@ export class BudgetService {
       clientBudget: budget.clientBudget,
       designProjectBudget: designProjectDB
         ? {
-          id: designProjectDB.id,
-          code: designProjectDB.code,
-        }
+            id: designProjectDB.id,
+            code: designProjectDB.code,
+          }
         : null,
     };
 
@@ -1149,9 +1149,9 @@ export class BudgetService {
           clientBudget: updatedBudget.clientBudget,
           designProjectBudget: designProjectDB
             ? {
-              id: designProjectDB.id,
-              code: designProjectDB.code,
-            }
+                id: designProjectDB.id,
+                code: designProjectDB.code,
+              }
             : null,
           budgetDetail: updatedBudgetDetail,
           category: categoryDetails,
@@ -1272,10 +1272,7 @@ export class BudgetService {
 
     // Generar el PDF usando Puppeteer
     const browser = await Puppeteer.launch({
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox'
-      ]
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
     const page = await browser.newPage();
     page.setDefaultTimeout(180000);
@@ -1348,10 +1345,45 @@ export class BudgetService {
   }
 
   /**
-   * Obtener todos los presupuestos que se pueden crear en estado aprobado
-   * @param budgetId Id del presupuesto
+   * Mostrar los presupuestos aprobados que no están asignados a ningún projectExecution
+   * @param projectExecutionId Proyecto de ejecución al que se le asignará el presupuesto
+   * @returns Todos los presupuestos aprobados que no están asignados a ningún projectExecution
    */
-  async findCreatable(): Promise<SummaryBudgetData[]> {
+  async findCreatable(
+    projectExecutionId?: string,
+  ): Promise<SummaryBudgetData[]> {
+    let assignedBudget = null;
+
+    if (projectExecutionId) {
+      // Encuentra el presupuesto asignado a projectExecution
+      assignedBudget = await this.prisma.budget.findFirst({
+        where: {
+          executionBudget: {
+            some: {
+              id: projectExecutionId,
+            },
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          codeBudget: true,
+          code: true,
+          ubication: true,
+          status: true,
+          dateProject: true,
+          clientBudget: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          designProjectId: true,
+        },
+      });
+    }
+
+    // Encuentra todos los presupuestos aprobados que no están asignados a ningún projectExecution
     const budgets = await this.prisma.budget.findMany({
       where: {
         status: BudgetStatusType.APPROVED,
@@ -1377,9 +1409,12 @@ export class BudgetService {
       },
     });
 
+    // Combina el presupuesto asignado con los demás presupuestos
+    const allBudgets = assignedBudget ? [assignedBudget, ...budgets] : budgets;
+
     // Mapea los resultados al tipo SummaryBudgetData
     const summaryBudgets = await Promise.all(
-      budgets.map(async (budget) => {
+      allBudgets.map(async (budget) => {
         const designProjectDB = budget.designProjectId
           ? await this.designProjectService.findById(budget.designProjectId)
           : null;
