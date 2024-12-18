@@ -15,4 +15,4 @@ export {
   PurchaseOrderDetailData,
 } from './purchaseOrder.interfaces';
 export { SupplierData, SupplierDescriptionData } from './supplier.interfaces';
-export { CreateWarehouseData } from './warehouse.interfaces';
+export { CreateWarehouseData, WarehouseData } from './warehouse.interfaces';
