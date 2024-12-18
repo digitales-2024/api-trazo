@@ -10,6 +10,7 @@ import { SubworkitemModule } from './subworkitem/subworkitem.module';
 import { ApuBudgetModule } from './apu-budget/apu-budget.module';
 import { ExecutionProjectModule } from './project/project.module';
 import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
+import { SupplierModule } from './supplier/supplier.module';
 
 @Module({
   providers: [ProjectExecutionService],
@@ -25,6 +26,7 @@ import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
     SubworkitemModule,
     ApuBudgetModule,
     PurchaseOrderModule,
+    SupplierModule,
   ],
 })
 export class ProjectExecutionModule {}
