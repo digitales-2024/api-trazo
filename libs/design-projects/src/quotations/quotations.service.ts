@@ -30,7 +30,7 @@ export class QuotationsService {
     private readonly audit: AuditService,
     private readonly clientService: ClientsService,
     private readonly template: QuotationTemplate,
-  ) { }
+  ) {}
 
   /**
    * Crea una cotizacion y todos sus datos asociados.
@@ -255,13 +255,13 @@ export class QuotationsService {
           ...(user.isSuperAdmin
             ? {}
             : {
-              status: {
-                in: [
-                  QuotationStatusType.PENDING,
-                  QuotationStatusType.APPROVED,
-                ],
-              },
-            }), // Filtrar por status solo si no es super admin
+                status: {
+                  in: [
+                    QuotationStatusType.PENDING,
+                    QuotationStatusType.APPROVED,
+                  ],
+                },
+              }), // Filtrar por status solo si no es super admin
         },
         select: {
           id: true,
@@ -928,10 +928,7 @@ export class QuotationsService {
 
     // Generar el PDF usando Puppeteer
     const browser = await Puppeteer.launch({
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox'
-      ]
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
     const page = await browser.newPage();
     await page.setContent(pdfHtml);

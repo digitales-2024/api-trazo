@@ -84,7 +84,7 @@ export class ProjectTemplate {
           <p class="my-8 leading-8">
             <b>
               El terreno cuenta con un área de{' '}
-              <span safe>{twoDecimals(quotation.metering)}</span> m2.
+              <span safe>{twoDecimals(quotation.landArea)}</span> m2.
             </b>
           </p>
 

@@ -30,7 +30,7 @@ export class ObservationsService {
     private readonly projectCharter: ProjectCharterService,
     private readonly projectService: ProjectService,
     private readonly template: ObservationsTemplate,
-  ) { }
+  ) {}
 
   /**
    * Creates a new observation associated with a project charter
@@ -485,10 +485,7 @@ export class ObservationsService {
 
     // Generar el PDF usando Puppeteer
     const browser = await Puppeteer.launch({
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox'
-      ]
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
     const page = await browser.newPage();
     await page.setContent(pdfHtml);
