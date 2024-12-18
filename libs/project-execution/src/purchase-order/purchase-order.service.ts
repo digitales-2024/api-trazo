@@ -17,7 +17,11 @@ import { PrismaService } from '@prisma/prisma';
 import { ResourceService } from '../resource/resource.service';
 import { SupplierService } from '../supplier/supplier.service';
 import { handleException } from '@login/login/utils';
-import { AuditActionType, PurchaseOrderStatus } from '@prisma/client';
+import {
+  AuditActionType,
+  PurchaseOrderStatus,
+  ResourceType,
+} from '@prisma/client';
 import { CreatePurchaseOrderDetailDto } from './dto/create-purchase-order-detail.dto';
 import { UpdatePurchaseOrderStatusDto } from './dto/update-status-purchase-order.dto';
 
@@ -73,6 +77,20 @@ export class PurchaseOrderService {
 
       // Verificar que el proveedor existe
       await this.supplierService.findById(supplierId);
+
+      // Verificar que los recursos existen y son del tipo Supplies
+      await Promise.all(
+        purchaseOrderDetail.map(async (detail) => {
+          const resourceDB = await this.resourceService.findById(
+            detail.resourceId,
+          );
+          if (resourceDB.type !== ResourceType.SUPPLIES) {
+            throw new BadRequestException(
+              `The resource must be of type Supplies`,
+            );
+          }
+        }),
+      );
 
       // Crear la orden de compra
       newPurchaseOrder = await this.prisma.purchaseOrder.create({
@@ -489,8 +507,20 @@ export class PurchaseOrderService {
       // Obtener la orden de compra existente
       const existingPurchaseOrder = await this.findById(id);
 
-      if (!existingPurchaseOrder) {
-        throw new NotFoundException('Orden de compra no encontrada');
+      if (purchaseOrderDetail) {
+        // Verificar que los recursos existen y son del tipo Supplies
+        await Promise.all(
+          purchaseOrderDetail.map(async (detail) => {
+            const resourceDB = await this.resourceService.findById(
+              detail.resourceId,
+            );
+            if (resourceDB.type !== ResourceType.SUPPLIES) {
+              throw new BadRequestException(
+                `The resource must be of type Supplies`,
+              );
+            }
+          }),
+        );
       }
 
       // Verificar si hay cambios en los datos de la orden de compra
@@ -685,6 +715,13 @@ export class PurchaseOrderService {
     }
   }
 
+  /**
+   * Actualizar el estado de una orden de compra
+   * @param id Id de la orden de compra
+   * @param updatePurchaseOrderStatusDto Datos para actualizar el estado de la orden de compra
+   * @param user Usuario que realiza la acción
+   * @returns Datos de la orden de compra con el nuevo estado
+   */
   async updateStatus(
     id: string,
     updatePurchaseOrderStatusDto: UpdatePurchaseOrderStatusDto,
