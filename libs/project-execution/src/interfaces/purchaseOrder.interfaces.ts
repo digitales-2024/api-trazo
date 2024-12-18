@@ -5,7 +5,10 @@ export type PurchaseOrderData = Pick<
   'id' | 'code' | 'orderDate' | 'estimatedDeliveryDate' | 'status'
 > & {
   supplierPurchaseOrder: { id: string; name: string };
-  requirementsPurchaseOrder: { id: string; code: string };
+  requirementsPurchaseOrder: {
+    id: string;
+    executionProject: { id: string; code: string };
+  };
   purchaseOrderDetail: {
     id: string;
     quantity: number;
