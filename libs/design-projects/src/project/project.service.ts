@@ -32,6 +32,7 @@ import { UpdateChecklistDto } from './dto/update-checklist.dto';
 import { DeleteChecklistDto } from './dto/delete-checklist.dto';
 import { ProjectCharterService } from '../project-charter/project-charter.service';
 import { DesignProjectStatus, QuotationStatusType } from '@prisma/client';
+import { genContractDocx } from './project.document';
 
 /**
  * Servicio para gestionar proyectos de diseño
@@ -49,7 +50,7 @@ export class ProjectService {
     private readonly template: ProjectTemplate,
     private readonly quotation: QuotationsService,
     private readonly projectCharter: ProjectCharterService,
-  ) { }
+  ) {}
 
   /**
    * Genera un código único para un nuevo proyecto de diseño con el formato PRY-DIS-XXX
@@ -571,7 +572,7 @@ export class ProjectService {
         const hasChanges =
           (updateChecklistDto.dateArchitectural &&
             updateChecklistDto.dateArchitectural !==
-            project.dateArchitectural) ||
+              project.dateArchitectural) ||
           (updateChecklistDto.dateStructural &&
             updateChecklistDto.dateStructural !== project.dateStructural) ||
           (updateChecklistDto.dateElectrical &&
@@ -1099,6 +1100,16 @@ export class ProjectService {
     );
   }
 
+  async genDocx(id: string, dto: ExportProjectPdfDto): Promise<StreamableFile> {
+    const doc = await genContractDocx();
+    console.log(id, dto);
+
+    return new StreamableFile(doc, {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      disposition: 'attachment; filename="contrato-gen.docx"',
+    });
+  }
+
   async findOnePdf(
     id: string,
     dto: ExportProjectPdfDto,
@@ -1145,10 +1156,7 @@ export class ProjectService {
 
     // Generar el PDF usando Puppeteer
     const browser = await Puppeteer.launch({
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox'
-      ]
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
     const page = await browser.newPage();
     await page.setContent(pdfHtml);
