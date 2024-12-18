@@ -4,10 +4,10 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateWarehouseData } from '../interfaces';
+import { CreateWarehouseData, WarehouseData } from '../interfaces';
 import { PrismaService } from '@prisma/prisma';
-import { AuditActionType } from '@prisma/client';
-import { UserData } from '@login/login/interfaces';
+import { AuditActionType, ExecutionProjectStatus } from '@prisma/client';
+import { UserData, UserPayload } from '@login/login/interfaces';
 import { handleException } from '@login/login/utils';
 
 @Injectable()
@@ -87,11 +87,100 @@ export class WarehouseService {
     }
   }
 
-  findAll() {
-    return `This action returns all warehouse`;
+  /**
+   * Obtiene todos los almacenes
+   * @param user Usuario que realiza la acción
+   * @returns Lista de almacenes
+   */
+  async findAll(user: UserPayload): Promise<CreateWarehouseData[]> {
+    const activeStates: ExecutionProjectStatus[] = [
+      'STARTED',
+      'EXECUTION',
+      'COMPLETED',
+    ];
+
+    try {
+      const warehouses = await this.prisma.warehouse.findMany({
+        where: {
+          ...(user.isSuperAdmin
+            ? {}
+            : {
+                executionProject: {
+                  status: {
+                    in: activeStates,
+                  },
+                },
+              }),
+        },
+        select: {
+          id: true,
+          executionProject: {
+            select: {
+              id: true,
+              code: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+
+      // Mapea los resultados al tipo ClientData
+      return warehouses.map((warehouse) => ({
+        id: warehouse.id,
+        executionProject: warehouse.executionProject,
+      })) as CreateWarehouseData[];
+    } catch (error) {
+      this.logger.error('Error getting all warehouses');
+      handleException(error, 'Error getting all warehouses');
+    }
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} warehouse`;
+  async findOne(id: string): Promise<WarehouseData> {
+    try {
+      return await this.findById(id);
+    } catch (error) {
+      this.logger.error('Error get client');
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      handleException(error, 'Error get client');
+    }
+  }
+
+  async findById(id: string): Promise<WarehouseData> {
+    const warehouse = await this.prisma.warehouse.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        executionProject: {
+          select: {
+            id: true,
+            code: true,
+          },
+        },
+        stock: {
+          select: {
+            id: true,
+            quantity: true,
+            unitCost: true,
+            totalCost: true,
+            resource: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!warehouse) {
+      throw new NotFoundException('Warehouse not found');
+    }
+
+    return warehouse as unknown as WarehouseData;
   }
 }
