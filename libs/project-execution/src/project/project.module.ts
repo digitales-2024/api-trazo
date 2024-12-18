@@ -6,6 +6,7 @@ import { AuditModule } from '@login/login/admin/audit/audit.module';
 import { ClientsModule } from '@clients/clients';
 import { UsersModule } from '@login/login/admin/users/users.module';
 import { BudgetModule } from '../budget/budget.module';
+import { WarehouseModule } from '../warehouse/warehouse.module';
 
 @Module({
   controllers: [ExecutionProjectController],
@@ -16,6 +17,7 @@ import { BudgetModule } from '../budget/budget.module';
     ClientsModule,
     UsersModule,
     BudgetModule,
+    WarehouseModule,
   ],
 })
 export class ExecutionProjectModule {}
