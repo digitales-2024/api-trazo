@@ -14,7 +14,7 @@ export class CreateSupplierDto {
 
   @ApiProperty({
     name: 'phone',
-    description: 'Client phone',
+    description: 'Supplier phone',
     required: false,
   })
   @IsPhoneNumber('PE')

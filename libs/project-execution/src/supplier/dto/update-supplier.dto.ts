@@ -16,7 +16,7 @@ export class UpdateSupplierDto extends PartialType(CreateSupplierDto) {
 
   @ApiProperty({
     name: 'phone',
-    description: 'Client phone',
+    description: 'Supplier phone',
     required: false,
   })
   @IsPhoneNumber('PE')
