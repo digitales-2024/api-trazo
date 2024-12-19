@@ -32,6 +32,7 @@ import { UpdateChecklistDto } from './dto/update-checklist.dto';
 import { DeleteChecklistDto } from './dto/delete-checklist.dto';
 import { ProjectCharterService } from '../project-charter/project-charter.service';
 import { DesignProjectStatus, QuotationStatusType } from '@prisma/client';
+import { genContractDocx } from './project.document';
 
 /**
  * Servicio para gestionar proyectos de diseño
@@ -100,7 +101,7 @@ export class ProjectService {
     }
 
     // Validar fechas requeridas
-    await this.validateDatesForConfirmation(project);
+    this.validateDatesForConfirmation(project);
 
     // Aquí podrías agregar más validaciones en el futuro
   }
@@ -1097,6 +1098,23 @@ export class ProjectService {
       business[0],
       new Date('2024-10-12'),
     );
+  }
+
+  async genDocx(id: string, dto: ExportProjectPdfDto): Promise<StreamableFile> {
+    // Get the data
+    const allData = await this.findByIdNested(id);
+    const business = await this.businessService.findAll();
+
+    const doc = await genContractDocx(
+      allData,
+      business[0],
+      new Date(dto.signingDate + 'T12:00:00.000-05:00'),
+    );
+
+    return new StreamableFile(doc, {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      disposition: 'attachment; filename="contrato-gen.docx"',
+    });
   }
 
   async findOnePdf(

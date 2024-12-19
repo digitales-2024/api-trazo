@@ -1345,10 +1345,45 @@ export class BudgetService {
   }
 
   /**
-   * Obtener todos los presupuestos que se pueden crear en estado aprobado
-   * @param budgetId Id del presupuesto
+   * Mostrar los presupuestos aprobados que no están asignados a ningún projectExecution
+   * @param projectExecutionId Proyecto de ejecución al que se le asignará el presupuesto
+   * @returns Todos los presupuestos aprobados que no están asignados a ningún projectExecution
    */
-  async findCreatable(): Promise<SummaryBudgetData[]> {
+  async findCreatable(
+    projectExecutionId?: string,
+  ): Promise<SummaryBudgetData[]> {
+    let assignedBudget = null;
+
+    if (projectExecutionId) {
+      // Encuentra el presupuesto asignado a projectExecution
+      assignedBudget = await this.prisma.budget.findFirst({
+        where: {
+          executionBudget: {
+            some: {
+              id: projectExecutionId,
+            },
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          codeBudget: true,
+          code: true,
+          ubication: true,
+          status: true,
+          dateProject: true,
+          clientBudget: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          designProjectId: true,
+        },
+      });
+    }
+
+    // Encuentra todos los presupuestos aprobados que no están asignados a ningún projectExecution
     const budgets = await this.prisma.budget.findMany({
       where: {
         status: BudgetStatusType.APPROVED,
@@ -1374,9 +1409,12 @@ export class BudgetService {
       },
     });
 
+    // Combina el presupuesto asignado con los demás presupuestos
+    const allBudgets = assignedBudget ? [assignedBudget, ...budgets] : budgets;
+
     // Mapea los resultados al tipo SummaryBudgetData
     const summaryBudgets = await Promise.all(
-      budgets.map(async (budget) => {
+      allBudgets.map(async (budget) => {
         const designProjectDB = budget.designProjectId
           ? await this.designProjectService.findById(budget.designProjectId)
           : null;

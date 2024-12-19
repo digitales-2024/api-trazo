@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   StreamableFile,
+  Query,
 } from '@nestjs/common';
 import { BudgetService } from './budget.service';
 import { CreateBudgetDto } from './dto/create-budget.dto';
@@ -89,7 +90,7 @@ export class BudgetController {
     description:
       'Get all budgets that can be used to create a Project (approved, and not linked to another project)',
   })
-  findCreatable() {
-    return this.budgetService.findCreatable();
+  findCreatable(@Query('projectExecutionId') projectExecutionId?: string) {
+    return this.budgetService.findCreatable(projectExecutionId);
   }
 }

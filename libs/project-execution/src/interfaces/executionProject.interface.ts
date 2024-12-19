@@ -15,6 +15,7 @@ interface BaseExecutionProject {
   department: string;
   startProjectDate: string;
   executionTime: string;
+  projectProgress: number;
 }
 
 // Para operaciones (findOne, findById)
@@ -45,7 +46,7 @@ export type ExecutionProjectSummaryData = BaseExecutionProject & {
   };
   budget: {
     id: string;
-    name: string;
+    code: string;
   };
 };
 
