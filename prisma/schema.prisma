@@ -373,8 +373,8 @@ model Resource {
   // Relación con ApuOnResource
   resource ApuOnResource[] @relation("resource")
 
-  // Relación muchos a muchos con RequirementsDetail a través de RequirementResource
-  requirements RequirementsDetail[] @relation("ResourcesRequirementsDetail")
+  // Relación uno a muchos con RequirementsDetail
+  requirementsDetail    RequirementsDetail[] @relation("RequirementsDetailResources")
 
   // Relación con PurchaseOrderDetail a través de PurchaseOrder
   purcharseOrder PurchaseOrderDetail[] @relation("ResourcesPurcharseOrderDetail")
@@ -749,24 +749,23 @@ model Requirements {
 }
 
 model RequirementsDetail {
-  id               String                  @id @unique @default(uuid())
-  status           RequirementDetailStatus
-  quantity         Float
-  dateDetail       String
-  description      String
-  deliveryDate     String
-  deliveryQuantity Float
-  balance          Float
+  id                    String @id @unique @default(uuid())
+  status                RequirementDetailStatus @default(REQUIRED)
+  quantity              Float
+  dateDetail            String
+  description           String
 
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt
+  createdAt             DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt             DateTime @updatedAt
 
   // Relaciones
-  requirementsDetail Requirements @relation("requirementsDetail", fields: [requirementsId], references: [id])
-  requirementsId     String
+  requirementsDetail    Requirements @relation("requirementsDetail", fields: [requirementsId], references: [id])
+  requirementsId        String
 
-  resource   Resource @relation("ResourcesRequirementsDetail", fields: [resourceId], references: [id])
-  resourceId String
+  // Relación uno a muchos con Resource (ahora directo, no intermedio)
+  
+  resource              Resource @relation("RequirementsDetailResources", fields: [resourceId], references: [id])
+  resourceId            String
 }
 
 // Estados para el Detalle de Requerimiento

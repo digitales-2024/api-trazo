@@ -20,5 +20,6 @@ import { BusinessModule } from '@business/business';
     BudgetModule,
     BusinessModule,
   ],
+  exports: [ExecutionProjectService],
 })
 export class ExecutionProjectModule {}
