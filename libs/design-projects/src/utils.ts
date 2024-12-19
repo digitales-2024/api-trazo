@@ -1,3 +1,22 @@
+import * as Fs from 'node:fs';
+import * as Path from 'path';
+import {
+  AlignmentType,
+  Header,
+  HorizontalPositionRelativeFrom,
+  IParagraphOptions,
+  ImageRun,
+  Paragraph,
+  ParagraphChild,
+  TextRun,
+  VerticalPositionRelativeFrom,
+  convertMillimetersToTwip,
+} from 'docx';
+
+//
+// Utilidades para generar precios
+//
+
 /**
  * Given a number n, returns it as a string with 2 decimals.
  *
@@ -72,7 +91,6 @@ const indices = {
   '1000': 'UN MIL',
 };
 
-// "1" -> "UNO"
 function numberToText(n: string) {
   // si el numero exacto esta definido,
   // utilizarlos
@@ -131,4 +149,208 @@ export function spellPricingBudget(price: number) {
   const [whole, centimos] = newprice.split('.');
 
   return `${numberToText(whole)} CON ${centimos}/100 NUEVOS SOLES`;
+}
+
+//
+// Utilidades para la generacion de docx
+//
+
+export const FONT = 'Arial';
+
+// To define centimeters in a image's size
+export function cm(centimeters: number) {
+  return convertMillimetersToTwip((100 * centimeters) / 150);
+}
+
+// To define centimeters in a floating image's position
+export function cmToEmu(cm: number) {
+  return Math.round(cm * 360000);
+}
+
+// To define centimeters in a text
+export function cmText(cm: number) {
+  return Math.round(cm * 567);
+}
+
+export function bold(text: string): TextRun {
+  return new TextRun({
+    text,
+    bold: true,
+    font: FONT,
+  });
+}
+
+/**
+ * Underline and bold
+ */
+export function ub(text: string): TextRun {
+  return new TextRun({
+    text,
+    bold: true,
+    underline: {},
+    font: FONT,
+  });
+}
+
+/**
+ * A single line break, like <br /> in html
+ */
+export function br(): TextRun {
+  return new TextRun({
+    text: '',
+    break: 1,
+  });
+}
+
+/**
+ * Crea un texto simple
+ */
+export function t(text: string): TextRun {
+  return new TextRun({
+    text,
+    font: FONT,
+  });
+}
+
+/**
+ * Crea un parrafo justificado, con margenes y espacio entre linea
+ */
+export function p(
+  args: IParagraphOptions,
+  children: ParagraphChild[],
+): Paragraph {
+  return new Paragraph({
+    alignment: AlignmentType.JUSTIFIED,
+    spacing: {
+      before: 200,
+      after: 200,
+      line: 400,
+    },
+    children,
+    ...args,
+  });
+}
+
+/**
+ * Crea un parrafo justificado, con margenes y espacio entre linea normal
+ */
+export function p_n(
+  args: IParagraphOptions,
+  children: ParagraphChild[],
+): Paragraph {
+  return new Paragraph({
+    alignment: AlignmentType.JUSTIFIED,
+    spacing: {
+      before: 200,
+      after: 200,
+      line: 300,
+    },
+    children,
+    ...args,
+  });
+}
+
+export function p2(
+  args: IParagraphOptions,
+  children: ParagraphChild[],
+): Paragraph {
+  return new Paragraph({
+    alignment: AlignmentType.JUSTIFIED,
+    spacing: {
+      before: 100,
+      after: 100,
+      line: 400,
+    },
+    children,
+    ...args,
+  });
+}
+
+export function p3(
+  args: IParagraphOptions,
+  children: ParagraphChild[],
+): Paragraph {
+  return new Paragraph({
+    alignment: AlignmentType.JUSTIFIED,
+    spacing: {
+      before: 50,
+      after: 50,
+      line: 400,
+    },
+    children,
+    ...args,
+  });
+}
+
+/**
+ * Genera una cabecera de docx con el membretado de los contratos.
+ */
+export function cabeceraMembretada(): Header {
+  const membretado = Fs.readFileSync(
+    Path.join(process.cwd(), 'static', 'MEMBRETADA_t.png'),
+  );
+
+  return new Header({
+    children: [
+      new Paragraph({
+        children: [
+          new ImageRun({
+            data: membretado,
+            type: 'png',
+            transformation: {
+              width: cm(4),
+              height: cm(2.7),
+            },
+            floating: {
+              zIndex: 0,
+              horizontalPosition: {
+                relative: HorizontalPositionRelativeFrom.LEFT_MARGIN,
+                offset: cmToEmu(16.5),
+              },
+              verticalPosition: {
+                relative: VerticalPositionRelativeFrom.TOP_MARGIN,
+                offset: cmToEmu(0.5),
+              },
+              behindDocument: true,
+            },
+          }),
+        ],
+      }),
+    ],
+  });
+}
+
+export function pieDePaginaMembretada(): Header {
+  const membretado_b = Fs.readFileSync(
+    Path.join(process.cwd(), 'static', 'MEMBRETADA_b.png'),
+  );
+
+  return new Header({
+    children: [
+      new Paragraph({
+        children: [
+          new ImageRun({
+            data: membretado_b,
+            type: 'png',
+            transformation: {
+              width: cm(20),
+              height: cm(14),
+            },
+            floating: {
+              zIndex: 0,
+              horizontalPosition: {
+                relative: HorizontalPositionRelativeFrom.LEFT_MARGIN,
+                offset: cmToEmu(0.5),
+              },
+              verticalPosition: {
+                relative: VerticalPositionRelativeFrom.TOP_MARGIN,
+                offset: cmToEmu(15.5),
+              },
+              behindDocument: true,
+            },
+          }),
+        ],
+      }),
+    ],
+  });
 }

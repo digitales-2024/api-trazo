@@ -109,4 +109,9 @@ export class ExecutionProjectController {
   ): Promise<string> {
     return await this.projectService.genPdfTemplate(id, user);
   }
+
+  @Get(':id/docx')
+  async contractDocx(@Param('id') id: string, @GetUser() user: UserData) {
+    return await this.projectService.genContractDocx(id, user);
+  }
 }

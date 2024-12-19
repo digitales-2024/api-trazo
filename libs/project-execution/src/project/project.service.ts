@@ -5,6 +5,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  StreamableFile,
 } from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
@@ -23,6 +24,7 @@ import {
 import { ExecutionProjectStatus } from '@prisma/client';
 import { handleException } from '@login/login/utils';
 import { ExecutionProjectTemplate } from './project.template';
+import { genExecutionProjectContractDocx } from './project.document';
 
 @Injectable()
 export class ExecutionProjectService {
@@ -627,5 +629,15 @@ export class ExecutionProjectService {
   async genPdfTemplate(id: string, user: UserData) {
     console.log(id, user);
     return this.template.renderContract();
+  }
+
+  async genContractDocx(id: string, user: UserData) {
+    console.log(id, user);
+    const doc = await genExecutionProjectContractDocx();
+
+    return new StreamableFile(doc, {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      disposition: 'attachment; filename="contrato-gen.docx"',
+    });
   }
 }
