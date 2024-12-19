@@ -16,3 +16,4 @@ export {
 } from './purchaseOrder.interfaces';
 export { SupplierData, SupplierDescriptionData } from './supplier.interfaces';
 export { CreateWarehouseData, WarehouseData } from './warehouse.interfaces';
+export { MovementsData, MovementsDetailData } from './movements.interfaces';
