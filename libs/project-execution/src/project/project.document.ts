@@ -44,6 +44,7 @@ export async function genExecutionProjectContractDocx({
   signingDate,
   resources,
   firstPaymentPercentage,
+  adressing,
 }: {
   project: ExecutionProject;
   client: Client;
@@ -52,6 +53,10 @@ export async function genExecutionProjectContractDocx({
   signingDate: Date;
   resources: Array<Resource>;
   firstPaymentPercentage: number;
+  /**
+   * How to address the client in the contract. E.g. "Sr.", "Sra.", "Srta."
+   */
+  adressing: string;
 }): Promise<Buffer> {
   const totalPayment = budgetDetail.totalCost;
   const firstPayment = roundToTwoDecimals(
@@ -167,7 +172,7 @@ export async function genExecutionProjectContractDocx({
           p({}, []),
           p_n({}, [
             t(
-              `Conste por el presente documento el Contrato de Obra que celebran de una parte, ${client.name}, con D.N.I. Nº ${client.rucDni}, con domicilio legal en ${client.address}, Provincia de ${client.province} y Departamento de ${client.department} a quien en adelante se denominará "EL PROPIETARIO”; y la otra parte la empresa Trazo Arq S.A.C. con Ruc 20455937974 y cuyo representante legal es el Sr. ${business.legalRepName}, identificado con DNI N° ${business.legalRepDni}, con domicilio legal en ${business.address}, provincia y departamento de Arequipa, a quien en adelante se denominará "EL CONTRATISTA"; en los términos y condiciones siguientes:`,
+              `Conste por el presente documento el Contrato de Obra que celebran de una parte, ${adressing} ${client.name}, con D.N.I. Nº ${client.rucDni}, con domicilio legal en ${client.address}, Provincia de ${client.province} y Departamento de ${client.department} a quien en adelante se denominará "EL PROPIETARIO”; y la otra parte la empresa Trazo Arq S.A.C. con Ruc 20455937974 y cuyo representante legal es el Sr. ${business.legalRepName}, identificado con DNI N° ${business.legalRepDni}, con domicilio legal en ${business.address}, provincia y departamento de Arequipa, a quien en adelante se denominará "EL CONTRATISTA"; en los términos y condiciones siguientes:`,
             ),
           ]),
 

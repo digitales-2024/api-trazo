@@ -726,6 +726,7 @@ export class ExecutionProjectService {
       signingDate,
       resources,
       firstPaymentPercentage,
+      adressing: dto.adressing,
     });
 
     return new StreamableFile(doc, {

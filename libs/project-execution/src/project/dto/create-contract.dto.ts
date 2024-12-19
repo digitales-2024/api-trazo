@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsNumber,
   IsPositive,
+  IsString,
 } from 'class-validator';
 
 export class CreateContractDto {
@@ -14,7 +15,7 @@ export class CreateContractDto {
   })
   @IsDateString()
   @IsNotEmpty()
-  signingDate: Date;
+  signingDate: string;
 
   @ApiProperty({
     description:
@@ -24,4 +25,13 @@ export class CreateContractDto {
   @IsNumber()
   @IsPositive()
   firstPaymentPercentage: number;
+
+  @ApiProperty({
+    description:
+      'How to address the client of the contract ("El Sr.", "La Sra.", "Los Sres.", etc)',
+    example: 'La Srta.',
+  })
+  @IsString()
+  @IsNotEmpty()
+  adressing: string;
 }
