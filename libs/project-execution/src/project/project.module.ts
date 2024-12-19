@@ -17,5 +17,6 @@ import { BudgetModule } from '../budget/budget.module';
     UsersModule,
     BudgetModule,
   ],
+  exports: [ExecutionProjectService],
 })
 export class ExecutionProjectModule {}

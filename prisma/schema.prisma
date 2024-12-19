@@ -25,12 +25,11 @@ model User {
   auditsPerformed Audit[] @relation("AuditPerformedBy")
 
   // Relación con UserRol
-  userRols            UserRol[]       @relation("UserId")
-  designProjects      DesignProject[] @relation("DesignerDesignProjects")
-  executionProjects   ExecutionProject[] @relation("residentExecutionProjects")
-
+  userRols          UserRol[]          @relation("UserId")
+  designProjects    DesignProject[]    @relation("DesignerDesignProjects")
+  executionProjects ExecutionProject[] @relation("ResidentExecutionProjects")
   // Relacion con Requirements
-  requirements       Requirements[] @relation("residentRequirements")
+  requirements      Requirements[]     @relation("residentRequirements")
 
   @@unique([email, isActive])
 }
@@ -158,8 +157,8 @@ model Client {
   // Relacion con Budget
   clientBudget Budget[] @relation("client")
 
-  designProjects DesignProject[] @relation("ClientDesignProjects")
-  executionProjects ExecutionProject[] @relation("clientExecutionProjects")
+  designProjects    DesignProject[]    @relation("ClientDesignProjects")
+  executionProjects ExecutionProject[] @relation("ClientExecutionProjects")
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
@@ -374,9 +373,17 @@ model Resource {
   // Relación con ApuOnResource
   resource ApuOnResource[] @relation("resource")
 
-  // Relación muchos a muchos con RequirementsDetail a través de RequirementResource
-  requirements      RequirementResource[] @relation("ResourcesRequirementsDetail")
-  
+  // Relación uno a muchos con RequirementsDetail
+  requirementsDetail    RequirementsDetail[] @relation("RequirementsDetailResources")
+
+  // Relación con PurchaseOrderDetail a través de PurchaseOrder
+  purcharseOrder PurchaseOrderDetail[] @relation("ResourcesPurcharseOrderDetail")
+
+  // Relación con MovementsDetail a través de Movements
+  movements MovementsDetail[] @relation("ResourcesMovementsDetail")
+
+  stock Stock[] @relation("ResourceStock")
+
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
 }
@@ -410,7 +417,7 @@ model Budget {
   designProjectId String?
 
   // Relacion con ExecutionProject
-  executionBudget          ExecutionProject[] @relation("budgetExecutionProjects")
+  executionBudget ExecutionProject[] @relation("BudgetExecutionProjects")
 
   // Relación con BudgetDetail
   budgetDetail BudgetDetail[] @relation("budgetDetail")
@@ -700,16 +707,18 @@ model ExecutionProject {
   //Plazo de ejecución
   executionTime   String
   //Relaciones
-  client                    Client @relation("clientExecutionProjects", fields: [clientId], references: [id])
-  clientId                  String
+  client          Client @relation("ClientExecutionProjects", fields: [clientId], references: [id])
+  clientId        String
 
-  resident                  User   @relation("residentExecutionProjects", fields: [residentId], references: [id])
-  residentId                String
-  
-  budget                    Budget   @relation("budgetExecutionProjects", fields: [budgetId], references: [id])
-  budgetId                  String   @unique  
+  resident   User   @relation("ResidentExecutionProjects", fields: [residentId], references: [id])
+  residentId String
 
-  requirements              Requirements[] @relation("executionProjectRequirements")
+  budget   Budget @relation("BudgetExecutionProjects", fields: [budgetId], references: [id])
+  budgetId String @unique
+
+  requirements Requirements[] @relation("executionProjectRequirements")
+
+  warehouse Warehouse[] @relation("ExecutionProjectWarehouse")
 }
 
 // Estados de un proyecto de Ejecución
@@ -721,31 +730,30 @@ enum ExecutionProjectStatus {
 }
 
 model Requirements {
-  id                    String @id @unique @default(uuid())
-  date                  String
+  id   String @id @unique @default(uuid())
+  date String
 
-  createdAt             DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
 
   // Relaciones
-  resident              User @relation("residentRequirements", fields: [residentId], references: [id])
-  residentId            String
+  resident   User   @relation("residentRequirements", fields: [residentId], references: [id])
+  residentId String
 
-  executionProject      ExecutionProject @relation("executionProjectRequirements", fields: [executionProyectId], references: [id])
-  executionProyectId    String
-  
-  requirementsDetail    RequirementsDetail[] @relation("requirementsDetail")
+  executionProject   ExecutionProject @relation("executionProjectRequirements", fields: [executionProyectId], references: [id])
+  executionProyectId String
+
+  requirementsDetail RequirementsDetail[] @relation("requirementsDetail")
+
+  purchaseOrder PurchaseOrder[] @relation("RequirementsPurcharseOrder")
 }
 
 model RequirementsDetail {
   id                    String @id @unique @default(uuid())
-  status                RequirementDetailStatus
+  status                RequirementDetailStatus @default(REQUIRED)
   quantity              Float
-  date                  String
+  dateDetail            String
   description           String
-  deliveryDate          String
-  deliveryQuantity      Float
-  balance               Float
 
   createdAt             DateTime @default(now()) @db.Timestamptz(6)
   updatedAt             DateTime @updatedAt
@@ -754,7 +762,10 @@ model RequirementsDetail {
   requirementsDetail    Requirements @relation("requirementsDetail", fields: [requirementsId], references: [id])
   requirementsId        String
 
-  resources             RequirementResource[] @relation("RequirementsDetailResources")
+  // Relación uno a muchos con Resource (ahora directo, no intermedio)
+  
+  resource              Resource @relation("RequirementsDetailResources", fields: [resourceId], references: [id])
+  resourceId            String
 }
 
 // Estados para el Detalle de Requerimiento
@@ -764,17 +775,139 @@ enum RequirementDetailStatus {
   COMPLETED
 }
 
-// Tabla intermedia entre RequirementDetail y Resource
-model RequirementResource {
-  id                      String         @id @unique @default(uuid())
+model PurchaseOrder {
+  id String @id @unique @default(uuid())
 
-  createdAt               DateTime       @default(now()) @db.Timestamptz(6)
-  updatedAt               DateTime       @updatedAt
+  code                  String              @unique
+  orderDate             String
+  estimatedDeliveryDate String
+  status                PurchaseOrderStatus @default(PENDING)
 
-  // Relaciones 
-  requirementDetail       RequirementsDetail @relation("RequirementsDetailResources", fields: [requirementDetailId], references: [id])
-  requirementDetailId     String
-  
-  resource                Resource       @relation("ResourcesRequirementsDetail", fields: [resourceId], references: [id])
-  resourceId              String
+  supplier   Supplier @relation("SupplierPurcharseOrder", fields: [supplierId], references: [id])
+  supplierId String
+
+  requirements   Requirements @relation("RequirementsPurcharseOrder", fields: [requirementsId], references: [id])
+  requirementsId String
+
+  movements Movements[] @relation("PurchaseOrderMovements")
+
+  purchaseOrderDetail PurchaseOrderDetail[] @relation("PurcharseOrderPurchaseOrderDetail")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+enum PurchaseOrderStatus {
+  PENDING
+  DELIVERED
+  REJECTED
+}
+
+model Supplier {
+  id       String  @id @unique @default(uuid())
+  name     String  @unique
+  ruc      String  @unique
+  address  String
+  phone    String
+  email    String
+  isActive Boolean @default(true)
+
+  // Relación con PurchaseOrderDetail a través de PurchaseOrder
+  purcharseOrder PurchaseOrder[] @relation("SupplierPurcharseOrder")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+model PurchaseOrderDetail {
+  id String @id @unique @default(uuid())
+
+  quantity Float
+  unitCost Float
+  subtotal Float
+
+  resource   Resource @relation("ResourcesPurcharseOrderDetail", fields: [resourceId], references: [id])
+  resourceId String
+
+  purchaseOrder   PurchaseOrder? @relation("PurcharseOrderPurchaseOrderDetail", fields: [purchaseOrderId], references: [id])
+  purchaseOrderId String?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+model Movements {
+  id String @id @unique @default(uuid())
+
+  purchaseOrder PurchaseOrder @relation("PurchaseOrderMovements", fields: [purchaseId], references: [id])
+  purchaseId    String
+
+  typeMovement   TypeMovement @relation("MovementsTypeMovements", fields: [typeMovementId], references: [id])
+  typeMovementId String
+
+  warehouse   Warehouse @relation("WarehouseMovements", fields: [warehouseId], references: [id])
+  warehouseId String
+
+  movementsDetail MovementsDetail[] @relation("MovementsDetailMovements")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+model MovementsDetail {
+  id String @id @unique @default(uuid())
+
+  quantity Float
+  unitCost Float
+  subtotal Float
+
+  resource   Resource @relation("ResourcesMovementsDetail", fields: [resourceId], references: [id])
+  resourceId String
+
+  movements   Movements @relation("MovementsDetailMovements", fields: [movementsId], references: [id])
+  movementsId String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+model TypeMovement {
+  id          String  @id @unique @default(uuid())
+  name        String  @unique
+  description String?
+
+  movement Movements[] @relation("MovementsTypeMovements")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+model Warehouse {
+  id String @id @unique @default(uuid())
+
+  executionProject   ExecutionProject @relation("ExecutionProjectWarehouse", fields: [executionProjectId], references: [id])
+  executionProjectId String
+
+  stock Stock[] @relation("WarehouseStock")
+
+  movements Movements[] @relation("WarehouseMovements")
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+}
+
+model Stock {
+  id        String @id @unique @default(uuid())
+  quantity  Float
+  unitCost  Float
+  totalCost Float
+
+  warehouse   Warehouse @relation("WarehouseStock", fields: [warehouseId], references: [id])
+  warehouseId String
+
+  resource   Resource @relation("ResourceStock", fields: [resourceId], references: [id])
+  resourceId String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
 }
