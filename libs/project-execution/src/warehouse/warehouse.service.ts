@@ -30,7 +30,7 @@ export class WarehouseService {
     try {
       // Crear el almacen por proyecto
       newWarehouse = await this.prisma.$transaction(async () => {
-        // Crear el nuevo cliente
+        // Crear el nuevo almacen
         const warehouse = await this.prisma.warehouse.create({
           data: {
             executionProjectId: idExecutionProject,
@@ -126,7 +126,7 @@ export class WarehouseService {
         },
       });
 
-      // Mapea los resultados al tipo ClientData
+      // Mapea los resultados al tipo CreateWarehouseData
       return warehouses.map((warehouse) => ({
         id: warehouse.id,
         executionProject: warehouse.executionProject,
@@ -189,6 +189,48 @@ export class WarehouseService {
 
     if (!warehouse) {
       throw new NotFoundException('Warehouse not found');
+    }
+
+    return warehouse as unknown as WarehouseData;
+  }
+
+  /**
+   * Obtiene un almacén por el identificador de un proyecto de ejecución
+   * @param id Identificador del proyecto de ejecución
+   * @returns Datos completos del almacén con su stock
+   */
+  async findWarehouseByExeuctionProject(id: string): Promise<WarehouseData> {
+    const warehouse = await this.prisma.executionProject.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        code: true,
+        warehouse: {
+          select: {
+            id: true,
+            stock: {
+              select: {
+                id: true,
+                quantity: true,
+                unitCost: true,
+                totalCost: true,
+                resource: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!warehouse) {
+      throw new NotFoundException(
+        'Warehouse assigned to execution project not found',
+      );
     }
 
     return warehouse as unknown as WarehouseData;

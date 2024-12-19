@@ -29,4 +29,12 @@ export class WarehouseController {
   findOne(@Param('id') id: string): Promise<WarehouseData> {
     return this.warehouseService.findOne(id);
   }
+
+  @ApiOkResponse({ description: 'Get warehouse by execution project id' })
+  @Get(':id')
+  findWarehouseByExeuctionProject(
+    @Param('/warehouse/execution/id') id: string,
+  ): Promise<WarehouseData> {
+    return this.warehouseService.findWarehouseByExeuctionProject(id);
+  }
 }
