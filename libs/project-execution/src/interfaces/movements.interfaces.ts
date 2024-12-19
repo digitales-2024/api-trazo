@@ -1,7 +1,11 @@
-import { Movements, TypeMovementName } from '@prisma/client';
+import { Movements } from '@prisma/client';
 
-export type MovementsData = Pick<Movements, 'id' | 'code' | 'dateMovement'> & {
-  typeMovement: { id: string; name: TypeMovementName; description: string };
+export type MovementsData = Pick<
+  Movements,
+  'id' | 'code' | 'dateMovement' | 'type' | 'description'
+> & {
+  warehouse: { id: string; executionProject: { id: string; code: string } };
+  purchaseOrder?: { id: string; code: string };
   movementsDetail: MovementsDetailData[];
 };
 
