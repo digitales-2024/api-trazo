@@ -28,6 +28,7 @@ import {
   ApiBadRequestResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { CreateContractDto } from './dto/create-contract.dto';
 
 @ApiTags('Execution Projects')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -100,5 +101,21 @@ export class ExecutionProjectController {
     @GetUser() user: UserData,
   ) {
     return this.projectService.remove(deleteProjectsDto, user);
+  }
+
+  @Get(':id/pdflayout')
+  async pdfTemplate(
+    @Param('id') id: string,
+    @GetUser() user: UserData,
+  ): Promise<string> {
+    return await this.projectService.genPdfTemplate(id, user);
+  }
+
+  @Post(':id/docx')
+  async contractDocx(
+    @Body() createContractDto: CreateContractDto,
+    @Param('id') id: string,
+  ) {
+    return await this.projectService.genContractDocx(id, createContractDto);
   }
 }

@@ -5,17 +5,20 @@ import {
   Packer,
   Paragraph,
   TextRun,
-  Header,
-  ImageRun,
-  HorizontalPositionRelativeFrom,
-  VerticalPositionRelativeFrom,
   Table,
   TableRow,
   TableCell,
 } from 'docx';
-import { bold, cm, cmToEmu, FONT, p, p2, p3, t } from './utils';
-import * as Fs from 'node:fs';
-import * as Path from 'path';
+import {
+  bold,
+  cabeceraMembretada,
+  FONT,
+  p,
+  p2,
+  p3,
+  pieDePaginaMembretada,
+  t,
+} from '../utils';
 import { DesignProjectDataNested } from '../interfaces/project.interfaces';
 import { BusinessGet } from '@business/business/business.service';
 import { spellPricing, twoDecimals } from '../utils';
@@ -26,13 +29,6 @@ export async function genContractDocx(
   business: BusinessGet,
   signingDate: Date,
 ): Promise<Buffer> {
-  const membretado = Fs.readFileSync(
-    Path.join(process.cwd(), 'static', 'MEMBRETADA_t.png'),
-  );
-  const membretado_b = Fs.readFileSync(
-    Path.join(process.cwd(), 'static', 'MEMBRETADA_b.png'),
-  );
-
   const project = data;
   const quotation = data.quotation;
   const client = data.client;
@@ -53,64 +49,10 @@ export async function genContractDocx(
     sections: [
       {
         headers: {
-          default: new Header({
-            children: [
-              new Paragraph({
-                children: [
-                  new ImageRun({
-                    data: membretado,
-                    type: 'png',
-                    transformation: {
-                      width: cm(4),
-                      height: cm(2.7),
-                    },
-                    floating: {
-                      zIndex: 0,
-                      horizontalPosition: {
-                        relative: HorizontalPositionRelativeFrom.LEFT_MARGIN,
-                        offset: cmToEmu(16.5),
-                      },
-                      verticalPosition: {
-                        relative: VerticalPositionRelativeFrom.TOP_MARGIN,
-                        offset: cmToEmu(0.5),
-                      },
-                      behindDocument: true,
-                    },
-                  }),
-                ],
-              }),
-            ],
-          }),
+          default: cabeceraMembretada(),
         },
         footers: {
-          default: new Header({
-            children: [
-              new Paragraph({
-                children: [
-                  new ImageRun({
-                    data: membretado_b,
-                    type: 'png',
-                    transformation: {
-                      width: cm(20),
-                      height: cm(14),
-                    },
-                    floating: {
-                      zIndex: 0,
-                      horizontalPosition: {
-                        relative: HorizontalPositionRelativeFrom.LEFT_MARGIN,
-                        offset: cmToEmu(0.5),
-                      },
-                      verticalPosition: {
-                        relative: VerticalPositionRelativeFrom.TOP_MARGIN,
-                        offset: cmToEmu(15),
-                      },
-                      behindDocument: true,
-                    },
-                  }),
-                ],
-              }),
-            ],
-          }),
+          default: pieDePaginaMembretada(),
         },
         children: [
           new Paragraph({

@@ -5,6 +5,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  StreamableFile,
 } from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma';
 import { AuditService } from '@login/login/admin/audit/audit.service';
@@ -20,8 +21,12 @@ import {
   ExecutionProjectSummaryData,
   ExecutionProjectStatusUpdateData,
 } from '../interfaces/executionProject.interface';
-import { ExecutionProjectStatus } from '@prisma/client';
+import { ExecutionProjectStatus, ResourceType } from '@prisma/client';
 import { handleException } from '@login/login/utils';
+import { ExecutionProjectTemplate } from './project.template';
+import { genExecutionProjectContractDocx } from './project.document';
+import { BusinessService } from '@business/business';
+import { CreateContractDto } from './dto/create-contract.dto';
 
 @Injectable()
 export class ExecutionProjectService {
@@ -33,6 +38,8 @@ export class ExecutionProjectService {
     private readonly budgetService: BudgetService,
     private readonly client: ClientsService,
     private readonly user: UsersService,
+    private readonly template: ExecutionProjectTemplate,
+    private readonly business: BusinessService,
   ) {}
 
   /**
@@ -620,5 +627,111 @@ export class ExecutionProjectService {
 
       handleException(error, 'Error deleting execution projects');
     }
+  }
+
+  // TODO: no se utiliza, eliminar?
+  async genPdfTemplate(id: string, user: UserData) {
+    console.log(id, user);
+    return this.template.renderContract();
+  }
+
+  async genContractDocx(id: string, dto: CreateContractDto) {
+    // verificar que el proyecto existe
+    const project = await this.prisma.executionProject.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        client: true,
+        budget: {
+          include: {
+            budgetDetail: true,
+          },
+        },
+      },
+    });
+    if (!project) {
+      throw new NotFoundException('Project does not exist');
+    }
+
+    // obtener business
+    const business = (await this.business.findAll())[0];
+    const signingDate = new Date(dto.signingDate + 'T12:00:00.000-05:00');
+    const firstPaymentPercentage = dto.firstPaymentPercentage;
+
+    // obtener recursos (suministros)
+    const budgetDetail = project.budget.budgetDetail[0];
+    const categories = await this.prisma.categoryBudget.findMany({
+      where: {
+        budgetDetailId: budgetDetail.id,
+      },
+      select: {
+        subcategoryBudget: {
+          select: {
+            workItemBudget: {
+              select: {
+                apuBudgetId: true,
+                subWorkItemBudget: {
+                  select: {
+                    apuBudgetId: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const apuIds = categories.flatMap((category) =>
+      category.subcategoryBudget.flatMap((subcat) =>
+        subcat.workItemBudget.flatMap((workItem) => {
+          if (!!workItem.apuBudgetId) {
+            return workItem.apuBudgetId;
+          } else {
+            return workItem.subWorkItemBudget.map((s) => s.apuBudgetId);
+          }
+        }),
+      ),
+    );
+
+    // get all unique resource ids
+    const resourceIdsRaw = await this.prisma.apuOnResourceBudget.findMany({
+      where: {
+        apuId: {
+          in: apuIds,
+        },
+      },
+      select: {
+        resourceId: true,
+      },
+    });
+    const resourceIds = [...new Set(resourceIdsRaw.map((r) => r.resourceId))];
+
+    // actually get the resources
+    const resources = await this.prisma.resource.findMany({
+      where: {
+        id: {
+          in: resourceIds,
+        },
+        type: ResourceType.SUPPLIES,
+      },
+    });
+
+    const doc = await genExecutionProjectContractDocx({
+      project,
+      client: project.client,
+      budgetDetail: budgetDetail,
+      business,
+      signingDate,
+      resources,
+      firstPaymentPercentage,
+      adressing: dto.adressing,
+    });
+
+    return new StreamableFile(doc, {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      disposition: 'attachment; filename="contrato-gen.docx"',
+    });
   }
 }
