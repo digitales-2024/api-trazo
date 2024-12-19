@@ -74,8 +74,11 @@ export class ExecutionProjectService {
           ubicationProject: true,
           department: true,
           province: true,
+          executionTime: true,
+          projectProgress: true,
           client: { select: { id: true, name: true } },
           resident: { select: { id: true, name: true } },
+          budget: { select: { id: true, code: true } },
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -212,7 +215,6 @@ export class ExecutionProjectService {
    */
   async findAll(user: UserPayload): Promise<ExecutionProjectSummaryData[]> {
     const activeStates: ExecutionProjectStatus[] = [
-      'APPROVED',
       'CANCELLED',
       'STARTED',
       'EXECUTION',
@@ -232,8 +234,11 @@ export class ExecutionProjectService {
         ubicationProject: true,
         department: true,
         province: true,
+        executionTime: true,
+        projectProgress: true,
         client: { select: { id: true, name: true } },
         resident: { select: { id: true, name: true } },
+        budget: { select: { id: true, code: true } },
       },
       orderBy: { createdAt: 'desc' },
     });

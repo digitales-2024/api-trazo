@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   StreamableFile,
+  Query,
 } from '@nestjs/common';
 import { BudgetService } from './budget.service';
 import { CreateBudgetDto } from './dto/create-budget.dto';
@@ -82,5 +83,14 @@ export class BudgetController {
   @Get(':id/pdflayout')
   async pdfTemplate(@Param('id') id: string): Promise<string> {
     return await this.budgetService.genPdfTemplate(id);
+  }
+
+  @Get('/approved/budgets')
+  @ApiOkResponse({
+    description:
+      'Get all budgets that can be used to create a Project (approved, and not linked to another project)',
+  })
+  findCreatable(@Query('projectExecutionId') projectExecutionId?: string) {
+    return this.budgetService.findCreatable(projectExecutionId);
   }
 }

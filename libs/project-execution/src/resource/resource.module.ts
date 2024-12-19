@@ -8,6 +8,6 @@ import { PrismaModule } from '@prisma/prisma';
   controllers: [ResourceController],
   providers: [ResourceService],
   imports: [PrismaModule, AuditModule],
-  exports: [ResourceModule],
+  exports: [ResourceService],
 })
 export class ResourceModule {}

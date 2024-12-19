@@ -391,7 +391,7 @@ export class BudgetService {
         },
       });
 
-      // Mapea los resultados al tipo CategoryData
+      // Mapea los resultados al tipo SummaryBudgetData
       const summaryBudgets = await Promise.all(
         budgets.map(async (budget) => {
           const designProjectDB = budget.designProjectId
@@ -1271,9 +1271,11 @@ export class BudgetService {
     );
 
     // Generar el PDF usando Puppeteer
-    const browser = await Puppeteer.launch();
+    const browser = await Puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
     const page = await browser.newPage();
-    await page.setDefaultTimeout(180000);
+    page.setDefaultTimeout(180000);
     await page.setContent(pdfHtml);
 
     // The size of the page in px, before accounting for the pdf margin
@@ -1307,6 +1309,11 @@ export class BudgetService {
     });
   }
 
+  /**
+   * Generar plantilla de pdf de un presupuesto
+   * @param id Id del presupuesto
+   * @returns Plantilla en HTML del presupuesto
+   */
   async genPdfTemplate(id: string): Promise<string> {
     // Get the quotation
     const budget = await this.findOne(id);
@@ -1321,6 +1328,10 @@ export class BudgetService {
     return this.template.renderPdf(budget, editCount, business[0]);
   }
 
+  /**
+   * Validar si un presupuesto está aprobado
+   * @param budgetId Id del presupuesto
+   */
   async validateApprovedBudget(budgetId: string): Promise<void> {
     const budget = await this.findById(budgetId);
 
@@ -1331,5 +1342,102 @@ export class BudgetService {
     if (budget.status !== 'APPROVED') {
       throw new BadRequestException('Budget is not approved');
     }
+  }
+
+  /**
+   * Mostrar los presupuestos aprobados que no están asignados a ningún projectExecution
+   * @param projectExecutionId Proyecto de ejecución al que se le asignará el presupuesto
+   * @returns Todos los presupuestos aprobados que no están asignados a ningún projectExecution
+   */
+  async findCreatable(
+    projectExecutionId?: string,
+  ): Promise<SummaryBudgetData[]> {
+    let assignedBudget = null;
+
+    if (projectExecutionId) {
+      // Encuentra el presupuesto asignado a projectExecution
+      assignedBudget = await this.prisma.budget.findFirst({
+        where: {
+          executionBudget: {
+            some: {
+              id: projectExecutionId,
+            },
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          codeBudget: true,
+          code: true,
+          ubication: true,
+          status: true,
+          dateProject: true,
+          clientBudget: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          designProjectId: true,
+        },
+      });
+    }
+
+    // Encuentra todos los presupuestos aprobados que no están asignados a ningún projectExecution
+    const budgets = await this.prisma.budget.findMany({
+      where: {
+        status: BudgetStatusType.APPROVED,
+        executionBudget: {
+          none: {},
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        codeBudget: true,
+        code: true,
+        ubication: true,
+        status: true,
+        dateProject: true,
+        clientBudget: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        designProjectId: true,
+      },
+    });
+
+    // Combina el presupuesto asignado con los demás presupuestos
+    const allBudgets = assignedBudget ? [assignedBudget, ...budgets] : budgets;
+
+    // Mapea los resultados al tipo SummaryBudgetData
+    const summaryBudgets = await Promise.all(
+      allBudgets.map(async (budget) => {
+        const designProjectDB = budget.designProjectId
+          ? await this.designProjectService.findById(budget.designProjectId)
+          : null;
+
+        return {
+          id: budget.id,
+          name: budget.name,
+          codeBudget: budget.codeBudget,
+          code: budget.code,
+          ubication: budget.ubication,
+          status: budget.status,
+          dateProject: budget.dateProject,
+          clientBudget: budget.clientBudget,
+          designProjectBudget: designProjectDB
+            ? {
+                id: designProjectDB.id,
+                code: designProjectDB.code,
+              }
+            : null,
+        };
+      }),
+    );
+
+    return summaryBudgets as SummaryBudgetData[];
   }
 }
