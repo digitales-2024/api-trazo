@@ -873,14 +873,19 @@ model MovementsDetail {
 }
 
 model TypeMovement {
-  id          String  @id @unique @default(uuid())
-  name        String  @unique
+  id          String           @id @unique @default(uuid())
+  name        TypeMovementName
   description String?
 
   movement Movements[] @relation("MovementsTypeMovements")
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
+}
+
+enum TypeMovementName {
+  INPUT
+  OUTPUT
 }
 
 model Warehouse {
