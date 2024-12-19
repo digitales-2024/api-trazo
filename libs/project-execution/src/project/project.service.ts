@@ -21,7 +21,7 @@ import {
   ExecutionProjectSummaryData,
   ExecutionProjectStatusUpdateData,
 } from '../interfaces/executionProject.interface';
-import { ExecutionProjectStatus, ResourceType } from '@prisma/client';
+import { ExecutionProjectStatus, Resource, ResourceType } from '@prisma/client';
 import { handleException } from '@login/login/utils';
 import { ExecutionProjectTemplate } from './project.template';
 import { genExecutionProjectContractDocx } from './project.document';
@@ -98,6 +98,95 @@ export class ExecutionProjectService {
         'Error fetching completed execution projects',
       );
     }
+  }
+
+  /**
+   * Dado un id de proyecto de ejecucion, devuelve todos los recursos que existen en sus apus.
+   *
+   *
+   */
+  async findAllResourcesById(id: string): Promise<Array<Resource>> {
+    // verificar que el proyecto existe y obtener su budget detail
+    const project = await this.prisma.executionProject.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        budget: {
+          select: {
+            budgetDetail: true,
+          },
+        },
+      },
+    });
+    if (!project) {
+      throw new NotFoundException('Project does not exist');
+    }
+
+    // obtener el budget detail
+    const budgetDetail = project.budget.budgetDetail[0];
+
+    // obtener todas las categorias, subcategorias, partidas, subpartidas y sus apus
+    const categories = await this.prisma.categoryBudget.findMany({
+      where: {
+        budgetDetailId: budgetDetail.id,
+      },
+      select: {
+        subcategoryBudget: {
+          select: {
+            workItemBudget: {
+              select: {
+                apuBudgetId: true,
+                subWorkItemBudget: {
+                  select: {
+                    apuBudgetId: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // coleccion de IDs de todos los APUs hijos
+    const apuIds = categories.flatMap((category) =>
+      category.subcategoryBudget.flatMap((subcat) =>
+        subcat.workItemBudget.flatMap((workItem) => {
+          if (!!workItem.apuBudgetId) {
+            return workItem.apuBudgetId;
+          } else {
+            return workItem.subWorkItemBudget.map((s) => s.apuBudgetId);
+          }
+        }),
+      ),
+    );
+
+    // todos los id de recursos de los APUs
+    const resourceIdsRaw = await this.prisma.apuOnResourceBudget.findMany({
+      where: {
+        apuId: {
+          in: apuIds,
+        },
+      },
+      select: {
+        resourceId: true,
+      },
+    });
+    // ids de recursos sin repetirse
+    const resourceIds = [...new Set(resourceIdsRaw.map((r) => r.resourceId))];
+
+    // obtener los recursos segun sus ids
+    const resources = await this.prisma.resource.findMany({
+      where: {
+        id: {
+          in: resourceIds,
+        },
+        isActive: true,
+      },
+    });
+
+    return resources;
   }
 
   /**
