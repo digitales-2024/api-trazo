@@ -137,18 +137,28 @@ export class WarehouseService {
     }
   }
 
+  /**
+   * Obtiene un almacén por su identificador
+   * @param id Identificador del almacén
+   * @returns Datos del almacén
+   */
   async findOne(id: string): Promise<WarehouseData> {
     try {
       return await this.findById(id);
     } catch (error) {
-      this.logger.error('Error get client');
+      this.logger.error('Error get warehouse');
       if (error instanceof BadRequestException) {
         throw error;
       }
-      handleException(error, 'Error get client');
+      handleException(error, 'Error get warehouse');
     }
   }
 
+  /**
+   * Obtiene un almacén por su identificador con validación
+   * @param id Identificador del almacén
+   * @returns Datos completos del almacén con su stock
+   */
   async findById(id: string): Promise<WarehouseData> {
     const warehouse = await this.prisma.warehouse.findUnique({
       where: { id },
