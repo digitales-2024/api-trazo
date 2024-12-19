@@ -837,13 +837,14 @@ model PurchaseOrderDetail {
 }
 
 model Movements {
-  id String @id @unique @default(uuid())
+  id   String @id @unique @default(uuid())
+  code String @default("SGC-P-07-F2")
 
+  dateMovement  String
+  type          TypeMovements
+  description   String?
   purchaseOrder PurchaseOrder @relation("PurchaseOrderMovements", fields: [purchaseId], references: [id])
   purchaseId    String
-
-  typeMovement   TypeMovement @relation("MovementsTypeMovements", fields: [typeMovementId], references: [id])
-  typeMovementId String
 
   warehouse   Warehouse @relation("WarehouseMovements", fields: [warehouseId], references: [id])
   warehouseId String
@@ -852,6 +853,11 @@ model Movements {
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt
+}
+
+enum TypeMovements {
+  INPUT
+  OUTPUT
 }
 
 model MovementsDetail {
@@ -866,17 +872,6 @@ model MovementsDetail {
 
   movements   Movements @relation("MovementsDetailMovements", fields: [movementsId], references: [id])
   movementsId String
-
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt
-}
-
-model TypeMovement {
-  id          String  @id @unique @default(uuid())
-  name        String  @unique
-  description String?
-
-  movement Movements[] @relation("MovementsTypeMovements")
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt

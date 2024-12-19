@@ -8,6 +8,7 @@ import { UsersModule } from '@login/login/admin/users/users.module';
 import { BudgetModule } from '../budget/budget.module';
 import { ExecutionProjectTemplate } from './project.template';
 import { BusinessModule } from '@business/business';
+import { WarehouseModule } from '../warehouse/warehouse.module';
 
 @Module({
   controllers: [ExecutionProjectController],
@@ -18,6 +19,7 @@ import { BusinessModule } from '@business/business';
     ClientsModule,
     UsersModule,
     BudgetModule,
+    WarehouseModule,
     BusinessModule,
   ],
   exports: [ExecutionProjectService],

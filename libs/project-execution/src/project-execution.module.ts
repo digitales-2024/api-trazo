@@ -11,6 +11,8 @@ import { ApuBudgetModule } from './apu-budget/apu-budget.module';
 import { ExecutionProjectModule } from './project/project.module';
 import { PurchaseOrderModule } from './purchase-order/purchase-order.module';
 import { SupplierModule } from './supplier/supplier.module';
+import { MovementsModule } from './movements/movements.module';
+import { WarehouseModule } from './warehouse/warehouse.module';
 
 @Module({
   providers: [ProjectExecutionService],
@@ -27,6 +29,8 @@ import { SupplierModule } from './supplier/supplier.module';
     ApuBudgetModule,
     PurchaseOrderModule,
     SupplierModule,
+    MovementsModule,
+    WarehouseModule,
   ],
 })
 export class ProjectExecutionModule {}

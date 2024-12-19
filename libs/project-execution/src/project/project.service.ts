@@ -27,6 +27,7 @@ import { ExecutionProjectTemplate } from './project.template';
 import { genExecutionProjectContractDocx } from './project.document';
 import { BusinessService } from '@business/business';
 import { CreateContractDto } from './dto/create-contract.dto';
+import { WarehouseService } from '../warehouse/warehouse.service';
 
 @Injectable()
 export class ExecutionProjectService {
@@ -38,6 +39,7 @@ export class ExecutionProjectService {
     private readonly budgetService: BudgetService,
     private readonly client: ClientsService,
     private readonly user: UsersService,
+    private readonly warehouse: WarehouseService,
     private readonly template: ExecutionProjectTemplate,
     private readonly business: BusinessService,
   ) {}
@@ -277,6 +279,10 @@ export class ExecutionProjectService {
             budget: { select: { id: true, name: true } },
           },
         });
+
+        if (newProject) {
+          await this.warehouse.create(newProject.id, user);
+        }
 
         // Registrar la auditoría de la creación del proyecto
         await this.audit.create({
