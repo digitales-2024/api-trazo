@@ -27,8 +27,10 @@ import {
   ApiOkResponse,
   ApiBadRequestResponse,
   ApiUnauthorizedResponse,
+  ApiOperation,
 } from '@nestjs/swagger';
 import { CreateContractDto } from './dto/create-contract.dto';
+import { Resource } from '@prisma/client';
 
 @ApiTags('Execution Projects')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -69,6 +71,16 @@ export class ExecutionProjectController {
   @ApiOkResponse({ description: 'Execution project retrieved successfully' })
   findOne(@Param('id') id: string): Promise<ExecutionProjectData> {
     return this.projectService.findOne(id);
+  }
+
+  @ApiOperation({
+    summary: 'Get children resources by id',
+    description: 'Gets all children resources owned by the project with `id`',
+  })
+  @ApiOkResponse({ description: 'All children resources' })
+  @Get(':id/resources')
+  findResourcesById(@Param('id') id: string): Promise<Array<Resource>> {
+    return this.projectService.findAllResourcesById(id);
   }
 
   @Patch(':id')
