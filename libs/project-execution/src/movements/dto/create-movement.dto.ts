@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { TypeMovementName } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
@@ -13,6 +12,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { CreateMovementDetailDto } from './create-movement-detail.dto';
+import { TypeMovements } from '@prisma/client';
 
 export class CreateMovementDto {
   @ApiProperty({
@@ -23,6 +23,7 @@ export class CreateMovementDto {
   @IsDateString()
   @IsNotEmpty()
   dateMovement: string;
+
   @ApiProperty({
     name: 'nameTypeMovement',
     description:
@@ -35,7 +36,7 @@ export class CreateMovementDto {
     message: "nameTypeMovement must be either 'INPUT' or 'OUTPUT'",
   })
   @Transform(({ value }) => value.toUpperCase())
-  nameTypeMovement: TypeMovementName;
+  type: TypeMovements;
 
   @ApiProperty({
     name: 'description',
@@ -84,5 +85,5 @@ export class CreateMovementDto {
   @ArrayNotEmpty()
   @ValidateNested({ each: true })
   @Type(() => CreateMovementDetailDto)
-  purchaseOrderDetail: CreateMovementDetailDto[];
+  movementDetail: CreateMovementDetailDto[];
 }
