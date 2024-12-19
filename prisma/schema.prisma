@@ -838,7 +838,10 @@ model PurchaseOrderDetail {
 }
 
 model Movements {
-  id String @id @unique @default(uuid())
+  id   String @id @unique @default(uuid())
+  code String @default("SGC-P-07-F2")
+
+  dateMovement String
 
   purchaseOrder PurchaseOrder @relation("PurchaseOrderMovements", fields: [purchaseId], references: [id])
   purchaseId    String
