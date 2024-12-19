@@ -6,11 +6,13 @@ import { AuditModule } from '@login/login/admin/audit/audit.module';
 import { ClientsModule } from '@clients/clients';
 import { UsersModule } from '@login/login/admin/users/users.module';
 import { BudgetModule } from '../budget/budget.module';
+import { ExecutionProjectTemplate } from './project.template';
+import { BusinessModule } from '@business/business';
 import { WarehouseModule } from '../warehouse/warehouse.module';
 
 @Module({
   controllers: [ExecutionProjectController],
-  providers: [ExecutionProjectService],
+  providers: [ExecutionProjectService, ExecutionProjectTemplate],
   imports: [
     PrismaModule,
     AuditModule,
@@ -18,6 +20,8 @@ import { WarehouseModule } from '../warehouse/warehouse.module';
     UsersModule,
     BudgetModule,
     WarehouseModule,
+    BusinessModule,
   ],
+  exports: [ExecutionProjectService],
 })
 export class ExecutionProjectModule {}

@@ -34,7 +34,6 @@ export class ResourceController {
 
   @Post()
   @ApiOperation({
-    summary: 'Create a new resource',
     description: 'Creates a new resource with the provided data',
   })
   @ApiCreatedResponse({
@@ -53,7 +52,6 @@ export class ResourceController {
 
   @Patch(':id')
   @ApiOperation({
-    summary: 'Update an existing resource',
     description: 'Updates the specified resource with the provided data',
   })
   @ApiOkResponse({
@@ -75,7 +73,6 @@ export class ResourceController {
 
   @Patch('reactivate/all')
   @ApiOperation({
-    summary: 'Reactive all resources',
     description: 'Reactive all resources',
   })
   @ApiOkResponse({
@@ -93,7 +90,6 @@ export class ResourceController {
 
   @Get(':type')
   @ApiOperation({
-    summary: 'Get a resource by TYPE',
     description: 'Returns the resources with the specified TYPE',
   })
   @ApiOkResponse({
@@ -107,7 +103,6 @@ export class ResourceController {
   }
   @Get('item/:id')
   @ApiOperation({
-    summary: 'Get a resource by ID',
     description: 'Returns the resource with the specified ID',
   })
   @ApiOkResponse({
@@ -122,7 +117,6 @@ export class ResourceController {
 
   @Delete('remove/all')
   @ApiOperation({
-    summary: 'Desactive all resources',
     description: 'Desactive all resources',
   })
   @ApiOkResponse({

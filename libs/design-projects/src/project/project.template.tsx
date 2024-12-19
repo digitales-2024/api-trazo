@@ -84,7 +84,7 @@ export class ProjectTemplate {
           <p class="my-8 leading-8">
             <b>
               El terreno cuenta con un área de{' '}
-              <span safe>{twoDecimals(quotation.metering)}</span> m2.
+              <span safe>{twoDecimals(quotation.landArea)}</span> m2.
             </b>
           </p>
 
@@ -471,7 +471,7 @@ export class ProjectTemplate {
     );
   }
 
-  private static signatures(props: { business: BusinessGet }) {
+  static signatures(props: { business: BusinessGet }) {
     return (
       <div class="grid grid-cols-2 gap-4 pt-32">
         <div class="text-center border-t-2 border-black mx-12">

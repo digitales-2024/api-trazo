@@ -134,6 +134,14 @@ export class ProjectController {
   @ApiOkResponse({
     description: 'Gets the contract for the project passed by id',
   })
+  @Post(':id/docx')
+  genDocx(@Body() exportDto: ExportProjectPdfDto, @Param('id') id: string) {
+    return this.projectService.genDocx(id, exportDto);
+  }
+
+  @ApiOkResponse({
+    description: 'Gets the contract for the project passed by id',
+  })
   @Post(':id/pdf')
   genPdf(@Body() exportDto: ExportProjectPdfDto, @Param('id') id: string) {
     return this.projectService.findOnePdf(id, exportDto);
