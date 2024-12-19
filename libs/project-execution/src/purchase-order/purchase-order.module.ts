@@ -9,5 +9,6 @@ import { ResourceModule } from '../resource/resource.module';
   controllers: [PurchaseOrderController],
   providers: [PurchaseOrderService],
   imports: [PrismaModule, ResourceModule, SupplierModule],
+  exports: [PurchaseOrderService],
 })
 export class PurchaseOrderModule {}

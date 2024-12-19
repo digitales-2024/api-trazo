@@ -1,5 +1,22 @@
+/*
+  Warnings:
+
+  - You are about to drop the column `balance` on the `RequirementsDetail` table. All the data in the column will be lost.
+  - You are about to drop the column `deliveryDate` on the `RequirementsDetail` table. All the data in the column will be lost.
+  - You are about to drop the column `deliveryQuantity` on the `RequirementsDetail` table. All the data in the column will be lost.
+
+*/
 -- CreateEnum
 CREATE TYPE "PurchaseOrderStatus" AS ENUM ('PENDING', 'DELIVERED', 'REJECTED');
+
+-- CreateEnum
+CREATE TYPE "TypeMovements" AS ENUM ('INPUT', 'OUTPUT');
+
+-- AlterTable
+ALTER TABLE "RequirementsDetail" DROP COLUMN "balance",
+DROP COLUMN "deliveryDate",
+DROP COLUMN "deliveryQuantity",
+ALTER COLUMN "status" SET DEFAULT 'REQUIRED';
 
 -- CreateTable
 CREATE TABLE "PurchaseOrder" (
@@ -22,8 +39,8 @@ CREATE TABLE "Supplier" (
     "name" TEXT NOT NULL,
     "ruc" TEXT NOT NULL,
     "address" TEXT NOT NULL,
-    "phone" TEXT NOT NULL,
-    "email" TEXT NOT NULL,
+    "phone" TEXT,
+    "email" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -48,8 +65,11 @@ CREATE TABLE "PurchaseOrderDetail" (
 -- CreateTable
 CREATE TABLE "Movements" (
     "id" TEXT NOT NULL,
+    "code" TEXT NOT NULL DEFAULT 'SGC-P-07-F2',
+    "dateMovement" TEXT NOT NULL,
+    "type" "TypeMovements" NOT NULL,
+    "description" TEXT,
     "purchaseId" TEXT NOT NULL,
-    "typeMovementId" TEXT NOT NULL,
     "warehouseId" TEXT NOT NULL,
     "createdAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -69,17 +89,6 @@ CREATE TABLE "MovementsDetail" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "MovementsDetail_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "TypeMovement" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "description" TEXT,
-    "createdAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "TypeMovement_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -122,6 +131,9 @@ CREATE UNIQUE INDEX "Supplier_name_key" ON "Supplier"("name");
 CREATE UNIQUE INDEX "Supplier_ruc_key" ON "Supplier"("ruc");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Supplier_email_key" ON "Supplier"("email");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "PurchaseOrderDetail_id_key" ON "PurchaseOrderDetail"("id");
 
 -- CreateIndex
@@ -129,12 +141,6 @@ CREATE UNIQUE INDEX "Movements_id_key" ON "Movements"("id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "MovementsDetail_id_key" ON "MovementsDetail"("id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "TypeMovement_id_key" ON "TypeMovement"("id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "TypeMovement_name_key" ON "TypeMovement"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Warehouse_id_key" ON "Warehouse"("id");
@@ -156,9 +162,6 @@ ALTER TABLE "PurchaseOrderDetail" ADD CONSTRAINT "PurchaseOrderDetail_purchaseOr
 
 -- AddForeignKey
 ALTER TABLE "Movements" ADD CONSTRAINT "Movements_purchaseId_fkey" FOREIGN KEY ("purchaseId") REFERENCES "PurchaseOrder"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Movements" ADD CONSTRAINT "Movements_typeMovementId_fkey" FOREIGN KEY ("typeMovementId") REFERENCES "TypeMovement"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Movements" ADD CONSTRAINT "Movements_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
