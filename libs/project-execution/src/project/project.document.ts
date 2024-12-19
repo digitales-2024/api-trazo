@@ -202,7 +202,7 @@ export async function genExecutionProjectContractDocx({
           p_n({}, [
             PROPIETARIO,
             t(
-              ` dispone de un terreno ubicado en  ubicado en ${project.ubicationProject}, Provincia de ${project.province} y Departamento de ${project.department}`,
+              ` dispone de un terreno ubicado en ${project.ubicationProject}, Provincia de ${project.province} y Departamento de ${project.department}`,
             ),
             br(),
             t('En el terreno descrito '),
@@ -912,7 +912,7 @@ export async function genExecutionProjectContractDocx({
           ]),
           p_n({}, [
             t(
-              'Las partes convienen en establecer que el Árbitro designado tendrá facultades de ejecución de Laudo salvo que se requiera del auxilio de la fuerza pública, en cuyo caso se solicitará la intervención del poder judicial conforme a Ley. Las partes dejan establecido que el Arbitro se encuentra facultado a dictar medidas cautelares las que se resolverán en un plazo de cinco días de solicitadas y se pondrán en conocimiento de la contraparte después de su ejecución.',
+              'Las partes convienen en establecer que el Árbitro designado tendrá facultades de ejecución de Laudo salvo que se requiera del auxilio de la fuerza pública, en cuyo caso se solicitará la intervención del poder judicial conforme a Ley. Las partes dejan establecido que el Árbitro se encuentra facultado a dictar medidas cautelares las que se resolverán en un plazo de cinco días de solicitadas y se pondrán en conocimiento de la contraparte después de su ejecución.',
             ),
           ]),
 

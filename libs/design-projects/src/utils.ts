@@ -158,7 +158,7 @@ export function spellPricingWithTaxes(price: number) {
   const newprice = twoDecimals(price);
   const [whole, centimos] = newprice.split('.');
 
-  return `${numberToText(whole)} CON ${centimos}/100 NUEVOS SOLES NO INCLUYE IGV`;
+  return `${numberToText(whole)} CON ${centimos}/100 NUEVOS SOLES`;
 }
 
 export function spellPricingBudget(price: number) {
