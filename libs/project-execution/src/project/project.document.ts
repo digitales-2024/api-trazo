@@ -1,3 +1,4 @@
+import { BusinessGet } from '@business/business/business.service';
 import {
   bold,
   br,
@@ -6,9 +7,17 @@ import {
   p,
   p_n,
   pieDePaginaMembretada,
+  spellPricingWithTaxes,
   t,
+  twoDecimals,
   ub,
 } from '@design-projects/design-projects/utils';
+import {
+  BudgetDetail,
+  Client,
+  ExecutionProject,
+  Resource,
+} from '@prisma/client';
 import {
   Packer,
   Document,
@@ -22,11 +31,33 @@ import {
   TableRow,
   TableCell,
 } from 'docx';
+import { roundToTwoDecimals } from '../utils';
 
 const PROPIETARIO = bold('EL PROPIETARIO');
 const CONTRATISTA = bold('EL CONTRATISTA');
 
-export async function genExecutionProjectContractDocx(): Promise<Buffer> {
+export async function genExecutionProjectContractDocx({
+  project,
+  client,
+  budgetDetail,
+  business,
+  signingDate,
+  resources,
+  firstPaymentPercentage,
+}: {
+  project: ExecutionProject;
+  client: Client;
+  budgetDetail: BudgetDetail;
+  business: BusinessGet;
+  signingDate: Date;
+  resources: Array<Resource>;
+  firstPaymentPercentage: number;
+}): Promise<Buffer> {
+  const totalPayment = budgetDetail.totalCost;
+  const firstPayment = roundToTwoDecimals(
+    totalPayment * firstPaymentPercentage,
+  );
+
   const doc = new Document({
     numbering: {
       config: [
@@ -136,7 +167,7 @@ export async function genExecutionProjectContractDocx(): Promise<Buffer> {
           p({}, []),
           p_n({}, [
             t(
-              `Conste por el presente documento el Contrato de Obra que celebran de una parte, La Sra. ------------------------------------------, identificada con D.N.I. Nº ------------- con domicilio legal en ----------------------------------, Provincia de --------- y Departamento de Arequipa a quien en adelante se denominará "EL PROPIETARIO”; y la otra parte la empresa Trazo Arq S.A.C. con Ruc 20455937974 y cuyo representante legal es el Sr. JOEL JESUS GONZALES FLORES, identificado con DNI N° 42578992, con domicilio legal en Urb. Villa el Prado Mz. A Lt. 6 Dpto 201, distrito de Yanahuara, provincia y departamento de Arequipa, a quien en adelante se denominará "EL CONTRATISTA"; en los términos y condiciones siguientes:`,
+              `Conste por el presente documento el Contrato de Obra que celebran de una parte, ${client.name}, con D.N.I. Nº ${client.rucDni}, con domicilio legal en ${client.address}, Provincia de ${client.province} y Departamento de ${client.department} a quien en adelante se denominará "EL PROPIETARIO”; y la otra parte la empresa Trazo Arq S.A.C. con Ruc 20455937974 y cuyo representante legal es el Sr. ${business.legalRepName}, identificado con DNI N° ${business.legalRepDni}, con domicilio legal en ${business.address}, provincia y departamento de Arequipa, a quien en adelante se denominará "EL CONTRATISTA"; en los términos y condiciones siguientes:`,
             ),
           ]),
 
@@ -147,7 +178,7 @@ export async function genExecutionProjectContractDocx(): Promise<Buffer> {
           p_n({}, [
             PROPIETARIO,
             t(
-              ` tiene un inmueble ubicado en la tiene un inmueble ubicado en Urb. La----------------------------, distrito de Cerro Colorado y Provincia y Departamento de Arequipa.`,
+              ` tiene un inmueble ubicado en la tiene un inmueble ubicado en ${project.ubicationProject}, Provincia de ${project.province} y Departamento de ${project.department}.`,
             ),
           ]),
           p_n({}, [
@@ -171,13 +202,15 @@ export async function genExecutionProjectContractDocx(): Promise<Buffer> {
           p_n({}, [
             PROPIETARIO,
             t(
-              ' dispone de un terreno ubicado en -------------------------- , distrito de Cerro Colorado y Provincia y Departamento de Arequipa.',
+              ` dispone de un terreno ubicado en  ubicado en ${project.ubicationProject}, Provincia de ${project.province} y Departamento de ${project.department}`,
             ),
             br(),
             t('En el terreno descrito '),
             PROPIETARIO,
             t(' tiene proyectado '),
-            bold('LA CONSTRUCCION DE UNA EDIFICACION DE 2 NIVELES, '),
+            bold(
+              `LA CONSTRUCCION DEL PROYECTO ${project.name}, `.toUpperCase(),
+            ),
             t('de acuerdo con el proyecto elaborado para tal fin.'),
           ]),
           p_n({}, [
@@ -570,10 +603,9 @@ export async function genExecutionProjectContractDocx(): Promise<Buffer> {
           ]),
           p_n({}, [t('Se debe precisar el uso de los siguientes materiales:')]),
 
-          p({ bullet: { level: 0 }, spacing: {} }, [t('Item 1')]),
-          p({ bullet: { level: 0 }, spacing: {} }, [t('Item 2')]),
-          p({ bullet: { level: 0 }, spacing: {} }, [t('Item 3')]),
-          p({ bullet: { level: 0 }, spacing: {} }, [t('Item 4')]),
+          ...resources.map((r) =>
+            p({ bullet: { level: 0 }, spacing: {} }, [t(r.name)]),
+          ),
 
           //
           // Clausula sexta
@@ -582,9 +614,11 @@ export async function genExecutionProjectContractDocx(): Promise<Buffer> {
           p_n({}, [
             t('La retribución fijada por mutuo acuerdo que le corresponde a '),
             CONTRATISTA,
-            t(
-              ' asciende a la suma de S/. ______ (DOSCIENTOS CINCUENTA MIL CON 00/100 nuevos Soles) incluido el 18 % del impuesto general a las ventas.',
+            t(` asciende a la suma de `),
+            bold(
+              `S/. ${twoDecimals(totalPayment)} (${spellPricingWithTaxes(totalPayment)})`,
             ),
+            t(` incluido el 18 % del impuesto general a las ventas.`),
           ]),
           p_n({}, [
             t(
@@ -600,9 +634,9 @@ export async function genExecutionProjectContractDocx(): Promise<Buffer> {
             PROPIETARIO,
             t(' a solicitud de '),
             CONTRATISTA,
-            t('realizara el pago de una inicial correspondiente al monto de '),
+            t(' realizara el pago de una inicial correspondiente al monto de '),
             bold(
-              'S/. 21,180.00 (VEINTIUN MIL CIENTO OCHENTA CON 00/100 Nuevos Soles) y los demás pagos se realizarán quincenalmente según presentación de valorización al avance de obra y se entregara un recibo de recepción.',
+              `S/. ${twoDecimals(firstPayment)} (${spellPricingWithTaxes(firstPayment)}) y los demás pagos se realizarán quincenalmente según presentación de valorización al avance de obra y se entregara un recibo de recepción.`,
             ),
           ]),
           p_n({}, [
@@ -622,7 +656,7 @@ export async function genExecutionProjectContractDocx(): Promise<Buffer> {
           p({}, [ub('SETIMA:'), bold(' PLAZO DE EJECUCION DE LA OBRA')]),
           p_n({}, [
             t(
-              'El plazo de ejecución de la obra será de 120 DÍAS HÁBILES, contados a partir de los 7 días de completada la entrega de la información por parte de ',
+              `El plazo de ejecución de la obra será de ${project.executionTime} DÍAS HÁBILES, contados a partir de los 7 días de completada la entrega de la información por parte de `,
             ),
             PROPIETARIO,
             t(':'),
@@ -911,7 +945,15 @@ export async function genExecutionProjectContractDocx(): Promise<Buffer> {
           ]),
           p_n({}, [
             t(
-              'Suscrito en Arequipa, el 30 de Julio de 2024, en dos (2) ejemplares de idéntico tenor, en señal de conformidad con todos los términos que anteceden.',
+              `Suscrito en Arequipa, el ${signingDate.toLocaleDateString(
+                'es-PE',
+                {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  timeZone: 'America/Lima',
+                },
+              )}, en dos (2) ejemplares de idéntico tenor, en señal de conformidad con todos los términos que anteceden.`,
             ),
           ]),
           p({}, [t('')]),

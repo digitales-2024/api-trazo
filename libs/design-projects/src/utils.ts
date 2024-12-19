@@ -137,7 +137,24 @@ function numberToText(n: string) {
   return '----';
 }
 
+/**
+ * Transforms a number into its spelling using words.
+ *
+ * 320000 -> "TRES CIENTOS VEINTE MIL CON 00/100 NUEVOS SOLES NO INCLUYE IGV"
+ */
 export function spellPricing(price: number) {
+  const newprice = twoDecimals(price);
+  const [whole, centimos] = newprice.split('.');
+
+  return `${numberToText(whole)} CON ${centimos}/100 NUEVOS SOLES NO INCLUYE IGV`;
+}
+
+/**
+ * Transforms a number into its spelling using words, including taxes.
+ *
+ * 320000 -> "TRES CIENTOS VEINTE MIL CON 00/100 NUEVOS SOLES"
+ */
+export function spellPricingWithTaxes(price: number) {
   const newprice = twoDecimals(price);
   const [whole, centimos] = newprice.split('.');
 
