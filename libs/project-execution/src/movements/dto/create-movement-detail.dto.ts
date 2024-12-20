@@ -21,15 +21,6 @@ export class CreateMovementDetailDto {
   unitCost: number;
 
   @ApiProperty({
-    name: 'subtotal',
-    description: 'Subtotal of the resource',
-    example: 0,
-  })
-  @IsNotEmpty()
-  @IsNumber()
-  subtotal: number;
-
-  @ApiProperty({
     name: 'resourceId',
     description: 'Id of the resource',
     example: 'id del recurso',

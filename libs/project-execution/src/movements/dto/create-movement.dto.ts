@@ -25,15 +25,15 @@ export class CreateMovementDto {
   dateMovement: string;
 
   @ApiProperty({
-    name: 'nameTypeMovement',
+    name: 'type',
     description:
-      'Name of the type of movement to set the movement to. Can only be INPUT or OUTPUT',
+      'Type of movement to set the movement to. Can only be INPUT or OUTPUT',
     example: 'INPUT',
   })
   @IsString()
   @IsNotEmpty()
   @IsIn(['INPUT', 'OUTPUT'], {
-    message: "nameTypeMovement must be either 'INPUT' or 'OUTPUT'",
+    message: "type must be either 'INPUT' or 'OUTPUT'",
   })
   @Transform(({ value }) => value.toUpperCase())
   type: TypeMovements;
@@ -76,7 +76,6 @@ export class CreateMovementDto {
       {
         quantity: 0,
         unitCost: 0,
-        subtotal: 0,
         resourceId: 'id del recurso',
       },
     ],

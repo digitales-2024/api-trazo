@@ -213,8 +213,8 @@ export class MovementsService {
       dateMovement,
       description,
       warehouseId,
-      purchaseId,
       movementDetail,
+      purchaseId = null,
     } = createMovementDto;
     const { type } = createMovementDto;
     let newMovement;
@@ -222,6 +222,11 @@ export class MovementsService {
     try {
       // Verificar que el almacén existe
       const warehouseDB = await this.warehouseService.findById(warehouseId);
+
+      console.log(
+        'warehouseDB que estoy pidiendo',
+        JSON.stringify(warehouseDB, null, 2),
+      );
 
       if (purchaseId) {
         // Verificar que la orden de compra existe
@@ -249,10 +254,14 @@ export class MovementsService {
       newMovement = await this.prisma.movements.create({
         data: {
           dateMovement,
-          warehouseId,
-          ...(purchaseId && { purchaseId }),
+          warehouse: {
+            connect: { id: warehouseId },
+          },
           type,
           description,
+          ...(purchaseId
+            ? { purchaseOrder: { connect: { id: purchaseId } } }
+            : {}),
         },
         select: {
           id: true,
@@ -271,12 +280,14 @@ export class MovementsService {
               },
             },
           },
-          purchaseOrder: {
-            select: {
-              id: true,
-              code: true,
-            },
-          },
+          purchaseOrder: purchaseId
+            ? {
+                select: {
+                  id: true,
+                  code: true,
+                },
+              }
+            : false,
         },
       });
 
@@ -287,7 +298,7 @@ export class MovementsService {
             data: {
               quantity: detail.quantity,
               unitCost: detail.unitCost,
-              subtotal: detail.subtotal,
+              subtotal: detail.quantity * detail.unitCost,
               resourceId: detail.resourceId,
               movementsId: newMovement.id,
             },
@@ -347,6 +358,13 @@ export class MovementsService {
         ...(purchaseId && { purchaseOrder: newMovement.purchaseOrder }),
       };
 
+      // Verificar que el almacén existe
+      const warehouseAfcterDB =
+        await this.warehouseService.findById(warehouseId);
+      console.log(
+        'warehouseAfcterDB',
+        JSON.stringify(warehouseAfcterDB, null, 2),
+      );
       return {
         statusCode: HttpStatus.CREATED,
         message: 'Movement successfully created',
@@ -365,13 +383,13 @@ export class MovementsService {
         await this.prisma.movements.delete({
           where: { id: newMovement.id },
         });
+        if (movementDetail) {
+          await this.revertStockChanges(movementDetail, type, warehouseId);
+        }
+
         this.logger.error(
           `Movement has been deleted due to error in creation.`,
         );
-      }
-
-      if (movementDetail) {
-        await this.revertStockChanges(movementDetail, type, warehouseId);
       }
 
       if (
