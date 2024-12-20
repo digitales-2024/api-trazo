@@ -455,6 +455,66 @@ export class MovementsService {
   }
 
   /**
+   * Busca los movimientos por su tipo
+   * @param type Tipo de movimiento (INPUT o OUTPUT)
+   * @returns Movimientos por tipo
+   */
+  async findByType(type: TypeMovements): Promise<SummaryMovementsData[]> {
+    try {
+      const movements = await this.prisma.movements.findMany({
+        where: { type },
+        select: {
+          id: true,
+          code: true,
+          dateMovement: true,
+          type: true,
+          description: true,
+          warehouse: {
+            select: {
+              id: true,
+              executionProject: {
+                select: {
+                  id: true,
+                  code: true,
+                },
+              },
+            },
+          },
+          purchaseOrder: {
+            select: {
+              id: true,
+              code: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+
+      // Mapea los resultados al tipo SummaryMovementsData
+      const summaryMovements = await Promise.all(
+        movements.map(async (movement) => {
+          return {
+            id: movement.id,
+            code: movement.code,
+            dateMovement: movement.dateMovement,
+            type: movement.type,
+            description: movement.description,
+            warehouse: movement.warehouse,
+            purchaseOrder: movement.purchaseOrder,
+          };
+        }),
+      );
+
+      return summaryMovements as SummaryMovementsData[];
+    } catch (error) {
+      this.logger.error('Error getting all movements');
+      handleException(error, 'Error getting all purchase movements');
+    }
+  }
+
+  /**
    * Busca un movimiento por su id
    * @param id Id del movimiento
    * @returns Datos del movimiento
@@ -657,7 +717,73 @@ export class MovementsService {
     return `This action updates a #${id} ${updateMovementDto}movement`;
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} movement`;
+  /**
+   * Elimina un movimiento
+   * @param id Id del movimiento
+   * @param user Usuario que realiza la acción
+   * @returns Datos del movimiento eliminado
+   */
+  async remove(
+    id: string,
+    user: UserData,
+  ): Promise<HttpResponse<MovementsData>> {
+    try {
+      // Verificar que el movimiento existe
+      const movement = await this.findById(id);
+      // Verificar que el almacén existe
+      const warehouseDB = await this.warehouseService.findById(
+        movement.warehouse.id,
+      );
+      // Validar el stock de todos los recursos
+      await this.validateStock(
+        movement.type === 'INPUT' ? 'OUTPUT' : 'INPUT',
+        warehouseDB,
+        movement.movementsDetail.map((detail) => ({
+          resourceId: detail.resource.id,
+          quantity: detail.quantity,
+          unitCost: detail.unitCost,
+        })),
+      );
+
+      // Eliminar los detalles del movimiento
+      await this.prisma.movementsDetail.deleteMany({
+        where: { movementsId: movement.id },
+      });
+
+      // Eliminar el movimiento
+      await this.prisma.movements.delete({ where: { id } });
+
+      // Registrar la auditoría
+      await this.prisma.audit.create({
+        data: {
+          action: AuditActionType.DELETE,
+          entityId: movement.id,
+          entityType: 'movements',
+          performedById: user.id,
+        },
+      });
+
+      // Revertir los cambios en el stock de los recursos con el movimiento eliminado
+      await this.revertStockChanges(
+        movement.movementsDetail,
+        movement.type,
+        movement.warehouse.id,
+      );
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Movement successfully deleted',
+        data: movement,
+      };
+    } catch (error) {
+      this.logger.error('Error deleting movement');
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      handleException(error, 'Error deleting movement');
+    }
   }
 }

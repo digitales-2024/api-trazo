@@ -14,6 +14,7 @@ import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
   ApiOkResponse,
+  ApiParam,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -24,6 +25,7 @@ import {
   MovementsDetailData,
   SummaryMovementsData,
 } from '../interfaces';
+import { TypeMovements } from '@prisma/client';
 
 @ApiTags('Movements')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -56,6 +58,20 @@ export class MovementsController {
     return this.movementsService.findOne(id);
   }
 
+  @ApiOkResponse({ description: 'Get movements by type' })
+  @ApiParam({
+    name: 'type',
+    required: true,
+    description: 'Type of movements',
+    enum: TypeMovements,
+  })
+  @Get('by-type/:type')
+  findByType(
+    @Param('type') type: TypeMovements,
+  ): Promise<SummaryMovementsData[]> {
+    return this.movementsService.findByType(type);
+  }
+
   @ApiOkResponse({
     description: 'Get movements from Purchase Order ID',
   })
@@ -82,8 +98,12 @@ export class MovementsController {
     return this.movementsService.update(id, updateMovementDto);
   }
 
+  @ApiOkResponse({ description: 'Movement successfully deleted' })
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.movementsService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @GetUser() user: UserData,
+  ): Promise<HttpResponse<MovementsData>> {
+    return this.movementsService.remove(id, user);
   }
 }
