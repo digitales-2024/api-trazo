@@ -725,22 +725,22 @@ export class MovementsService {
     updateMovementDto: UpdateMovementDto,
     user: UserData,
   ): Promise<HttpResponse<MovementsData>> {
+    let existingMovement;
+    // Desestructurar los datos actuales y nuevos
+    const {
+      dateMovement,
+      description,
+      warehouseId,
+      movementDetail = [],
+      purchaseId = null,
+      type,
+    } = updateMovementDto;
     try {
       // Buscar el movimiento existente
-      const existingMovement = await this.findById(id);
+      existingMovement = await this.findById(id);
       const warehouseDB = await this.warehouseService.findById(
         existingMovement.warehouse.id,
       );
-
-      // Desestructurar los datos actuales y nuevos
-      const {
-        dateMovement,
-        description,
-        warehouseId,
-        movementDetail = [],
-        purchaseId = null,
-        type,
-      } = updateMovementDto;
 
       const {
         dateMovement: currentDateMovement,
@@ -834,6 +834,25 @@ export class MovementsService {
       };
     } catch (error) {
       this.logger.error('Error updating movement', error.stack);
+
+      // Revertir cambios en el stock
+      if (movementDetail && existingMovement) {
+        const currentDetails = existingMovement.movementsDetail.map((d) => ({
+          resourceId: d.resource.id,
+          quantity: d.quantity,
+          unitCost: d.unitCost,
+        }));
+        const typeToRevert =
+          type && type !== existingMovement.type ? type : existingMovement.type;
+        await this.revertStockChanges(
+          currentDetails,
+          typeToRevert === TypeMovements.INPUT
+            ? TypeMovements.OUTPUT
+            : TypeMovements.INPUT,
+          existingMovement.warehouse.id,
+        );
+      }
+
       if (
         error instanceof BadRequestException ||
         error instanceof NotFoundException
