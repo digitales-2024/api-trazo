@@ -3,6 +3,7 @@ import { RequirementDetailStatus } from '@prisma/client';
 // Requerimiento
 export interface RequirementsData {
   id: string;
+  code: string;
   date: string;
   resident: {
     id: string;
@@ -16,6 +17,7 @@ export interface RequirementsData {
 
 export interface RequirementsWithDetailData {
   id: string;
+  code: string;
   date: string;
   resident: {
     id: string;

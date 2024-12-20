@@ -32,6 +32,20 @@ export class RequirementService {
     private readonly executionProjectService: ExecutionProjectService,
   ) {}
 
+  private async generateCodeRequirement(): Promise<string> {
+    // Generar el siguiente código incremental
+    const lastRequirement = await this.prisma.requirements.findFirst({
+      where: { code: { startsWith: 'REQ-' } },
+      orderBy: { code: 'desc' },
+    });
+
+    const lastIncrement = lastRequirement
+      ? parseInt(lastRequirement.code.split('-')[1], 10)
+      : 0;
+    const requirementCode = `REQ-${String(lastIncrement + 1).padStart(3, '0')}`;
+    return requirementCode;
+  }
+
   /**
    * Crear un nuevo requerimiento
    * @param createRequirementDto Datos del requerimiento a crear
@@ -58,16 +72,21 @@ export class RequirementService {
       if (userResidentDb.isSuperAdmin)
         throw new NotFoundException('Resident is super admin');
 
+      //Generando el codigo de requerimiento
+      const requerimentCode = await this.generateCodeRequirement();
+
       // Creando el requerimiento principal
       const requirementDb = await this.prisma.requirements.create({
         data: {
           date,
+          code: requerimentCode,
           residentId,
           executionProyectId,
         },
         select: {
           id: true,
           date: true,
+          code: true,
         },
       });
 
@@ -136,6 +155,7 @@ export class RequirementService {
         data: {
           id: requirementDb.id,
           date: requirementDb.date,
+          code: requirementDb.code,
           resident: { id: residentId, name: 'Resident Name' },
           executionProject: { id: executionProyectId, name: 'Project Name' },
           requirementDetail: createdDetails,
@@ -161,6 +181,7 @@ export class RequirementService {
         select: {
           id: true,
           date: true,
+          code: true,
           residentId: true,
           executionProyectId: true,
           createdAt: true,
@@ -211,6 +232,7 @@ export class RequirementService {
       const mappedRequirements = requirements.map((requirement) => ({
         id: requirement.id,
         date: requirement.date,
+        code: requirement.code,
         resident: requirement.resident,
         executionProject: requirement.executionProject,
         requirementDetail: requirement.requirementsDetail.map((detail) => ({
@@ -249,6 +271,7 @@ export class RequirementService {
       select: {
         id: true,
         date: true,
+        code: true,
         resident: {
           select: {
             id: true,
@@ -308,6 +331,7 @@ export class RequirementService {
         select: {
           id: true,
           date: true,
+          code: true,
           resident: {
             select: {
               id: true,
@@ -336,6 +360,7 @@ export class RequirementService {
       const mappedRequirements = requirements.map((requirement) => ({
         id: requirement.id,
         date: requirement.date,
+        code: requirement.code,
         resident: requirement.resident,
         executionProject: requirement.executionProject,
       }));
