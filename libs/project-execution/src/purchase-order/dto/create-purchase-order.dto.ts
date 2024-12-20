@@ -58,7 +58,6 @@ export class CreatePurchaseOrderDto {
       {
         quantity: 0,
         unitCost: 0,
-        subtotal: 0,
         resourceId: 'id del recurso',
       },
     ],
