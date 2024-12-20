@@ -136,7 +136,7 @@ export class PurchaseOrderService {
               data: {
                 quantity: detail.quantity,
                 unitCost: detail.unitCost,
-                subtotal: detail.subtotal,
+                subtotal: detail.quantity * detail.unitCost,
                 resourceId: detail.resourceId,
                 purchaseOrderId: newPurchaseOrder.id,
               },
@@ -563,7 +563,8 @@ export class PurchaseOrderService {
           if (
             existingDetail.quantity !== incomingDetail.quantity ||
             existingDetail.unitCost !== incomingDetail.unitCost ||
-            existingDetail.subtotal !== incomingDetail.subtotal
+            existingDetail.subtotal !==
+              incomingDetail.quantity * incomingDetail.unitCost
           ) {
             isPurchaseOrderDetailChanged = true;
             detailsToUpdate.push({
@@ -571,7 +572,7 @@ export class PurchaseOrderService {
               resourceId: existingDetail.resource.id, // Asegúrate de pasar el resourceId
               quantity: incomingDetail.quantity,
               unitCost: incomingDetail.unitCost,
-              subtotal: incomingDetail.subtotal,
+              subtotal: incomingDetail.quantity * incomingDetail.unitCost,
             });
           }
           // Remover de incomingDetailsMap para no procesar nuevamente
