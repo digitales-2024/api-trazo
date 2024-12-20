@@ -15,7 +15,6 @@ import {
   MovementsData,
   MovementsDetailData,
   SummaryMovementsData,
-  WarehouseData,
 } from '../interfaces';
 import { AuditActionType, ResourceType, TypeMovements } from '@prisma/client';
 import { PurchaseOrderService } from '../purchase-order/purchase-order.service';
@@ -40,12 +39,17 @@ export class MovementsService {
    */
   private async validateStock(
     type: TypeMovements,
-    warehouseDb: WarehouseData,
+    warehouseID: string,
     movementDetail: CreateMovementDetailDto[],
   ): Promise<void> {
+    console.log('validateStock', type);
+    console.log('validateStock', JSON.stringify(warehouseID));
+    console.log('validateStock', JSON.stringify(movementDetail));
+
+    const warehouseDB = await this.warehouseService.findById(warehouseID);
     if (type === TypeMovements.OUTPUT) {
       for (const detail of movementDetail) {
-        const stockItem = warehouseDb.stock.find(
+        const stockItem = warehouseDB.stock.find(
           (item) => item.resource.id === detail.resourceId,
         );
 
@@ -243,7 +247,7 @@ export class MovementsService {
       );
 
       // Validar el stock de todos los recursos
-      await this.validateStock(type, warehouseDB, movementDetail);
+      await this.validateStock(type, warehouseDB.id, movementDetail);
 
       // Crear el movimiento
       newMovement = await this.prisma.movements.create({
@@ -774,7 +778,7 @@ export class MovementsService {
           type === TypeMovements.OUTPUT
         ) {
           // Validar stock como si fuera un OUTPUT
-          await this.validateStock(type, warehouseDB, movementDetail);
+          await this.validateStock(type, warehouseDB.id, movementDetail);
         }
       }
 
@@ -784,7 +788,7 @@ export class MovementsService {
         movementDetail,
         type || currentType,
         currentWarehouse.id,
-        warehouseDB,
+        id,
         user,
       );
 
@@ -893,7 +897,7 @@ export class MovementsService {
     newDetails: CreateMovementDetailDto[],
     type: TypeMovements,
     warehouseId: string,
-    warehouseDB: WarehouseData,
+    movementsId: string,
     user: UserData,
   ) {
     const currentDetailMap = new Map(
@@ -958,7 +962,7 @@ export class MovementsService {
             unitCost: detail.unitCost,
             subtotal: detail.quantity * detail.unitCost,
             resourceId: detail.resourceId,
-            movementsId: warehouseDB.id,
+            movementsId: movementsId,
           },
         });
 
@@ -1018,15 +1022,25 @@ export class MovementsService {
       const warehouseDB = await this.warehouseService.findById(
         movement.warehouse.id,
       );
+      // Mapea los detalles del movimiento
+      const movementDetails = movement.movementsDetail.map((detail) => ({
+        resourceId: detail.resource.id,
+        quantity: detail.quantity,
+        unitCost: detail.unitCost,
+      }));
+
+      const typeValidation: TypeMovements =
+        movement.type === TypeMovements.INPUT
+          ? TypeMovements.OUTPUT
+          : TypeMovements.INPUT;
+
       // Validar el stock de todos los recursos
-      await this.validateStock(
-        movement.type === 'INPUT' ? 'OUTPUT' : 'INPUT',
-        warehouseDB,
-        movement.movementsDetail.map((detail) => ({
-          resourceId: detail.resource.id,
-          quantity: detail.quantity,
-          unitCost: detail.unitCost,
-        })),
+      await this.validateStock(typeValidation, warehouseDB.id, movementDetails);
+      // Revertir los cambios en el stock de los recursos con el movimiento eliminado
+      await this.revertStockChanges(
+        movement.movementsDetail,
+        movement.type,
+        movement.warehouse.id,
       );
 
       // Eliminar los detalles del movimiento
@@ -1046,13 +1060,6 @@ export class MovementsService {
           performedById: user.id,
         },
       });
-
-      // Revertir los cambios en el stock de los recursos con el movimiento eliminado
-      await this.revertStockChanges(
-        movement.movementsDetail,
-        movement.type,
-        movement.warehouse.id,
-      );
 
       return {
         statusCode: HttpStatus.OK,
