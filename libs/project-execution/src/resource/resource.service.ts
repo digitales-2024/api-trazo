@@ -354,7 +354,7 @@ export class ResourceService {
     });
 
     if (!resourceDB) {
-      throw new NotFoundException(`Resource with ID ${id} not found`);
+      throw new NotFoundException(`Resource not found`);
     }
 
     return resourceDB;

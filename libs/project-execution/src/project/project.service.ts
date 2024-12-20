@@ -225,11 +225,6 @@ export class ExecutionProjectService {
       );
     }
 
-    const budget = await this.prisma.budget.findUnique({
-      where: { id: budgetId },
-      select: { status: true },
-    });
-
     try {
       await this.prisma.$transaction(async (prisma) => {
         // Validando que el cliente existe
@@ -239,7 +234,7 @@ export class ExecutionProjectService {
         await this.user.findById(residentId);
 
         // Validando que el presupuesto existe
-        await this.budgetService.findById(budgetId);
+        const budget = await this.budgetService.findById(budgetId);
 
         // Verificando que el estado del Presupuesto sea "Aprobado"
         if (budget.status !== 'APPROVED') {
@@ -280,10 +275,6 @@ export class ExecutionProjectService {
           },
         });
 
-        if (newProject) {
-          await this.warehouse.create(newProject.id, user);
-        }
-
         // Registrar la auditoría de la creación del proyecto
         await this.audit.create({
           entityId: newProject.id,
@@ -293,6 +284,10 @@ export class ExecutionProjectService {
           createdAt: new Date(),
         });
       });
+
+      if (newProject) {
+        await this.warehouse.create(newProject.id, user);
+      }
 
       return {
         statusCode: HttpStatus.CREATED,

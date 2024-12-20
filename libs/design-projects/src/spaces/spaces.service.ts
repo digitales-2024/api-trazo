@@ -273,10 +273,6 @@ export class SpacesService {
     }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} space`;
-  }
-
   /**
    * Activar varios spaces
    * @param user Spaces que realiza la acción

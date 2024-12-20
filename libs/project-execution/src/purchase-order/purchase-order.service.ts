@@ -24,6 +24,7 @@ import {
 } from '@prisma/client';
 import { CreatePurchaseOrderDetailDto } from './dto/create-purchase-order-detail.dto';
 import { UpdatePurchaseOrderStatusDto } from './dto/update-status-purchase-order.dto';
+import { RequirementService } from 'libs/requirements/src';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -32,6 +33,7 @@ export class PurchaseOrderService {
     private readonly prisma: PrismaService,
     private readonly resourceService: ResourceService,
     private readonly supplierService: SupplierService,
+    private readonly requirementsService: RequirementService,
   ) {}
 
   /**
@@ -74,6 +76,9 @@ export class PurchaseOrderService {
     try {
       // Generar el código de la orden de compra
       const projectCode = await this.generateCodePurchaseOrder();
+
+      // Verificar que los requerimientos existen
+      await this.requirementsService.findById(requirementsId);
 
       // Verificar que el proveedor existe
       await this.supplierService.findById(supplierId);
@@ -136,7 +141,7 @@ export class PurchaseOrderService {
               data: {
                 quantity: detail.quantity,
                 unitCost: detail.unitCost,
-                subtotal: detail.subtotal,
+                subtotal: detail.quantity * detail.unitCost,
                 resourceId: detail.resourceId,
                 purchaseOrderId: newPurchaseOrder.id,
               },
@@ -328,7 +333,10 @@ export class PurchaseOrderService {
       return await this.findById(id);
     } catch (error) {
       this.logger.error('Error get purchase order');
-      if (error instanceof BadRequestException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
         throw error;
       }
       handleException(error, 'Error get purchase order');
@@ -507,6 +515,11 @@ export class PurchaseOrderService {
       // Obtener la orden de compra existente
       const existingPurchaseOrder = await this.findById(id);
 
+      if (requirementsId) {
+        // Verificar que los requerimientos existen
+        await this.requirementsService.findById(requirementsId);
+      }
+
       if (purchaseOrderDetail) {
         // Verificar que los recursos existen y son del tipo Supplies
         await Promise.all(
@@ -563,7 +576,8 @@ export class PurchaseOrderService {
           if (
             existingDetail.quantity !== incomingDetail.quantity ||
             existingDetail.unitCost !== incomingDetail.unitCost ||
-            existingDetail.subtotal !== incomingDetail.subtotal
+            existingDetail.subtotal !==
+              incomingDetail.quantity * incomingDetail.unitCost
           ) {
             isPurchaseOrderDetailChanged = true;
             detailsToUpdate.push({
@@ -571,7 +585,7 @@ export class PurchaseOrderService {
               resourceId: existingDetail.resource.id, // Asegúrate de pasar el resourceId
               quantity: incomingDetail.quantity,
               unitCost: incomingDetail.unitCost,
-              subtotal: incomingDetail.subtotal,
+              subtotal: incomingDetail.quantity * incomingDetail.unitCost,
             });
           }
           // Remover de incomingDetailsMap para no procesar nuevamente

@@ -13,12 +13,13 @@ import { UpdateMovementDto } from './dto/update-movement.dto';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import { HttpResponse, UserData } from '@login/login/interfaces';
-import { MovementsData } from '../interfaces';
+import { MovementsData, MovementsDetailData } from '../interfaces';
 
 @ApiTags('Movements')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -47,6 +48,24 @@ export class MovementsController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.movementsService.findOne(id);
+  }
+
+  @ApiOkResponse({
+    description: 'Get movements from Purchase Order ID',
+  })
+  @Get('/purchase/order/:id')
+  findByPurchaseOrderId(@Param('id') id: string): Promise<MovementsData[]> {
+    return this.movementsService.findByPurchaseOrderId(id);
+  }
+
+  @ApiOkResponse({
+    description: 'Get missing movements from Purchase Order ID',
+  })
+  @Get('/missing/purchase/:id')
+  findMissingMovementDetail(
+    @Param('id') id: string,
+  ): Promise<MovementsDetailData[]> {
+    return this.movementsService.findMissingMovementDetail(id);
   }
 
   @Patch(':id')
