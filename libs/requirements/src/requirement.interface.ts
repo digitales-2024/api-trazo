@@ -3,6 +3,21 @@ import { RequirementDetailStatus } from '@prisma/client';
 // Requerimiento
 export interface RequirementsData {
   id: string;
+  code: string;
+  date: string;
+  resident: {
+    id: string;
+    name: string;
+  };
+  executionProject: {
+    id: string;
+    name: string;
+  };
+}
+
+export interface RequirementsWithDetailData {
+  id: string;
+  code: string;
   date: string;
   resident: {
     id: string;

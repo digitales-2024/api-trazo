@@ -12,6 +12,7 @@ import {
   UpdateRequirements,
   RequirementsData,
   UpdateRequirementsDetail,
+  RequirementsWithDetailData,
 } from './requirement.interface';
 import { AuditActionType, RequirementDetailStatus } from '@prisma/client';
 import { handleException } from '@login/login/utils';
@@ -31,6 +32,20 @@ export class RequirementService {
     private readonly executionProjectService: ExecutionProjectService,
   ) {}
 
+  private async generateCodeRequirement(): Promise<string> {
+    // Generar el siguiente código incremental
+    const lastRequirement = await this.prisma.requirements.findFirst({
+      where: { code: { startsWith: 'REQ-' } },
+      orderBy: { code: 'desc' },
+    });
+
+    const lastIncrement = lastRequirement
+      ? parseInt(lastRequirement.code.split('-')[1], 10)
+      : 0;
+    const requirementCode = `REQ-${String(lastIncrement + 1).padStart(3, '0')}`;
+    return requirementCode;
+  }
+
   /**
    * Crear un nuevo requerimiento
    * @param createRequirementDto Datos del requerimiento a crear
@@ -40,7 +55,7 @@ export class RequirementService {
   async create(
     createRequirementDto: CreateRequirementDto,
     user: UserData,
-  ): Promise<HttpResponse<RequirementsData>> {
+  ): Promise<HttpResponse<RequirementsWithDetailData>> {
     const { date, residentId, executionProyectId, requirementsDetail } =
       createRequirementDto;
 
@@ -57,16 +72,21 @@ export class RequirementService {
       if (userResidentDb.isSuperAdmin)
         throw new NotFoundException('Resident is super admin');
 
+      //Generando el codigo de requerimiento
+      const requerimentCode = await this.generateCodeRequirement();
+
       // Creando el requerimiento principal
       const requirementDb = await this.prisma.requirements.create({
         data: {
           date,
+          code: requerimentCode,
           residentId,
           executionProyectId,
         },
         select: {
           id: true,
           date: true,
+          code: true,
         },
       });
 
@@ -135,6 +155,7 @@ export class RequirementService {
         data: {
           id: requirementDb.id,
           date: requirementDb.date,
+          code: requirementDb.code,
           resident: { id: residentId, name: 'Resident Name' },
           executionProject: { id: executionProyectId, name: 'Project Name' },
           requirementDetail: createdDetails,
@@ -160,6 +181,7 @@ export class RequirementService {
         select: {
           id: true,
           date: true,
+          code: true,
           residentId: true,
           executionProyectId: true,
           createdAt: true,
@@ -210,6 +232,7 @@ export class RequirementService {
       const mappedRequirements = requirements.map((requirement) => ({
         id: requirement.id,
         date: requirement.date,
+        code: requirement.code,
         resident: requirement.resident,
         executionProject: requirement.executionProject,
         requirementDetail: requirement.requirementsDetail.map((detail) => ({
@@ -248,6 +271,7 @@ export class RequirementService {
       select: {
         id: true,
         date: true,
+        code: true,
         resident: {
           select: {
             id: true,
@@ -282,6 +306,78 @@ export class RequirementService {
       throw new NotFoundException('Requirement not found');
     }
     return requirementDb;
+  }
+
+  /**
+   * Obtener todos los requerimientos de un proyecto de ejecución
+   * @param id Id del proyecto de ejecución
+   * @returns Datos del requerimiento encontrado para 1 proyecto de ejecución
+   */
+  async findRequirementsByExecutionProject(
+    executionProjectId: string,
+  ): Promise<HttpResponse<RequirementsData[]>> {
+    // Validar que el id no esta vacio
+    if (!executionProjectId) {
+      throw new BadRequestException('Execution project ID is required');
+    }
+
+    // Verificando que el proyecto de ejecución existe
+    await this.executionProjectService.findById(executionProjectId);
+
+    try {
+      // Obteniendo los requerimientos asociados al proyecto de ejecución
+      const requirements = await this.prisma.requirements.findMany({
+        where: { executionProyectId: executionProjectId },
+        select: {
+          id: true,
+          date: true,
+          code: true,
+          resident: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          executionProject: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      // Respuesta si no se encuentran requerimientos
+      if (requirements.length === 0) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'No requirements found for this execution project',
+          data: [],
+        };
+      }
+
+      // Mapear los resultados para que coincidan con la estructura de 'RequirementsData'
+      const mappedRequirements = requirements.map((requirement) => ({
+        id: requirement.id,
+        date: requirement.date,
+        code: requirement.code,
+        resident: requirement.resident,
+        executionProject: requirement.executionProject,
+      }));
+
+      // Devolvemos los datos con los requerimientos encontrados
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Requirements fetched successfully',
+        data: mappedRequirements,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error fetching requirements for project: ${error.message}`,
+        error.stack,
+      );
+      handleException(error, 'Error fetching requirements');
+    }
   }
 
   /**
@@ -354,6 +450,13 @@ export class RequirementService {
     };
   }
 
+  /**
+   * Actualizar un detalle de requerimiento
+   * @param id Id del detalle requerimiento a actualizar
+   * @param updateRequirementDetailDto Datos a actualizar
+   * @param user Usuario que realiza la acción
+   * @returns Respuesta de la actualización
+   */
   async updateRequirementDetails(
     id: string,
     updateRequirementDto: UpdateRequirementDetailDto,
