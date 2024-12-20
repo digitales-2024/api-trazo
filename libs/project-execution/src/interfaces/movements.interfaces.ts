@@ -16,3 +16,11 @@ export type MovementsDetailData = {
   subtotal: number;
   resource: { id: string; name: string };
 };
+
+export type SummaryMovementsData = Pick<
+  Movements,
+  'id' | 'code' | 'dateMovement' | 'type' | 'description'
+> & {
+  warehouse: { id: string; executionProject: { id: string; code: string } };
+  purchaseOrder?: { id: string; code: string };
+};
