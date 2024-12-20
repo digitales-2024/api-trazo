@@ -11,7 +11,11 @@ import { HttpResponse, UserData } from '@login/login/interfaces';
 import { PrismaService } from '@prisma/prisma';
 import { ResourceService } from '../resource/resource.service';
 import { WarehouseService } from '../warehouse/warehouse.service';
-import { MovementsData, WarehouseData } from '../interfaces';
+import {
+  MovementsData,
+  MovementsDetailData,
+  WarehouseData,
+} from '../interfaces';
 import { AuditActionType, ResourceType, TypeMovements } from '@prisma/client';
 import { PurchaseOrderService } from '../purchase-order/purchase-order.service';
 import { handleException } from '@login/login/utils';
@@ -223,11 +227,6 @@ export class MovementsService {
       // Verificar que el almacén existe
       const warehouseDB = await this.warehouseService.findById(warehouseId);
 
-      console.log(
-        'warehouseDB que estoy pidiendo',
-        JSON.stringify(warehouseDB, null, 2),
-      );
-
       if (purchaseId) {
         // Verificar que la orden de compra existe
         await this.purchaseOrderService.findById(purchaseId);
@@ -358,13 +357,6 @@ export class MovementsService {
         ...(purchaseId && { purchaseOrder: newMovement.purchaseOrder }),
       };
 
-      // Verificar que el almacén existe
-      const warehouseAfcterDB =
-        await this.warehouseService.findById(warehouseId);
-      console.log(
-        'warehouseAfcterDB',
-        JSON.stringify(warehouseAfcterDB, null, 2),
-      );
       return {
         statusCode: HttpStatus.CREATED,
         message: 'Movement successfully created',
@@ -409,6 +401,136 @@ export class MovementsService {
 
   findOne(id: string) {
     return `This action returns a #${id} movement`;
+  }
+
+  /**
+   * Busca los movimientos asociados a una orden de compra
+   * @param purchaseId Id de la orden de compra
+   * @returns Movimientos asociados a la orden de compra
+   */
+  async findByPurchaseOrderId(purchaseId: string): Promise<MovementsData[]> {
+    try {
+      const movements = await this.prisma.movements.findMany({
+        where: { purchaseId },
+        select: {
+          id: true,
+          code: true,
+          dateMovement: true,
+          type: true,
+          description: true,
+          warehouse: {
+            select: {
+              id: true,
+              executionProject: {
+                select: {
+                  id: true,
+                  code: true,
+                },
+              },
+            },
+          },
+          movementsDetail: {
+            select: {
+              id: true,
+              quantity: true,
+              unitCost: true,
+              subtotal: true,
+              resource: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return movements;
+    } catch (error) {
+      this.logger.error('Error getting movements from purchase order');
+      handleException(error, 'Error getting movements from purchase order');
+    }
+  }
+
+  /**
+   * Busca los detalles de movimiento faltantes en una orden de compra
+   * @param id Id de la orden de compra
+   * @returns Detalles de movimiento faltantes
+   */
+  async findMissingMovementDetail(id: string): Promise<MovementsDetailData[]> {
+    try {
+      const purchaseOrderDB = await this.purchaseOrderService.findById(id);
+      const movementDetails = await this.prisma.movements.findFirst({
+        where: { purchaseId: purchaseOrderDB.id },
+        select: {
+          movementsDetail: {
+            select: {
+              id: true,
+              quantity: true,
+              unitCost: true,
+              resourceId: true,
+              resource: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!movementDetails) {
+        throw new NotFoundException(
+          'Movement assigned to purchase order not found',
+        );
+      }
+
+      const purchaseOrderDetails = purchaseOrderDB.purchaseOrderDetail;
+
+      const missingDetails = purchaseOrderDetails
+        .map((purchaseDetail) => {
+          const totalMovedQuantity = movementDetails.movementsDetail
+            .filter(
+              (detail) => detail.resource.id === purchaseDetail.resource.id,
+            )
+            .reduce((sum, detail) => sum + detail.quantity, 0);
+
+          const missingQuantity = purchaseDetail.quantity - totalMovedQuantity;
+          const missingQuantityAdjusted =
+            missingQuantity > 0 ? missingQuantity : 0;
+          const subtotal = missingQuantityAdjusted * purchaseDetail.unitCost;
+
+          return {
+            id: purchaseDetail.id,
+            quantity: missingQuantityAdjusted,
+            unitCost: purchaseDetail.unitCost,
+            subtotal: subtotal,
+            resource: {
+              id: purchaseDetail.resource.id,
+              name: purchaseDetail.resource.name,
+            },
+          };
+        })
+        .filter((detail) => detail.quantity > 0);
+
+      return missingDetails;
+    } catch (error) {
+      this.logger.error(
+        'Error getting missiong movement details from purchase order',
+      );
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      handleException(
+        error,
+        'Error getting missiong movement details from purchase order',
+      );
+    }
   }
 
   update(id: string, updateMovementDto: UpdateMovementDto) {
