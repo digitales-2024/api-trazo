@@ -31,6 +31,12 @@ export class RequirementService {
     private readonly executionProjectService: ExecutionProjectService,
   ) {}
 
+  /**
+   * Crear un nuevo requerimiento
+   * @param createRequirementDto Datos del requerimiento a crear
+   * @param user Usuario que realiza la acción
+   * @returns Respuesta de la creación
+   */
   async create(
     createRequirementDto: CreateRequirementDto,
     user: UserData,
@@ -143,6 +149,10 @@ export class RequirementService {
     }
   }
 
+  /**
+   * Listar todos los requerimientos
+   * @returns Requerimientos encontrados
+   */
   async findAll(): Promise<HttpResponse<RequirementsData[]>> {
     try {
       // Recuperamos todos los requerimientos con sus detalles asociados
@@ -227,6 +237,11 @@ export class RequirementService {
     }
   }
 
+  /**
+   * Mostrar un requerimiento específico con validación de existencia
+   * @param id Id del requerimiento a buscar
+   * @returns Datos del requerimiento encontrado
+   */
   async findById(id: string): Promise<RequirementsData> {
     const requirementDb = await this.prisma.requirements.findFirst({
       where: { id },
@@ -269,6 +284,13 @@ export class RequirementService {
     return requirementDb;
   }
 
+  /**
+   * Actualizar un requerimiento
+   * @param id Id del requerimiento a actualizar
+   * @param updateRequirementDto Datos a actualizar
+   * @param user Usuario que realiza la acción
+   * @returns Respuesta de la actualización
+   */
   async updateRequirement(
     id: string,
     updateRequirementDto: UpdateRequirementDto,
@@ -405,6 +427,13 @@ export class RequirementService {
     };
   }
 
+  /**
+   * Actualizar el estado de un detalle de requerimiento
+   * @param detailId Id del detalle de requerimiento
+   * @param newStatus Nuevo estado a asignar
+   * @param userId Id del usuario que realiza la acción
+   * @returns Respuesta de la actualización
+   */
   async updateStatus(
     detailId: string,
     newStatus: RequirementDetailStatus,
