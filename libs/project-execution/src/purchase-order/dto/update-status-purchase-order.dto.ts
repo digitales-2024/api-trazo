@@ -7,14 +7,15 @@ export class UpdatePurchaseOrderStatusDto {
   @ApiProperty({
     name: 'newStatus',
     description:
-      'New status to set the purchase order to. Can only be PENDING, DELIVERED, REJECTED',
+      'New status to set the purchase order to. Can only be PENDING, DELIVERED, INCOMPLETE, REJECTED',
     example: 'PENDING',
   })
   @IsString()
   @IsNotEmpty()
   @Transform(({ value }) => value.toUpperCase())
-  @IsIn(['PENDING', 'DELIVERED', 'REJECTED'], {
-    message: "newStatus must be either 'PENDING', 'DELIVERED' or 'REJECTED'",
+  @IsIn(['PENDING', 'DELIVERED', 'REJECTED', 'INCOMPLETE'], {
+    message:
+      "newStatus must be either 'PENDING', 'DELIVERED', 'INCOMPLETE' or 'REJECTED'",
   })
   newStatus: PurchaseOrderStatus;
 }
