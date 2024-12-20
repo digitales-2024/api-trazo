@@ -42,10 +42,6 @@ export class MovementsService {
     warehouseID: string,
     movementDetail: CreateMovementDetailDto[],
   ): Promise<void> {
-    console.log('validateStock', type);
-    console.log('validateStock', JSON.stringify(warehouseID));
-    console.log('validateStock', JSON.stringify(movementDetail));
-
     const warehouseDB = await this.warehouseService.findById(warehouseID);
     if (type === TypeMovements.OUTPUT) {
       for (const detail of movementDetail) {
@@ -161,55 +157,42 @@ export class MovementsService {
    * @param warehouseId Id del almacén
    */
   async revertStockChanges(movementDetail, type, warehouseId) {
-    console.log('este es el type que me llega para revertir', type);
-    await Promise.all(
-      movementDetail.map(async (detail) => {
-        const stockItem = await this.prisma.stock.findFirst({
+    // Transacción para asegurar atomicidad
+    await this.prisma.$transaction(async (tx) => {
+      for (const detail of movementDetail) {
+        const stockItem = await tx.stock.findFirst({
           where: {
             warehouseId,
             resourceId: detail.resourceId,
           },
         });
 
-        if (stockItem) {
-          if (type === TypeMovements.INPUT) {
-            console.log(
-              'este es el stockItem que me llega para revertir en input',
-              stockItem,
-            );
+        let newQuantity, newTotalCost;
 
-            // Calcular nueva cantidad y totalCost
-            const newQuantity = stockItem.quantity - detail.quantity;
-            const newTotalCost = Math.max(
-              stockItem.totalCost - detail.quantity * detail.unitCost,
-              0, // Evitar negativos
-            );
+        if (type === TypeMovements.INPUT) {
+          newQuantity = stockItem.quantity - detail.quantity;
+          newTotalCost =
+            stockItem.totalCost - detail.quantity * detail.unitCost;
 
-            // Asegurar que si la cantidad es 0, el costo también sea 0
-            await this.prisma.stock.update({
-              where: { id: stockItem.id },
-              data: {
-                quantity: Math.max(newQuantity, 0), // No permitir negativos
-                totalCost: newQuantity > 0 ? newTotalCost : 0,
-              },
-            });
-          } else if (type === TypeMovements.OUTPUT) {
-            console.log(
-              'este es el stockItem que me llega para revertir en output',
-              stockItem,
-            );
-            await this.prisma.stock.update({
-              where: { id: stockItem.id },
-              data: {
-                quantity: stockItem.quantity + detail.quantity,
-                totalCost:
-                  stockItem.totalCost + detail.quantity * detail.unitCost,
-              },
-            });
-          }
+          // Evita negativos
+          newQuantity = Math.max(newQuantity, 0);
+          newTotalCost = newQuantity > 0 ? newTotalCost : 0;
+        } else if (type === TypeMovements.OUTPUT) {
+          newQuantity = stockItem.quantity + detail.quantity;
+          newTotalCost =
+            stockItem.totalCost + detail.quantity * detail.unitCost;
         }
-      }),
-    );
+
+        // Realiza la actualización y verifica resultado
+        await tx.stock.update({
+          where: { id: stockItem.id },
+          data: {
+            quantity: newQuantity,
+            totalCost: newTotalCost,
+          },
+        });
+      }
+    });
   }
 
   /**
@@ -1027,11 +1010,6 @@ export class MovementsService {
     try {
       // Verificar que el movimiento existe
       const movement = await this.findById(id);
-
-      console.log(
-        'Este es el movimiento que me llega para eliminar',
-        JSON.stringify(movement, null, 2),
-      );
 
       const oppositeType =
         movement.type === TypeMovements.INPUT
