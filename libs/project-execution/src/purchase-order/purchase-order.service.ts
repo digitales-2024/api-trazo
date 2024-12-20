@@ -328,7 +328,10 @@ export class PurchaseOrderService {
       return await this.findById(id);
     } catch (error) {
       this.logger.error('Error get purchase order');
-      if (error instanceof BadRequestException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
         throw error;
       }
       handleException(error, 'Error get purchase order');
