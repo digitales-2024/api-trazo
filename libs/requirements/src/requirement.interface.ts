@@ -12,6 +12,19 @@ export interface RequirementsData {
     id: string;
     name: string;
   };
+}
+
+export interface RequirementsWithDetailData {
+  id: string;
+  date: string;
+  resident: {
+    id: string;
+    name: string;
+  };
+  executionProject: {
+    id: string;
+    name: string;
+  };
   requirementDetail?: RequirementsDetail[];
 }
 

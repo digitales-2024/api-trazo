@@ -12,6 +12,7 @@ import {
   UpdateRequirements,
   RequirementsData,
   UpdateRequirementsDetail,
+  RequirementsWithDetailData,
 } from './requirement.interface';
 import { AuditActionType, RequirementDetailStatus } from '@prisma/client';
 import { handleException } from '@login/login/utils';
@@ -40,7 +41,7 @@ export class RequirementService {
   async create(
     createRequirementDto: CreateRequirementDto,
     user: UserData,
-  ): Promise<HttpResponse<RequirementsData>> {
+  ): Promise<HttpResponse<RequirementsWithDetailData>> {
     const { date, residentId, executionProyectId, requirementsDetail } =
       createRequirementDto;
 
@@ -285,6 +286,76 @@ export class RequirementService {
   }
 
   /**
+   * Obtener todos los requerimientos de un proyecto de ejecución
+   * @param id Id del proyecto de ejecución
+   * @returns Datos del requerimiento encontrado para 1 proyecto de ejecución
+   */
+  async findRequirementsByExecutionProject(
+    executionProjectId: string,
+  ): Promise<HttpResponse<RequirementsData[]>> {
+    // Validar que el id no esta vacio
+    if (!executionProjectId) {
+      throw new BadRequestException('Execution project ID is required');
+    }
+
+    // Verificando que el proyecto de ejecución existe
+    await this.executionProjectService.findById(executionProjectId);
+
+    try {
+      // Obteniendo los requerimientos asociados al proyecto de ejecución
+      const requirements = await this.prisma.requirements.findMany({
+        where: { executionProyectId: executionProjectId },
+        select: {
+          id: true,
+          date: true,
+          resident: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          executionProject: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      // Respuesta si no se encuentran requerimientos
+      if (requirements.length === 0) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'No requirements found for this execution project',
+          data: [],
+        };
+      }
+
+      // Mapear los resultados para que coincidan con la estructura de 'RequirementsData'
+      const mappedRequirements = requirements.map((requirement) => ({
+        id: requirement.id,
+        date: requirement.date,
+        resident: requirement.resident,
+        executionProject: requirement.executionProject,
+      }));
+
+      // Devolvemos los datos con los requerimientos encontrados
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Requirements fetched successfully',
+        data: mappedRequirements,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error fetching requirements for project: ${error.message}`,
+        error.stack,
+      );
+      handleException(error, 'Error fetching requirements');
+    }
+  }
+
+  /**
    * Actualizar un requerimiento
    * @param id Id del requerimiento a actualizar
    * @param updateRequirementDto Datos a actualizar
@@ -354,6 +425,13 @@ export class RequirementService {
     };
   }
 
+  /**
+   * Actualizar un detalle de requerimiento
+   * @param id Id del detalle requerimiento a actualizar
+   * @param updateRequirementDetailDto Datos a actualizar
+   * @param user Usuario que realiza la acción
+   * @returns Respuesta de la actualización
+   */
   async updateRequirementDetails(
     id: string,
     updateRequirementDto: UpdateRequirementDetailDto,
