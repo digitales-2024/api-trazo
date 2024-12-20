@@ -33,7 +33,11 @@ export class WarehouseService {
         // Crear el nuevo almacen
         const warehouse = await this.prisma.warehouse.create({
           data: {
-            executionProjectId: idExecutionProject,
+            executionProject: {
+              connect: {
+                id: idExecutionProject,
+              },
+            },
           },
           select: {
             id: true,

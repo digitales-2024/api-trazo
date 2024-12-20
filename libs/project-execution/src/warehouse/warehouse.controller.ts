@@ -31,9 +31,9 @@ export class WarehouseController {
   }
 
   @ApiOkResponse({ description: 'Get warehouse by execution project id' })
-  @Get(':id')
+  @Get('/warehouse/execution/:id')
   findWarehouseByExeuctionProject(
-    @Param('/warehouse/execution/id') id: string,
+    @Param('id') id: string,
   ): Promise<WarehouseData> {
     return this.warehouseService.findWarehouseByExeuctionProject(id);
   }
