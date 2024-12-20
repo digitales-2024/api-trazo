@@ -94,8 +94,9 @@ export class MovementsController {
   update(
     @Param('id') id: string,
     @Body() updateMovementDto: UpdateMovementDto,
+    @GetUser() user: UserData,
   ) {
-    return this.movementsService.update(id, updateMovementDto);
+    return this.movementsService.update(id, updateMovementDto, user);
   }
 
   @ApiOkResponse({ description: 'Movement successfully deleted' })

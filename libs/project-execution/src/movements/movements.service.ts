@@ -713,8 +713,236 @@ export class MovementsService {
     }
   }
 
-  update(id: string, updateMovementDto: UpdateMovementDto) {
-    return `This action updates a #${id} ${updateMovementDto}movement`;
+  /**
+   * Actualiza un movimiento
+   * @param id Id del movimiento
+   * @param updateMovementDto Datos del movimiento a actualizar
+   * @param user Usuario que realiza la acción
+   * @returns Datos del movimiento actualizado
+   */
+  async update(
+    id: string,
+    updateMovementDto: UpdateMovementDto,
+    user: UserData,
+  ): Promise<HttpResponse<MovementsData>> {
+    try {
+      // Buscar el movimiento existente
+      const existingMovement = await this.findById(id);
+      const warehouseDB = await this.warehouseService.findById(
+        existingMovement.warehouse.id,
+      );
+
+      // Desestructurar los datos actuales y nuevos
+      const {
+        dateMovement,
+        description,
+        warehouseId,
+        movementDetail = [],
+        purchaseId = null,
+        type,
+      } = updateMovementDto;
+
+      const {
+        dateMovement: currentDateMovement,
+        description: currentDescription,
+        purchaseOrder: currentPurchaseOrder,
+        warehouse: currentWarehouse,
+        type: currentType,
+        movementsDetail: currentDetails,
+      } = existingMovement;
+
+      // Validar si hay cambios en la cabecera
+      const headerChanges =
+        dateMovement !== currentDateMovement ||
+        description !== currentDescription ||
+        warehouseId !== currentWarehouse.id ||
+        purchaseId !== (currentPurchaseOrder?.id || null) ||
+        type !== currentType;
+
+      const detailChanges = this.detectDetailChanges(
+        currentDetails,
+        movementDetail,
+      );
+
+      // Si no hay cambios en la cabecera ni en los detalles, retornar
+      if (!headerChanges && !detailChanges) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Movement successfully updated',
+          data: existingMovement,
+        };
+      }
+
+      // Validar cambios en el stock si se cambia el tipo de movimiento
+      if (type && type !== currentType) {
+        if (
+          currentType === TypeMovements.INPUT &&
+          type === TypeMovements.OUTPUT
+        ) {
+          // Validar stock como si fuera un OUTPUT
+          await this.validateStock(type, warehouseDB, movementDetail);
+        }
+      }
+
+      // Procesar cambios en los detalles del movimiento
+      await this.processDetailChanges(
+        currentDetails,
+        movementDetail,
+        type || currentType,
+        currentWarehouse.id,
+        warehouseDB,
+        user,
+      );
+
+      // Actualizar la cabecera si hubo cambios
+      if (headerChanges) {
+        await this.prisma.movements.update({
+          where: { id },
+          data: {
+            dateMovement,
+            description,
+            type,
+            warehouse: warehouseId
+              ? { connect: { id: warehouseId } }
+              : undefined,
+            purchaseOrder: purchaseId
+              ? { connect: { id: purchaseId } }
+              : currentPurchaseOrder
+                ? { disconnect: true }
+                : undefined,
+          },
+        });
+      }
+
+      // Registrar la auditoría
+      await this.prisma.audit.create({
+        data: {
+          action: AuditActionType.UPDATE,
+          entityId: id,
+          entityType: 'movements',
+          performedById: user.id,
+        },
+      });
+
+      // Obtener los datos actualizados del movimiento
+      const updatedMovement = await this.findById(id);
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Movement successfully updated',
+        data: updatedMovement,
+      };
+    } catch (error) {
+      this.logger.error('Error updating movement', error.stack);
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      handleException(error, 'Error updating a movement');
+    }
+  }
+
+  /**
+   * Detecta si hay cambios en los detalles de movimiento.
+   */
+  private detectDetailChanges(
+    currentDetails: any[],
+    newDetails: CreateMovementDetailDto[],
+  ): boolean {
+    const currentDetailIds = new Set(currentDetails.map((d) => d.resource.id));
+    const newDetailIds = new Set(newDetails.map((d) => d.resourceId));
+
+    // Detectar cambios en el conjunto de detalles
+    return (
+      currentDetails.some(
+        (detail) =>
+          !newDetails.some(
+            (d) =>
+              d.resourceId === detail.resource.id &&
+              d.quantity === detail.quantity &&
+              d.unitCost === detail.unitCost,
+          ),
+      ) ||
+      currentDetails.length !== newDetails.length ||
+      [...currentDetailIds].some((id) => !newDetailIds.has(id))
+    );
+  }
+
+  /**
+   * Procesa los cambios en los detalles de un movimiento
+   */
+  private async processDetailChanges(
+    currentDetails: any[],
+    newDetails: CreateMovementDetailDto[],
+    type: TypeMovements,
+    warehouseId: string,
+    warehouseDB: WarehouseData,
+    user: UserData,
+  ) {
+    const currentDetailMap = new Map(
+      currentDetails.map((d) => [d.resource.id, d]),
+    );
+
+    for (const detail of newDetails) {
+      const existingDetail = currentDetailMap.get(detail.resourceId);
+
+      if (existingDetail) {
+        // Validar si hay cambios en un detalle existente
+        if (
+          detail.quantity !== existingDetail.quantity ||
+          detail.unitCost !== existingDetail.unitCost
+        ) {
+          await this.prisma.movementsDetail.update({
+            where: { id: existingDetail.id },
+            data: {
+              quantity: detail.quantity,
+              unitCost: detail.unitCost,
+              subtotal: detail.quantity * detail.unitCost,
+            },
+          });
+        }
+        currentDetailMap.delete(detail.resourceId);
+      } else {
+        // Crear un nuevo detalle
+        await this.prisma.movementsDetail.create({
+          data: {
+            quantity: detail.quantity,
+            unitCost: detail.unitCost,
+            subtotal: detail.quantity * detail.unitCost,
+            resourceId: detail.resourceId,
+            movementsId: existingDetail.movementsId,
+          },
+        });
+      }
+    }
+
+    // Eliminar los detalles que ya no están en los nuevos detalles
+    for (const [detail] of currentDetailMap) {
+      await this.prisma.movementsDetail.delete({
+        where: { id: detail.id },
+      });
+    }
+
+    // Procesar los cambios en el stock
+    await this.revertStockChanges(
+      currentDetails.map((d) => ({
+        resourceId: d.resource.id,
+        quantity: d.quantity,
+        unitCost: d.unitCost,
+      })),
+      type === TypeMovements.INPUT ? TypeMovements.OUTPUT : TypeMovements.INPUT,
+      warehouseId,
+    );
+
+    await this.processMovementDetail(
+      newDetails,
+      type,
+      warehouseId,
+      warehouseDB,
+      user,
+    );
   }
 
   /**
