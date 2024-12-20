@@ -19,7 +19,11 @@ import {
 } from '@nestjs/swagger';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import { HttpResponse, UserData } from '@login/login/interfaces';
-import { MovementsData, MovementsDetailData } from '../interfaces';
+import {
+  MovementsData,
+  MovementsDetailData,
+  SummaryMovementsData,
+} from '../interfaces';
 
 @ApiTags('Movements')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -40,13 +44,15 @@ export class MovementsController {
     return this.movementsService.create(createMovementDto, user);
   }
 
+  @ApiOkResponse({ description: 'Get all movements' })
   @Get()
-  findAll() {
+  findAll(): Promise<SummaryMovementsData[]> {
     return this.movementsService.findAll();
   }
 
+  @ApiOkResponse({ description: 'Get movement by id' })
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string): Promise<MovementsData> {
     return this.movementsService.findOne(id);
   }
 

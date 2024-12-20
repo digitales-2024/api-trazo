@@ -14,6 +14,7 @@ import { WarehouseService } from '../warehouse/warehouse.service';
 import {
   MovementsData,
   MovementsDetailData,
+  SummaryMovementsData,
   WarehouseData,
 } from '../interfaces';
 import { AuditActionType, ResourceType, TypeMovements } from '@prisma/client';
@@ -395,12 +396,131 @@ export class MovementsService {
     }
   }
 
-  findAll() {
-    return `This action returns all movements`;
+  /**
+   * Busca todos los movimientos
+   * @returns Todos los movimientos
+   */
+  async findAll(): Promise<SummaryMovementsData[]> {
+    try {
+      const movements = await this.prisma.movements.findMany({
+        select: {
+          id: true,
+          code: true,
+          dateMovement: true,
+          type: true,
+          description: true,
+          warehouse: {
+            select: {
+              id: true,
+              executionProject: {
+                select: {
+                  id: true,
+                  code: true,
+                },
+              },
+            },
+          },
+          purchaseOrder: {
+            select: {
+              id: true,
+              code: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+
+      // Mapea los resultados al tipo SummaryMovementsData
+      const summaryMovements = await Promise.all(
+        movements.map(async (movement) => {
+          return {
+            id: movement.id,
+            code: movement.code,
+            dateMovement: movement.dateMovement,
+            type: movement.type,
+            description: movement.description,
+            warehouse: movement.warehouse,
+            purchaseOrder: movement.purchaseOrder,
+          };
+        }),
+      );
+
+      return summaryMovements as SummaryMovementsData[];
+    } catch (error) {
+      this.logger.error('Error getting all movements');
+      handleException(error, 'Error getting all purchase movements');
+    }
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} movement`;
+  /**
+   * Busca un movimiento por su id
+   * @param id Id del movimiento
+   * @returns Datos del movimiento
+   */
+  async findOne(id: string): Promise<MovementsData> {
+    try {
+      return await this.findById(id);
+    } catch (error) {
+      this.logger.error('Error get movement');
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      handleException(error, 'Error get movement');
+    }
+  }
+
+  /**
+   * Busca un movimiento por su id con validación
+   * @param id Id del movimiento
+   * @returns Datos del movimiento
+   */
+  async findById(id: string): Promise<MovementsData> {
+    const movement = await this.prisma.movements.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        code: true,
+        dateMovement: true,
+        type: true,
+        description: true,
+        warehouse: {
+          select: {
+            id: true,
+            executionProject: {
+              select: {
+                id: true,
+                code: true,
+              },
+            },
+          },
+        },
+        movementsDetail: {
+          select: {
+            id: true,
+            quantity: true,
+            unitCost: true,
+            subtotal: true,
+            resource: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!movement) {
+      throw new NotFoundException('Movement not found');
+    }
+
+    return movement;
   }
 
   /**
