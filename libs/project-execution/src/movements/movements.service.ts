@@ -870,7 +870,9 @@ export class MovementsService {
     currentDetails: any[],
     newDetails: CreateMovementDetailDto[],
   ): boolean {
-    const currentDetailIds = new Set(currentDetails.map((d) => d.resource.id));
+    const currentDetailIds = new Set(
+      currentDetails.map((d) => d.resource?.id).filter((id) => id),
+    );
     const newDetailIds = new Set(newDetails.map((d) => d.resourceId));
 
     // Detectar cambios en el conjunto de detalles
@@ -879,7 +881,7 @@ export class MovementsService {
         (detail) =>
           !newDetails.some(
             (d) =>
-              d.resourceId === detail.resource.id &&
+              d.resourceId === detail.resource?.id &&
               d.quantity === detail.quantity &&
               d.unitCost === detail.unitCost,
           ),
@@ -904,6 +906,7 @@ export class MovementsService {
       currentDetails.map((d) => [d.resource.id, d]),
     );
 
+    // Procesar detalles nuevos o modificados
     for (const detail of newDetails) {
       const existingDetail = currentDetailMap.get(detail.resourceId);
 
@@ -931,32 +934,39 @@ export class MovementsService {
             unitCost: detail.unitCost,
             subtotal: detail.quantity * detail.unitCost,
             resourceId: detail.resourceId,
-            movementsId: existingDetail.movementsId,
+            movementsId: warehouseDB.id, // Asegúrate de conectar el movimiento correcto
           },
         });
       }
     }
 
     // Eliminar los detalles que ya no están en los nuevos detalles
-    for (const [detail] of currentDetailMap) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    for (const [_, detail] of currentDetailMap) {
+      // Primero revertir el stock antes de eliminar el detalle
+      await this.revertStockChanges(
+        [
+          {
+            resourceId: detail.resource.id,
+            quantity: detail.quantity,
+            unitCost: detail.unitCost,
+          },
+        ],
+        type === TypeMovements.INPUT
+          ? TypeMovements.OUTPUT
+          : TypeMovements.INPUT, // Pasar el tipo opuesto
+        warehouseId,
+      );
+
+      // Eliminar el detalle después de revertir los cambios de stock
       await this.prisma.movementsDetail.delete({
         where: { id: detail.id },
       });
     }
 
-    // Procesar los cambios en el stock
-    await this.revertStockChanges(
-      currentDetails.map((d) => ({
-        resourceId: d.resource.id,
-        quantity: d.quantity,
-        unitCost: d.unitCost,
-      })),
-      type === TypeMovements.INPUT ? TypeMovements.OUTPUT : TypeMovements.INPUT,
-      warehouseId,
-    );
-
+    // Solo procesar los nuevos detalles que no se eliminaron
     await this.processMovementDetail(
-      newDetails,
+      newDetails.filter((detail) => !currentDetailMap.has(detail.resourceId)), // Filtrar solo los nuevos detalles
       type,
       warehouseId,
       warehouseDB,
