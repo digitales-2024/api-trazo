@@ -161,6 +161,7 @@ export class MovementsService {
    * @param warehouseId Id del almacén
    */
   async revertStockChanges(movementDetail, type, warehouseId) {
+    console.log('este es el type que me llega para revertir', type);
     await Promise.all(
       movementDetail.map(async (detail) => {
         const stockItem = await this.prisma.stock.findFirst({
@@ -170,27 +171,35 @@ export class MovementsService {
           },
         });
 
-        if (type === TypeMovements.INPUT) {
-          if (stockItem) {
-            // Restar la cantidad añadida
+        if (stockItem) {
+          if (type === TypeMovements.INPUT) {
+            console.log(
+              'este es el stockItem que me llega para revertir en input',
+              stockItem,
+            );
+
+            // Calcular nueva cantidad y totalCost
+            const newQuantity = stockItem.quantity - detail.quantity;
+            const newTotalCost = Math.max(
+              stockItem.totalCost - detail.quantity * detail.unitCost,
+              0, // Evitar negativos
+            );
+
+            // Asegurar que si la cantidad es 0, el costo también sea 0
             await this.prisma.stock.update({
-              where: {
-                id: stockItem.id,
-              },
+              where: { id: stockItem.id },
               data: {
-                quantity: stockItem.quantity - detail.quantity,
-                totalCost:
-                  stockItem.totalCost - detail.quantity * detail.unitCost,
+                quantity: Math.max(newQuantity, 0), // No permitir negativos
+                totalCost: newQuantity > 0 ? newTotalCost : 0,
               },
             });
-          }
-        } else if (type === TypeMovements.OUTPUT) {
-          if (stockItem) {
-            // Sumar la cantidad restada
+          } else if (type === TypeMovements.OUTPUT) {
+            console.log(
+              'este es el stockItem que me llega para revertir en output',
+              stockItem,
+            );
             await this.prisma.stock.update({
-              where: {
-                id: stockItem.id,
-              },
+              where: { id: stockItem.id },
               data: {
                 quantity: stockItem.quantity + detail.quantity,
                 totalCost:
@@ -1018,24 +1027,28 @@ export class MovementsService {
     try {
       // Verificar que el movimiento existe
       const movement = await this.findById(id);
-      // Verificar que el almacén existe
-      const warehouseDB = await this.warehouseService.findById(
-        movement.warehouse.id,
-      );
-      // Mapea los detalles del movimiento
-      const movementDetails = movement.movementsDetail.map((detail) => ({
-        resourceId: detail.resource.id,
-        quantity: detail.quantity,
-        unitCost: detail.unitCost,
-      }));
 
-      const typeValidation: TypeMovements =
+      console.log(
+        'Este es el movimiento que me llega para eliminar',
+        JSON.stringify(movement, null, 2),
+      );
+
+      const oppositeType =
         movement.type === TypeMovements.INPUT
           ? TypeMovements.OUTPUT
           : TypeMovements.INPUT;
 
-      // Validar el stock de todos los recursos
-      await this.validateStock(typeValidation, warehouseDB.id, movementDetails);
+      // Validar el stock de los recursos solo una vez para ambos tipos
+      await this.validateStock(
+        oppositeType,
+        movement.warehouse.id,
+        movement.movementsDetail.map((d) => ({
+          resourceId: d.resource.id,
+          quantity: d.quantity,
+          unitCost: d.unitCost,
+        })),
+      );
+
       // Revertir los cambios en el stock de los recursos con el movimiento eliminado
       await this.revertStockChanges(
         movement.movementsDetail,
