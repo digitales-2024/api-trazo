@@ -906,16 +906,30 @@ export class MovementsService {
       currentDetails.map((d) => [d.resource.id, d]),
     );
 
-    // Procesar detalles nuevos o modificados
+    // Procesar los nuevos detalles (que son nuevos o modificados)
     for (const detail of newDetails) {
       const existingDetail = currentDetailMap.get(detail.resourceId);
 
       if (existingDetail) {
-        // Validar si hay cambios en un detalle existente
-        if (
-          detail.quantity !== existingDetail.quantity ||
-          detail.unitCost !== existingDetail.unitCost
-        ) {
+        // Si existe el detalle, verificar si hubo cambios
+        const isQuantityChanged = detail.quantity !== existingDetail.quantity;
+        const isUnitCostChanged = detail.unitCost !== existingDetail.unitCost;
+
+        if (isQuantityChanged || isUnitCostChanged) {
+          // Si hay cambios, revertir el detalle en el stock
+          await this.revertStockChanges(
+            [
+              {
+                resourceId: detail.resourceId,
+                quantity: existingDetail.quantity,
+                unitCost: existingDetail.unitCost,
+              },
+            ],
+            type, // Mantenemos el mismo tipo de movimiento
+            warehouseId,
+          );
+
+          // Actualizar el detalle en la base de datos
           await this.prisma.movementsDetail.update({
             where: { id: existingDetail.id },
             data: {
@@ -924,19 +938,51 @@ export class MovementsService {
               subtotal: detail.quantity * detail.unitCost,
             },
           });
+
+          // Luego aplicar los nuevos cambios al stock
+          await this.processMovementDetail(
+            [
+              {
+                resourceId: detail.resourceId,
+                quantity: detail.quantity,
+                unitCost: detail.unitCost,
+              },
+            ],
+            type,
+            warehouseId,
+            warehouseDB,
+            user,
+          );
         }
+
+        // Eliminar el detalle de la lista de detalles existentes
         currentDetailMap.delete(detail.resourceId);
       } else {
-        // Crear un nuevo detalle
+        // Si el detalle es nuevo, crear el detalle
         await this.prisma.movementsDetail.create({
           data: {
             quantity: detail.quantity,
             unitCost: detail.unitCost,
             subtotal: detail.quantity * detail.unitCost,
             resourceId: detail.resourceId,
-            movementsId: warehouseDB.id, // Asegúrate de conectar el movimiento correcto
+            movementsId: warehouseDB.id,
           },
         });
+
+        // Aplicar los cambios al stock
+        await this.processMovementDetail(
+          [
+            {
+              resourceId: detail.resourceId,
+              quantity: detail.quantity,
+              unitCost: detail.unitCost,
+            },
+          ],
+          type,
+          warehouseId,
+          warehouseDB,
+          user,
+        );
       }
     }
 
@@ -952,9 +998,7 @@ export class MovementsService {
             unitCost: detail.unitCost,
           },
         ],
-        type === TypeMovements.INPUT
-          ? TypeMovements.OUTPUT
-          : TypeMovements.INPUT, // Pasar el tipo opuesto
+        type,
         warehouseId,
       );
 
@@ -963,15 +1007,6 @@ export class MovementsService {
         where: { id: detail.id },
       });
     }
-
-    // Solo procesar los nuevos detalles que no se eliminaron
-    await this.processMovementDetail(
-      newDetails.filter((detail) => !currentDetailMap.has(detail.resourceId)), // Filtrar solo los nuevos detalles
-      type,
-      warehouseId,
-      warehouseDB,
-      user,
-    );
   }
 
   /**
