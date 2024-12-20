@@ -41,16 +41,18 @@ export class PurchaseOrderService {
    * @returns Código de la orden de compra
    */
   private async generateCodePurchaseOrder(): Promise<string> {
-    // Generar el siguiente código incremental
+    const currentYear = new Date().getFullYear();
+    const prefix = `OC.GG.${currentYear}.`;
+
     const lastProject = await this.prisma.purchaseOrder.findFirst({
-      where: { code: { startsWith: 'ORD-CMP-' } },
+      where: { code: { startsWith: prefix } },
       orderBy: { code: 'desc' }, // Orden descendente
     });
 
     const lastIncrement = lastProject
-      ? parseInt(lastProject.code.split('-')[2], 10)
+      ? parseInt(lastProject.code.split('.')[3], 10)
       : 0;
-    const projectCode = `ORD-CMP-${String(lastIncrement + 1).padStart(3, '0')}`;
+    const projectCode = `${prefix}${String(lastIncrement + 1).padStart(3, '0')}`;
     return projectCode;
   }
 
