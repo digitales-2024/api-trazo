@@ -112,4 +112,17 @@ export class RequirementsController {
       user.id,
     );
   }
+
+  // Buscar requerimientos asociados a un proyecto de ejecución
+  @ApiOkResponse({
+    description: 'Get requirements by exection project ID',
+  })
+  @Get(':executionProjectId')
+  async getRequirementsByExecutionProjectId(
+    @Param('executionProjectId') executionProjectId: string,
+  ): Promise<HttpResponse<RequirementsData[]>> {
+    return this.requirementService.findRequirementsByExecutionProject(
+      executionProjectId,
+    );
+  }
 }
