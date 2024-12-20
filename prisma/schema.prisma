@@ -813,6 +813,7 @@ model PurchaseOrder {
 
 enum PurchaseOrderStatus {
   PENDING
+  INCOMPLETE
   DELIVERED
   REJECTED
 }
