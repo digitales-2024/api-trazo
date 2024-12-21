@@ -11,6 +11,7 @@ import { HttpResponse, UserData } from '@login/login/interfaces';
 import {
   UpdateRequirements,
   RequirementsData,
+  RequirementsDetail,
   UpdateRequirementsDetail,
   RequirementsWithDetailData,
 } from './requirement.interface';
@@ -196,6 +197,7 @@ export class RequirementService {
             select: {
               id: true,
               name: true,
+              code: true,
             },
           },
           requirementsDetail: {
@@ -369,6 +371,65 @@ export class RequirementService {
         statusCode: HttpStatus.OK,
         message: 'Requirements fetched successfully',
         data: mappedRequirements,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error fetching requirements for project: ${error.message}`,
+        error.stack,
+      );
+      handleException(error, 'Error fetching requirements');
+    }
+  }
+
+  /**
+   * Obtener todos los detalles de un requerimiento
+   * @param id Id del requerimiento
+   * @returns Datos del detale de requerimiento
+   */
+  async findRequirementsDetailByRequirementId(): Promise<
+    HttpResponse<RequirementsDetail[]>
+  > {
+    try {
+      const requirementsDetail = await this.prisma.requirementsDetail.findMany({
+        select: {
+          id: true,
+          status: true,
+          quantity: true,
+          dateDetail: true,
+          description: true,
+          resource: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      // Respuesta si no se encuentrar los detalles de requerimientos
+      if (requirementsDetail.length === 0) {
+        return {
+          statusCode: HttpStatus.NO_CONTENT,
+          message: 'No requirements detail found',
+          data: [],
+        };
+      }
+
+      const mappedRequirementsDetail = requirementsDetail.map(
+        (requirementDetail) => ({
+          id: requirementDetail.id,
+          status: requirementDetail.status,
+          quantity: requirementDetail.quantity,
+          dateDetail: requirementDetail.dateDetail,
+          description: requirementDetail.description,
+          resource: requirementDetail.resource,
+        }),
+      );
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Requirements detail fetched successfully',
+        data: mappedRequirementsDetail,
       };
     } catch (error) {
       this.logger.error(

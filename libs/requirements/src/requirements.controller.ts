@@ -14,6 +14,7 @@ import {
   UpdateRequirements,
   RequirementsData,
   UpdateRequirementsDetail,
+  RequirementsDetail,
   /* RequirementsWithDetailData, */
 } from './requirement.interface';
 import {
@@ -110,6 +111,19 @@ export class RequirementsController {
       detailId,
       updateStatusDto.status,
       user.id,
+    );
+  }
+
+  // Buscar detalles de requerimientos asociados a un requerimiento
+  @ApiOkResponse({
+    description: 'Get requirements detail by execution requirement ID',
+  })
+  @Get('detail/:requirementId')
+  async getRequirementsDetailByRequirementId(
+    @Param('requirementId') requirementId: string,
+  ): Promise<HttpResponse<RequirementsDetail[]>> {
+    return this.requirementService.findRequirementsDetailByRequirementId(
+      requirementId,
     );
   }
 

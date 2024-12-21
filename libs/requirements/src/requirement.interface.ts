@@ -38,7 +38,11 @@ export interface RequirementsDetail {
   quantity: number;
   dateDetail: string;
   description: string;
-  resourceId: string;
+  // resourceId: string;
+  resource: {
+    id: string;
+    name: string;
+  };
 }
 
 // Interfaz para actualizar requerimientos
