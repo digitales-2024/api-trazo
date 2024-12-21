@@ -14,6 +14,7 @@ import {
   UpdateRequirements,
   RequirementsData,
   UpdateRequirementsDetail,
+  /* RequirementsWithDetailData, */
 } from './requirement.interface';
 import {
   UpdateRequirementDetailDto,
@@ -45,9 +46,8 @@ export class RequirementsController {
     description: 'Get all requirements',
   })
   @Get()
-  findAll() /* @GetUser() user: UserData, */
-  : Promise<HttpResponse<RequirementsData[]>> {
-    return this.requirementService.findAll(/* user */);
+  findAll(): Promise<HttpResponse<RequirementsData[]>> {
+    return this.requirementService.findAll();
   }
 
   // Actualizar un Requerimiento
@@ -117,7 +117,7 @@ export class RequirementsController {
   @ApiOkResponse({
     description: 'Get requirements by exection project ID',
   })
-  @Get(':executionProjectId')
+  @Get('/execution-project/:executionProjectId')
   async getRequirementsByExecutionProjectId(
     @Param('executionProjectId') executionProjectId: string,
   ): Promise<HttpResponse<RequirementsData[]>> {

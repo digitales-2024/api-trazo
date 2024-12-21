@@ -12,6 +12,7 @@ export interface RequirementsData {
   executionProject: {
     id: string;
     name: string;
+    code?: string;
   };
 }
 
