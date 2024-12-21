@@ -1,7 +1,13 @@
 import { PartialType } from '@nestjs/swagger';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEmail, IsNotEmpty, IsPhoneNumber, IsString } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsPhoneNumber,
+  IsString,
+} from 'class-validator';
 import { CreateSupplierDto } from './create-supplier.dto';
 
 export class UpdateSupplierDto extends PartialType(CreateSupplierDto) {
@@ -48,6 +54,24 @@ export class UpdateSupplierDto extends PartialType(CreateSupplierDto) {
   @IsString()
   @IsNotEmpty()
   @IsEmail()
+  @IsOptional()
   @Transform(({ value }) => value.trim())
   email?: string;
+
+  @ApiProperty({
+    name: 'province',
+    description: 'Supplier province',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Transform(({ value }) => value.trim().toLowerCase())
+  province?: string;
+
+  @ApiProperty({
+    name: 'department',
+    description: 'Supplier department',
+  })
+  @IsString()
+  @IsNotEmpty()
+  department?: string;
 }
