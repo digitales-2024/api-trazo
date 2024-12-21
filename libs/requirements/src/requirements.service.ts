@@ -199,7 +199,6 @@ export class RequirementService {
             },
           },
           requirementsDetail: {
-            // Detalles de cada requerimiento
             select: {
               id: true,
               status: true,
@@ -207,7 +206,6 @@ export class RequirementService {
               dateDetail: true,
               description: true,
               resource: {
-                // Información sobre el recurso relacionado con el detalle
                 select: {
                   id: true,
                   name: true,
@@ -342,6 +340,7 @@ export class RequirementService {
             select: {
               id: true,
               name: true,
+              code: true,
             },
           },
         },
