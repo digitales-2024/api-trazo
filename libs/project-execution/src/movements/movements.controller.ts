@@ -14,12 +14,18 @@ import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
   ApiOkResponse,
+  ApiParam,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Auth, GetUser } from '@login/login/admin/auth/decorators';
 import { HttpResponse, UserData } from '@login/login/interfaces';
-import { MovementsData, MovementsDetailData } from '../interfaces';
+import {
+  MovementsData,
+  MovementsDetailData,
+  SummaryMovementsData,
+} from '../interfaces';
+import { TypeMovements } from '@prisma/client';
 
 @ApiTags('Movements')
 @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -40,14 +46,30 @@ export class MovementsController {
     return this.movementsService.create(createMovementDto, user);
   }
 
+  @ApiOkResponse({ description: 'Get all movements' })
   @Get()
-  findAll() {
+  findAll(): Promise<SummaryMovementsData[]> {
     return this.movementsService.findAll();
   }
 
+  @ApiOkResponse({ description: 'Get movement by id' })
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string): Promise<MovementsData> {
     return this.movementsService.findOne(id);
+  }
+
+  @ApiOkResponse({ description: 'Get movements by type' })
+  @ApiParam({
+    name: 'type',
+    required: true,
+    description: 'Type of movements',
+    enum: TypeMovements,
+  })
+  @Get('by-type/:type')
+  findByType(
+    @Param('type') type: TypeMovements,
+  ): Promise<SummaryMovementsData[]> {
+    return this.movementsService.findByType(type);
   }
 
   @ApiOkResponse({
@@ -72,12 +94,17 @@ export class MovementsController {
   update(
     @Param('id') id: string,
     @Body() updateMovementDto: UpdateMovementDto,
+    @GetUser() user: UserData,
   ) {
-    return this.movementsService.update(id, updateMovementDto);
+    return this.movementsService.update(id, updateMovementDto, user);
   }
 
+  @ApiOkResponse({ description: 'Movement successfully deleted' })
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.movementsService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @GetUser() user: UserData,
+  ): Promise<HttpResponse<MovementsData>> {
+    return this.movementsService.remove(id, user);
   }
 }

@@ -14,7 +14,7 @@ import { WarehouseService } from '../warehouse/warehouse.service';
 import {
   MovementsData,
   MovementsDetailData,
-  WarehouseData,
+  SummaryMovementsData,
 } from '../interfaces';
 import { AuditActionType, ResourceType, TypeMovements } from '@prisma/client';
 import { PurchaseOrderService } from '../purchase-order/purchase-order.service';
@@ -39,12 +39,13 @@ export class MovementsService {
    */
   private async validateStock(
     type: TypeMovements,
-    warehouseDb: WarehouseData,
+    warehouseID: string,
     movementDetail: CreateMovementDetailDto[],
   ): Promise<void> {
+    const warehouseDB = await this.warehouseService.findById(warehouseID);
     if (type === TypeMovements.OUTPUT) {
       for (const detail of movementDetail) {
-        const stockItem = warehouseDb.stock.find(
+        const stockItem = warehouseDB.stock.find(
           (item) => item.resource.id === detail.resourceId,
         );
 
@@ -71,14 +72,9 @@ export class MovementsService {
    * @param warehouseDB Datos del almacén
    * @param user Usuario que realiza la acción
    */
-  async processMovementDetail(
-    movementDetail,
-    type,
-    warehouseId,
-    warehouseDB,
-    user,
-  ) {
+  async processMovementDetail(movementDetail, type, warehouseId, user) {
     return await this.prisma.$transaction(async (prisma) => {
+      const warehouseDB = await this.warehouseService.findById(warehouseId);
       await Promise.all(
         movementDetail.map(async (detail) => {
           const stockItem = warehouseDB.stock.find(
@@ -161,46 +157,42 @@ export class MovementsService {
    * @param warehouseId Id del almacén
    */
   async revertStockChanges(movementDetail, type, warehouseId) {
-    await Promise.all(
-      movementDetail.map(async (detail) => {
-        const stockItem = await this.prisma.stock.findFirst({
+    // Transacción para asegurar atomicidad
+    await this.prisma.$transaction(async (tx) => {
+      for (const detail of movementDetail) {
+        const stockItem = await tx.stock.findFirst({
           where: {
             warehouseId,
             resourceId: detail.resourceId,
           },
         });
 
+        let newQuantity, newTotalCost;
+
         if (type === TypeMovements.INPUT) {
-          if (stockItem) {
-            // Restar la cantidad añadida
-            await this.prisma.stock.update({
-              where: {
-                id: stockItem.id,
-              },
-              data: {
-                quantity: stockItem.quantity - detail.quantity,
-                totalCost:
-                  stockItem.totalCost - detail.quantity * detail.unitCost,
-              },
-            });
-          }
+          newQuantity = stockItem.quantity - detail.quantity;
+          newTotalCost =
+            stockItem.totalCost - detail.quantity * detail.unitCost;
+
+          // Evita negativos
+          newQuantity = Math.max(newQuantity, 0);
+          newTotalCost = newQuantity > 0 ? newTotalCost : 0;
         } else if (type === TypeMovements.OUTPUT) {
-          if (stockItem) {
-            // Sumar la cantidad restada
-            await this.prisma.stock.update({
-              where: {
-                id: stockItem.id,
-              },
-              data: {
-                quantity: stockItem.quantity + detail.quantity,
-                totalCost:
-                  stockItem.totalCost + detail.quantity * detail.unitCost,
-              },
-            });
-          }
+          newQuantity = stockItem.quantity + detail.quantity;
+          newTotalCost =
+            stockItem.totalCost + detail.quantity * detail.unitCost;
         }
-      }),
-    );
+
+        // Realiza la actualización y verifica resultado
+        await tx.stock.update({
+          where: { id: stockItem.id },
+          data: {
+            quantity: newQuantity,
+            totalCost: newTotalCost,
+          },
+        });
+      }
+    });
   }
 
   /**
@@ -247,7 +239,7 @@ export class MovementsService {
       );
 
       // Validar el stock de todos los recursos
-      await this.validateStock(type, warehouseDB, movementDetail);
+      await this.validateStock(type, warehouseDB.id, movementDetail);
 
       // Crear el movimiento
       newMovement = await this.prisma.movements.create({
@@ -331,7 +323,6 @@ export class MovementsService {
           movementDetail,
           type,
           warehouseId,
-          warehouseDB,
           user,
         );
       }
@@ -395,12 +386,191 @@ export class MovementsService {
     }
   }
 
-  findAll() {
-    return `This action returns all movements`;
+  /**
+   * Busca todos los movimientos
+   * @returns Todos los movimientos
+   */
+  async findAll(): Promise<SummaryMovementsData[]> {
+    try {
+      const movements = await this.prisma.movements.findMany({
+        select: {
+          id: true,
+          code: true,
+          dateMovement: true,
+          type: true,
+          description: true,
+          warehouse: {
+            select: {
+              id: true,
+              executionProject: {
+                select: {
+                  id: true,
+                  code: true,
+                },
+              },
+            },
+          },
+          purchaseOrder: {
+            select: {
+              id: true,
+              code: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+
+      // Mapea los resultados al tipo SummaryMovementsData
+      const summaryMovements = await Promise.all(
+        movements.map(async (movement) => {
+          return {
+            id: movement.id,
+            code: movement.code,
+            dateMovement: movement.dateMovement,
+            type: movement.type,
+            description: movement.description,
+            warehouse: movement.warehouse,
+            purchaseOrder: movement.purchaseOrder,
+          };
+        }),
+      );
+
+      return summaryMovements as SummaryMovementsData[];
+    } catch (error) {
+      this.logger.error('Error getting all movements');
+      handleException(error, 'Error getting all purchase movements');
+    }
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} movement`;
+  /**
+   * Busca los movimientos por su tipo
+   * @param type Tipo de movimiento (INPUT o OUTPUT)
+   * @returns Movimientos por tipo
+   */
+  async findByType(type: TypeMovements): Promise<SummaryMovementsData[]> {
+    try {
+      const movements = await this.prisma.movements.findMany({
+        where: { type },
+        select: {
+          id: true,
+          code: true,
+          dateMovement: true,
+          type: true,
+          description: true,
+          warehouse: {
+            select: {
+              id: true,
+              executionProject: {
+                select: {
+                  id: true,
+                  code: true,
+                },
+              },
+            },
+          },
+          purchaseOrder: {
+            select: {
+              id: true,
+              code: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+
+      // Mapea los resultados al tipo SummaryMovementsData
+      const summaryMovements = await Promise.all(
+        movements.map(async (movement) => {
+          return {
+            id: movement.id,
+            code: movement.code,
+            dateMovement: movement.dateMovement,
+            type: movement.type,
+            description: movement.description,
+            warehouse: movement.warehouse,
+            purchaseOrder: movement.purchaseOrder,
+          };
+        }),
+      );
+
+      return summaryMovements as SummaryMovementsData[];
+    } catch (error) {
+      this.logger.error('Error getting all movements');
+      handleException(error, 'Error getting all purchase movements');
+    }
+  }
+
+  /**
+   * Busca un movimiento por su id
+   * @param id Id del movimiento
+   * @returns Datos del movimiento
+   */
+  async findOne(id: string): Promise<MovementsData> {
+    try {
+      return await this.findById(id);
+    } catch (error) {
+      this.logger.error('Error get movement');
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      handleException(error, 'Error get movement');
+    }
+  }
+
+  /**
+   * Busca un movimiento por su id con validación
+   * @param id Id del movimiento
+   * @returns Datos del movimiento
+   */
+  async findById(id: string): Promise<MovementsData> {
+    const movement = await this.prisma.movements.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        code: true,
+        dateMovement: true,
+        type: true,
+        description: true,
+        warehouse: {
+          select: {
+            id: true,
+            executionProject: {
+              select: {
+                id: true,
+                code: true,
+              },
+            },
+          },
+        },
+        movementsDetail: {
+          select: {
+            id: true,
+            quantity: true,
+            unitCost: true,
+            subtotal: true,
+            resource: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!movement) {
+      throw new NotFoundException('Movement not found');
+    }
+
+    return movement;
   }
 
   /**
@@ -533,11 +703,369 @@ export class MovementsService {
     }
   }
 
-  update(id: string, updateMovementDto: UpdateMovementDto) {
-    return `This action updates a #${id} ${updateMovementDto}movement`;
+  /**
+   * Actualiza un movimiento
+   * @param id Id del movimiento
+   * @param updateMovementDto Datos del movimiento a actualizar
+   * @param user Usuario que realiza la acción
+   * @returns Datos del movimiento actualizado
+   */
+  async update(
+    id: string,
+    updateMovementDto: UpdateMovementDto,
+    user: UserData,
+  ): Promise<HttpResponse<MovementsData>> {
+    let existingMovement;
+    // Desestructurar los datos actuales y nuevos
+    const {
+      dateMovement,
+      description,
+      warehouseId,
+      movementDetail = [],
+      purchaseId = null,
+      type,
+    } = updateMovementDto;
+    try {
+      // Buscar el movimiento existente
+      existingMovement = await this.findById(id);
+      const warehouseDB = await this.warehouseService.findById(
+        existingMovement.warehouse.id,
+      );
+
+      const {
+        dateMovement: currentDateMovement,
+        description: currentDescription,
+        purchaseOrder: currentPurchaseOrder,
+        warehouse: currentWarehouse,
+        type: currentType,
+        movementsDetail: currentDetails,
+      } = existingMovement;
+
+      // Validar si hay cambios en la cabecera
+      const headerChanges =
+        dateMovement !== currentDateMovement ||
+        description !== currentDescription ||
+        warehouseId !== currentWarehouse.id ||
+        purchaseId !== (currentPurchaseOrder?.id || null) ||
+        type !== currentType;
+
+      const detailChanges = this.detectDetailChanges(
+        currentDetails,
+        movementDetail,
+      );
+
+      // Si no hay cambios en la cabecera ni en los detalles, retornar
+      if (!headerChanges && !detailChanges) {
+        return {
+          statusCode: HttpStatus.OK,
+          message: 'Movement successfully updated',
+          data: existingMovement,
+        };
+      }
+
+      // Validar cambios en el stock si se cambia el tipo de movimiento
+      if (type && type !== currentType) {
+        if (
+          currentType === TypeMovements.INPUT &&
+          type === TypeMovements.OUTPUT
+        ) {
+          // Validar stock como si fuera un OUTPUT
+          await this.validateStock(type, warehouseDB.id, movementDetail);
+        }
+      }
+
+      // Procesar cambios en los detalles del movimiento
+      await this.processDetailChanges(
+        currentDetails,
+        movementDetail,
+        type || currentType,
+        currentWarehouse.id,
+        id,
+        user,
+      );
+
+      // Actualizar la cabecera si hubo cambios
+      if (headerChanges) {
+        await this.prisma.movements.update({
+          where: { id },
+          data: {
+            dateMovement,
+            description,
+            type,
+            warehouse: warehouseId
+              ? { connect: { id: warehouseId } }
+              : undefined,
+            purchaseOrder: purchaseId
+              ? { connect: { id: purchaseId } }
+              : currentPurchaseOrder
+                ? { disconnect: true }
+                : undefined,
+          },
+        });
+      }
+
+      // Registrar la auditoría
+      await this.prisma.audit.create({
+        data: {
+          action: AuditActionType.UPDATE,
+          entityId: id,
+          entityType: 'movements',
+          performedById: user.id,
+        },
+      });
+
+      // Obtener los datos actualizados del movimiento
+      const updatedMovement = await this.findById(id);
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Movement successfully updated',
+        data: updatedMovement,
+      };
+    } catch (error) {
+      this.logger.error('Error updating movement', error.stack);
+
+      // Revertir cambios en el stock
+      if (movementDetail && existingMovement) {
+        const currentDetails = existingMovement.movementsDetail.map((d) => ({
+          resourceId: d.resource.id,
+          quantity: d.quantity,
+          unitCost: d.unitCost,
+        }));
+        const typeToRevert =
+          type && type !== existingMovement.type ? type : existingMovement.type;
+        await this.revertStockChanges(
+          currentDetails,
+          typeToRevert === TypeMovements.INPUT
+            ? TypeMovements.OUTPUT
+            : TypeMovements.INPUT,
+          existingMovement.warehouse.id,
+        );
+      }
+
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      handleException(error, 'Error updating a movement');
+    }
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} movement`;
+  /**
+   * Detecta si hay cambios en los detalles de movimiento.
+   */
+  private detectDetailChanges(
+    currentDetails: any[],
+    newDetails: CreateMovementDetailDto[],
+  ): boolean {
+    const currentDetailIds = new Set(
+      currentDetails.map((d) => d.resource?.id).filter((id) => id),
+    );
+    const newDetailIds = new Set(newDetails.map((d) => d.resourceId));
+
+    // Detectar cambios en el conjunto de detalles
+    return (
+      currentDetails.some(
+        (detail) =>
+          !newDetails.some(
+            (d) =>
+              d.resourceId === detail.resource?.id &&
+              d.quantity === detail.quantity &&
+              d.unitCost === detail.unitCost,
+          ),
+      ) ||
+      currentDetails.length !== newDetails.length ||
+      [...currentDetailIds].some((id) => !newDetailIds.has(id))
+    );
+  }
+
+  /**
+   * Procesa los cambios en los detalles de un movimiento
+   */
+  private async processDetailChanges(
+    currentDetails: any[],
+    newDetails: CreateMovementDetailDto[],
+    type: TypeMovements,
+    warehouseId: string,
+    movementsId: string,
+    user: UserData,
+  ) {
+    const currentDetailMap = new Map(
+      currentDetails.map((d) => [d.resource.id, d]),
+    );
+
+    // Procesar los nuevos detalles (que son nuevos o modificados)
+    for (const detail of newDetails) {
+      const existingDetail = currentDetailMap.get(detail.resourceId);
+
+      if (existingDetail) {
+        // Si existe el detalle, verificar si hubo cambios
+        const isQuantityChanged = detail.quantity !== existingDetail.quantity;
+        const isUnitCostChanged = detail.unitCost !== existingDetail.unitCost;
+
+        if (isQuantityChanged || isUnitCostChanged) {
+          // Si hay cambios, revertir el detalle en el stock
+          await this.revertStockChanges(
+            [
+              {
+                resourceId: detail.resourceId,
+                quantity: existingDetail.quantity,
+                unitCost: existingDetail.unitCost,
+              },
+            ],
+            type,
+            warehouseId,
+          );
+
+          // Actualizar el detalle en la base de datos
+          await this.prisma.movementsDetail.update({
+            where: { id: existingDetail.id },
+            data: {
+              quantity: detail.quantity,
+              unitCost: detail.unitCost,
+              subtotal: detail.quantity * detail.unitCost,
+            },
+          });
+
+          // Luego aplicar los nuevos cambios al stock
+          await this.processMovementDetail(
+            [
+              {
+                resourceId: detail.resourceId,
+                quantity: detail.quantity,
+                unitCost: detail.unitCost,
+              },
+            ],
+            type,
+            warehouseId,
+            user,
+          );
+        }
+
+        // Eliminar el detalle de la lista de detalles existentes
+        currentDetailMap.delete(detail.resourceId);
+      } else {
+        // Si el detalle es nuevo, crear el detalle
+        await this.prisma.movementsDetail.create({
+          data: {
+            quantity: detail.quantity,
+            unitCost: detail.unitCost,
+            subtotal: detail.quantity * detail.unitCost,
+            resourceId: detail.resourceId,
+            movementsId: movementsId,
+          },
+        });
+
+        // Aplicar los cambios al stock
+        await this.processMovementDetail(
+          [
+            {
+              resourceId: detail.resourceId,
+              quantity: detail.quantity,
+              unitCost: detail.unitCost,
+            },
+          ],
+          type,
+          warehouseId,
+          user,
+        );
+      }
+    }
+
+    // Eliminar los detalles que ya no están en los nuevos detalles
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    for (const [_, detail] of currentDetailMap) {
+      // Primero revertir el stock antes de eliminar el detalle
+      await this.revertStockChanges(
+        [
+          {
+            resourceId: detail.resource.id,
+            quantity: detail.quantity,
+            unitCost: detail.unitCost,
+          },
+        ],
+        type,
+        warehouseId,
+      );
+
+      // Eliminar el detalle después de revertir los cambios de stock
+      await this.prisma.movementsDetail.delete({
+        where: { id: detail.id },
+      });
+    }
+  }
+
+  /**
+   * Elimina un movimiento
+   * @param id Id del movimiento
+   * @param user Usuario que realiza la acción
+   * @returns Datos del movimiento eliminado
+   */
+  async remove(
+    id: string,
+    user: UserData,
+  ): Promise<HttpResponse<MovementsData>> {
+    try {
+      // Verificar que el movimiento existe
+      const movement = await this.findById(id);
+
+      const oppositeType =
+        movement.type === TypeMovements.INPUT
+          ? TypeMovements.OUTPUT
+          : TypeMovements.INPUT;
+
+      // Validar el stock de los recursos solo una vez para ambos tipos
+      await this.validateStock(
+        oppositeType,
+        movement.warehouse.id,
+        movement.movementsDetail.map((d) => ({
+          resourceId: d.resource.id,
+          quantity: d.quantity,
+          unitCost: d.unitCost,
+        })),
+      );
+
+      // Revertir los cambios en el stock de los recursos con el movimiento eliminado
+      await this.revertStockChanges(
+        movement.movementsDetail,
+        movement.type,
+        movement.warehouse.id,
+      );
+
+      // Eliminar los detalles del movimiento
+      await this.prisma.movementsDetail.deleteMany({
+        where: { movementsId: movement.id },
+      });
+
+      // Eliminar el movimiento
+      await this.prisma.movements.delete({ where: { id } });
+
+      // Registrar la auditoría
+      await this.prisma.audit.create({
+        data: {
+          action: AuditActionType.DELETE,
+          entityId: movement.id,
+          entityType: 'movements',
+          performedById: user.id,
+        },
+      });
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Movement successfully deleted',
+        data: movement,
+      };
+    } catch (error) {
+      this.logger.error('Error deleting movement');
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      handleException(error, 'Error deleting movement');
+    }
   }
 }
