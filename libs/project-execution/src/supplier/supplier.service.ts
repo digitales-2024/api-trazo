@@ -36,7 +36,8 @@ export class SupplierService {
     createSupplierDto: CreateSupplierDto,
     user: UserData,
   ): Promise<HttpResponse<SupplierData>> {
-    const { name, address, phone, ruc, email } = createSupplierDto;
+    const { name, address, phone, ruc, email, department, province } =
+      createSupplierDto;
     let newSupplier;
 
     try {
@@ -54,6 +55,8 @@ export class SupplierService {
             phone,
             ruc,
             email,
+            department,
+            province,
           },
           select: {
             id: true,
@@ -62,6 +65,8 @@ export class SupplierService {
             phone: true,
             ruc: true,
             email: true,
+            department: true,
+            province: true,
             isActive: true,
           },
         });
@@ -89,6 +94,8 @@ export class SupplierService {
           phone: newSupplier.phone,
           address: newSupplier.address,
           email: newSupplier.email,
+          department: newSupplier.department,
+          province: newSupplier.province,
           isActive: newSupplier.isActive,
         },
       };
@@ -134,6 +141,8 @@ export class SupplierService {
           phone: true,
           ruc: true,
           email: true,
+          department: true,
+          province: true,
           isActive: true,
         },
         orderBy: {
@@ -149,6 +158,9 @@ export class SupplierService {
         phone: supplier.phone,
         ruc: supplier.ruc,
         email: supplier.email,
+        department: supplier.department,
+        province: supplier.province,
+        isActive: supplier.isActive,
         description: [supplier],
       })) as SupplierDescriptionData[];
     } catch (error) {
@@ -190,6 +202,8 @@ export class SupplierService {
         phone: true,
         ruc: true,
         email: true,
+        department: true,
+        province: true,
         isActive: true,
       },
     });
@@ -224,6 +238,8 @@ export class SupplierService {
         phone: true,
         ruc: true,
         email: true,
+        department: true,
+        province: true,
         isActive: true,
       },
     });
@@ -257,6 +273,8 @@ export class SupplierService {
         phone: true,
         ruc: true,
         email: true,
+        department: true,
+        province: true,
         isActive: true,
       },
     });
@@ -289,6 +307,8 @@ export class SupplierService {
         phone: true,
         ruc: true,
         email: true,
+        department: true,
+        province: true,
         isActive: true,
       },
     });
@@ -315,7 +335,8 @@ export class SupplierService {
     updateSupplierDto: UpdateSupplierDto,
     user: UserData,
   ): Promise<HttpResponse<SupplierData>> {
-    const { name, phone, address, email, ruc } = updateSupplierDto;
+    const { name, phone, address, email, ruc, department, province } =
+      updateSupplierDto;
 
     try {
       const supplierDB = await this.findById(id);
@@ -337,7 +358,9 @@ export class SupplierService {
         (phone === undefined || phone === supplierDB.phone) &&
         (ruc === undefined || ruc === supplierDB.ruc) &&
         (address === undefined || address === supplierDB.address) &&
-        (email === undefined || email === supplierDB.email);
+        (email === undefined || email === supplierDB.email) &&
+        (department === undefined || department === supplierDB.department) &&
+        (province === undefined || province === supplierDB.province);
 
       if (noChanges) {
         return {
@@ -350,6 +373,8 @@ export class SupplierService {
             phone: supplierDB.phone,
             ruc: supplierDB.ruc,
             email: supplierDB.email,
+            department: supplierDB.department,
+            province: supplierDB.province,
             isActive: supplierDB.isActive,
           },
         };
@@ -366,6 +391,10 @@ export class SupplierService {
         updateData.address = address;
       if (email !== undefined && email !== supplierDB.email)
         updateData.email = email;
+      if (department !== undefined && department !== supplierDB.department)
+        updateData.department = department;
+      if (province !== undefined && province !== supplierDB.province)
+        updateData.province = province;
       // Transacción para realizar la actualización
       const updatedSupplier = await this.prisma.$transaction(async (prisma) => {
         const supplier = await prisma.supplier.update({
@@ -378,6 +407,8 @@ export class SupplierService {
             phone: true,
             ruc: true,
             email: true,
+            department: true,
+            province: true,
             isActive: true,
           },
         });
@@ -416,6 +447,12 @@ export class SupplierService {
     }
   }
 
+  /**
+   * Reactivar varios proveedores
+   * @param user Usuario que realiza la acción
+   * @param suppliers Proveedores a reactivar
+   * @returns Respuesta de la operación
+   */
   async reactivateAll(
     user: UserData,
     suppliers: DeleteSuppliersDto,
@@ -491,6 +528,12 @@ export class SupplierService {
     }
   }
 
+  /**
+   * Desactivar varios proveedores
+   * @param suppliers Proveedores a desactivar
+   * @param user Usuario que realiza la acción
+   * @returns Respuesta de la operación
+   */
   async removeAll(
     suppliers: DeleteSuppliersDto,
     user: UserData,
